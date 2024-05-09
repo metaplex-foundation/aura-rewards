@@ -1,5 +1,4 @@
 //! Program entrypoint
-#![cfg(all(target_arch = "bpf", not(feature = "no-entrypoint")))]
 use crate::error::MplxRewardsError;
 use crate::processor::process_instruction;
 use solana_program::program_error::PrintProgramError;

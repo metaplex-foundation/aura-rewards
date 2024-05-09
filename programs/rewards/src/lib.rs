@@ -3,20 +3,18 @@
 //! Rewards contract
 
 pub mod cpi;
+pub mod entrypoint;
+pub mod error;
 pub mod instruction;
 pub mod instructions;
 pub mod processor;
 pub mod state;
 pub mod utils;
 
-#[cfg(not(feature = "no-entrypoint"))]
-pub mod entrypoint;
-pub mod error;
-
 pub use solana_program;
 use solana_program::pubkey::Pubkey;
 
-solana_program::declare_id!("5JQsRv4nYLp99NbACEmCwnHT6zd9kxRLJf5DUZggF28o");
+solana_program::declare_id!("5jemiZdnpEATsTYu1E7U47RjFQ4JyVXoMvs1Ht9RXVtp");
 
 /// Generates mining address
 pub fn find_mining_program_address(

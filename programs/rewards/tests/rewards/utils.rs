@@ -1,13 +1,12 @@
 use solana_program::pubkey::Pubkey;
-use solana_program_test::{processor, ProgramTest, ProgramTestContext};
+use solana_program_test::{processor, BanksClientError, ProgramTest, ProgramTestContext};
 use solana_sdk::account::Account;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_instruction;
 use solana_sdk::transaction::Transaction;
-use solana_sdk::transport::TransportError;
 
-pub type BanksClientResult<T> = Result<T, TransportError>;
+pub type BanksClientResult<T> = Result<T, BanksClientError>;
 
 pub async fn transfer(
     context: &mut ProgramTestContext,
@@ -136,7 +135,7 @@ impl TestRewards {
             &[mplx_rewards::instruction::deposit_mining(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
-                &mining_account,
+                mining_account,
                 user,
                 &self.deposit_authority.pubkey(),
                 amount,
@@ -160,7 +159,7 @@ impl TestRewards {
             &[mplx_rewards::instruction::withdraw_mining(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
-                &mining_account,
+                mining_account,
                 user,
                 &self.deposit_authority.pubkey(),
                 amount,
@@ -275,15 +274,6 @@ impl TestRewards {
 
         context.banks_client.process_transaction(tx).await
     }
-}
-
-pub async fn account(context: &mut ProgramTestContext, pubkey: &Pubkey) -> Account {
-    context
-        .banks_client
-        .get_account(*pubkey)
-        .await
-        .expect("account not found")
-        .expect("account empty")
 }
 
 pub async fn create_token_account(
