@@ -1,0 +1,56 @@
+# [package]
+# name = "mplx-rewards"
+# version = "0.1.0"
+# edition = "2018"
+# publish = false
+
+# [lib]
+# crate-type = ["cdylib", "lib"]
+
+# [dependencies]
+# solana-program = "1.18.9"
+# solana-sdk = "1.18.9"
+# spl-token = { version = "4", features = [ "no-entrypoint" ] }
+# # borsh = { version = "1.5", features = ["derive"] }
+# borsh = "0.10"
+# num-derive = "0.3"
+# num-traits = "0.2"
+# thiserror = "1.0"
+# getrandom = { version = "0.2.15", features = ["custom"] }
+
+# [dev-dependencies]
+# solana-program-test = "1.18.9"
+
+# [[test]]
+# name = "integration_tests"
+# path = "tests/rewards/tests.rs"
+
+[package]
+name = "mplx-rewards"
+version = "0.1.0"
+edition = "2018"
+
+[features]
+no-entrypoint = []
+test-bpf = []
+
+[dependencies]
+solana-program = "1.9.13"
+spl-token = { version = "3.1", features = [ "no-entrypoint" ] }
+borsh = "0.9.0"
+num-derive = "0.3"
+num-traits = "=0.2.15"
+num_enum = "0.5"
+thiserror = "1.0"
+
+[dev-dependencies]
+solana-program-test = "1.9.13"
+solana-sdk = "1.9.13"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[[test]]
+name = "integration_tests"
+path = "tests/rewards/tests.rs"
+
