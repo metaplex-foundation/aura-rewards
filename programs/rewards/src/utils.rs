@@ -153,7 +153,6 @@ pub fn create_account<'a, S: Pack>(
     from: AccountInfo<'a>,
     to: AccountInfo<'a>,
     signers_seeds: &[&[&[u8]]],
-    // rent: &Rent, TODO: remove useless param
 ) -> ProgramResult {
     let rent = Rent::get()?;
 

@@ -17,7 +17,6 @@ pub enum RewardsInstruction {
     /// [R] Deposit authority
     /// [WS] Payer
     /// [R] System program
-    /// [R] Rent sysvar
     InitializePool,
 
     /// Creates a new vault account and adds it to the reward pool
@@ -102,7 +101,6 @@ pub enum RewardsInstruction {
     /// [WS] Root account (ex-Config program account)
     /// [WS] Authority
     /// [R] System program
-    /// [R] Rent sysvar
     InitializeRoot,
 }
 
@@ -122,7 +120,6 @@ pub fn initialize_pool(
         AccountMeta::new_readonly(*authority, false),
         AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(system_program::id(), false),
-        AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
 
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializePool, accounts)
@@ -282,7 +279,6 @@ pub fn initialize_root(
         AccountMeta::new(*rewards_root, true),
         AccountMeta::new(*authority, true),
         AccountMeta::new_readonly(system_program::id(), false),
-        AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
 
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializeRoot, accounts)

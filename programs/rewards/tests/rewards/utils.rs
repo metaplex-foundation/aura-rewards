@@ -70,12 +70,6 @@ impl TestRewards {
             .await
             .unwrap();
 
-        println!("rewards root {:?}", self.rewards_root.pubkey());
-        println!("rewards pool {:?}", self.mining_reward_pool);
-        println!("token mint {:?}", self.token_mint_pubkey);
-        println!("deposit authority {:?}", self.deposit_authority.pubkey());
-        println!("root authority {:?}", self.root_authority.pubkey());
-
         // Initialize mining pool
         let tx = Transaction::new_signed_with_payer(
             &[

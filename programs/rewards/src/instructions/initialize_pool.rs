@@ -6,9 +6,6 @@ use solana_program::entrypoint_deprecated::ProgramResult;
 use solana_program::program_error::ProgramError;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
-use solana_program::rent::Rent;
-use solana_program::system_program;
-use solana_program::sysvar::{Sysvar, SysvarId};
 
 /// Instruction context
 pub struct InitializePoolContext<'a, 'b> {
@@ -17,7 +14,6 @@ pub struct InitializePoolContext<'a, 'b> {
     liquidity_mint: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
     payer: &'a AccountInfo<'b>,
-    // rent: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> InitializePoolContext<'a, 'b> {
@@ -33,9 +29,6 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         let liquidity_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let deposit_authority = AccountLoader::next_unchecked(account_info_iter)?;
         let payer = AccountLoader::next_signer(account_info_iter)?;
-        let _system_program =
-            AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
-        // let rent = AccountLoader::next_with_key(account_info_iter, &Rent::id())?;
 
         Ok(InitializePoolContext {
             rewards_root,
@@ -43,7 +36,6 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             liquidity_mint,
             deposit_authority,
             payer,
-            // rent,
         })
     }
 
@@ -76,7 +68,6 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             self.payer.clone(),
             self.reward_pool.clone(),
             &[reward_pool_seeds],
-            // &Rent::from_account_info(self.rent)?,
         )?;
 
         let reward_pool = RewardPool::init(InitRewardPoolParams {
