@@ -363,3 +363,27 @@ pub async fn create_mint(
 
     context.banks_client.process_transaction(tx).await
 }
+
+pub async fn mint_tokens(
+    context: &mut ProgramTestContext,
+    mint: &Pubkey,
+    account: &Pubkey,
+    amount: u64,
+) -> BanksClientResult<()> {
+    let tx = Transaction::new_signed_with_payer(
+        &[spl_token::instruction::mint_to(
+            &spl_token::id(),
+            mint,
+            account,
+            &context.payer.pubkey(),
+            &[],
+            amount,
+        )
+        .unwrap()],
+        Some(&context.payer.pubkey()),
+        &[&context.payer],
+        context.last_blockhash,
+    );
+
+    context.banks_client.process_transaction(tx).await
+}

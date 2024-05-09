@@ -55,17 +55,16 @@ impl<'a, 'b> InitializeMiningContext<'a, 'b> {
             &[bump],
         ];
 
-        // create_account::<Mining>(
-        //     program_id,
-        //     self.payer.clone(),
-        //     self.mining.clone(),
-        //     &[signers_seeds],
-        // )?;
+        create_account::<Mining>(
+            program_id,
+            self.payer.clone(),
+            self.mining.clone(),
+            &[signers_seeds],
+        )?;
 
-        // let mining = Mining::initialize(*self.reward_pool.key, bump, *self.user.key);
-        // Mining::pack(mining, *self.mining.data.borrow_mut())?;
+        let mining = Mining::initialize(*self.reward_pool.key, bump, *self.user.key);
+        Mining::pack(mining, *self.mining.data.borrow_mut())?;
 
-        // Ok(())
-        todo!()
+        Ok(())
     }
 }
