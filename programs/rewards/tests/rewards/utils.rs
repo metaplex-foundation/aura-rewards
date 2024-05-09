@@ -1,13 +1,11 @@
 use solana_program::pubkey::Pubkey;
-use solana_program_test::{processor, BanksClientError, ProgramTest, ProgramTestContext};
+use solana_program_test::{processor, ProgramTest, ProgramTestContext};
 use solana_sdk::account::Account;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_instruction;
 use solana_sdk::transaction::Transaction;
 use solana_sdk::transport::TransportError;
-
-use crate::instructions::*;
 
 pub type BanksClientResult<T> = Result<T, TransportError>;
 
