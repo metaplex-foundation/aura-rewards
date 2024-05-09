@@ -1,5 +1,5 @@
 use solana_program::pubkey::Pubkey;
-use solana_program_test::{BanksClientError, ProgramTestContext};
+use solana_program_test::{processor, BanksClientError, ProgramTest, ProgramTestContext};
 use solana_sdk::account::Account;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::signature::{Keypair, Signer};
@@ -386,4 +386,22 @@ pub async fn mint_tokens(
     );
 
     context.banks_client.process_transaction(tx).await
+}
+
+pub async fn presetup() -> (ProgramTestContext, Keypair) {
+    let test = ProgramTest::new(
+        "mplx_rewards",
+        mplx_rewards::id(),
+        processor!(mplx_rewards::processor::process_instruction),
+    );
+
+    let mut context = test.start_with_context().await;
+    let payer_pubkey = context.payer.pubkey();
+
+    // // TODO: check liquidity ming
+    let liquidity_mint = Keypair::new();
+    create_mint(&mut context, &liquidity_mint, &payer_pubkey)
+        .await
+        .unwrap();
+    (context, liquidity_mint)
 }

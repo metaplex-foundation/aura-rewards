@@ -15,29 +15,12 @@ async fn setup() -> (
     Pubkey,
     Pubkey,
 ) {
-    let (mut context, token_mint) = async {
-        let test = ProgramTest::new(
-            "mplx_rewards",
-            mplx_rewards::id(),
-            processor!(mplx_rewards::processor::process_instruction),
-        );
-
-        let mut context = test.start_with_context().await;
-        let payer_pubkey = context.payer.pubkey();
-
-        // // TODO: check liquidity ming
-        let liquidity_mint = Keypair::new();
-        create_mint(&mut context, &liquidity_mint, &payer_pubkey)
-            .await
-            .unwrap();
-        (context, liquidity_mint)
-    }
-    .await;
+    let (mut context, _) = presetup().await;
 
     let owner = &context.payer.pubkey();
 
     let mint = Keypair::new();
-    create_mint(&mut context, &mint, &owner).await.unwrap();
+    create_mint(&mut context, &mint, owner).await.unwrap();
 
     let test_reward_pool = TestRewards::new(Some(mint.pubkey()));
     test_reward_pool

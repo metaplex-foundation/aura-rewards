@@ -6,27 +6,10 @@ use solana_program_test::*;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 
-use crate::utils::{create_mint, create_token_account, get_account, TestRewards};
+use crate::utils::{create_token_account, get_account, presetup, TestRewards};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair) {
-    let (mut context, token_mint) = async {
-        let test = ProgramTest::new(
-            "mplx_rewards",
-            mplx_rewards::id(),
-            processor!(mplx_rewards::processor::process_instruction),
-        );
-
-        let mut context = test.start_with_context().await;
-        let payer_pubkey = context.payer.pubkey();
-
-        // // TODO: check liquidity ming
-        let liquidity_mint = Keypair::new();
-        create_mint(&mut context, &liquidity_mint, &payer_pubkey)
-            .await
-            .unwrap();
-        (context, liquidity_mint)
-    }
-    .await;
+    let (mut context, token_mint) = presetup().await;
 
     let test_reward_pool = TestRewards::new(Some(token_mint.pubkey()));
 
