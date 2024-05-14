@@ -76,7 +76,7 @@ impl RewardPool {
         if self.total_share == 0 {
             return Err(MplxRewardsError::RewardsNoDeposits.into());
         }
-        // TODO: distribute rewards which means fill the vault's
+
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
 
@@ -166,7 +166,6 @@ impl RewardPool {
             .checked_add(weighted_stake)
             .ok_or(MplxRewardsError::MathOverflow)?;
 
-        // TODO: for now `share` is shared between all vaults, which must be fixed?
         mining.share = mining
             .share
             .checked_add(weighted_stake)
@@ -175,7 +174,7 @@ impl RewardPool {
         let reward_index = mining.reward_index_mut(*reward_mint);
         reward_index
             .weighted_stake_diffs
-            .get_mut(&lockup_period.end_timestamp())
+            .get_mut(&lockup_period.end_timestamp()?)
             .unwrap_or(&mut 0)
             .checked_add(weighted_stake_diff)
             .ok_or(MplxRewardsError::MathOverflow)?;

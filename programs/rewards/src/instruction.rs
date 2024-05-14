@@ -205,6 +205,7 @@ pub fn initialize_mining(
 }
 
 /// Creates 'DepositMining' instruction.
+#[allow(clippy::too_many_arguments)]
 pub fn deposit_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,

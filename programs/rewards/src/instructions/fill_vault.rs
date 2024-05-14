@@ -64,7 +64,7 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             assert_account_key(
                 self.vault,
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
-            )?
+            )?;
         }
 
         reward_pool.fill(*self.reward_mint.key, rewards)?;

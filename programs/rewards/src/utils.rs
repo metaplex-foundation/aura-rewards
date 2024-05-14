@@ -336,8 +336,7 @@ impl LockupPeriod {
     /// which will be used in rewards calculations
     pub fn multiplier(&self) -> u64 {
         match self {
-            // TODO: remove unreachable
-            LockupPeriod::None => unreachable!(),
+            LockupPeriod::None => 0,
             LockupPeriod::ThreeMonths => 2,
             LockupPeriod::SixMonths => 4,
             LockupPeriod::OneYear => 6,
@@ -346,19 +345,16 @@ impl LockupPeriod {
     }
 
     /// Calculates the time when a lockup should expire
-    pub fn end_timestamp(&self) -> u64 {
+    pub fn end_timestamp(&self) -> Result<u64, MplxRewardsError> {
         // conversion should be unfailable because negative timestamp means the ts is earlier than 1970y
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
 
         match self {
-            // TODO: remove unreachable
-            LockupPeriod::None => unreachable!(),
-            LockupPeriod::ThreeMonths => beginning_of_the_day + SECONDS_PER_DAY * 90,
-            LockupPeriod::SixMonths => beginning_of_the_day + SECONDS_PER_DAY * 180,
-            LockupPeriod::OneYear => beginning_of_the_day + SECONDS_PER_DAY * 365,
-            // TODO: deal with Flex
-            LockupPeriod::Flex => 0,
+            LockupPeriod::None | LockupPeriod::Flex => Err(MplxRewardsError::InvalidLockupPeriod),
+            LockupPeriod::ThreeMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 90),
+            LockupPeriod::SixMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 180),
+            LockupPeriod::OneYear => Ok(beginning_of_the_day + SECONDS_PER_DAY * 365),
         }
     }
 

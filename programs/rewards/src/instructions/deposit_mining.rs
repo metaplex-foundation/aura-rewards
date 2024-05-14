@@ -68,7 +68,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             &mut mining,
             amount,
             lockup_period,
-            &self.reward_mint.unsigned_key(),
+            self.reward_mint.unsigned_key(),
         )?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
