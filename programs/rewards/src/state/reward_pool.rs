@@ -144,6 +144,7 @@ impl RewardPool {
         mining: &mut Mining,
         amount: u64,
         lockup_period: LockupPeriod,
+        reward_mint: &Pubkey,
     ) -> ProgramResult {
         // regular weighted stake which will be used in rewards distribution
         let weighted_stake = amount
@@ -171,22 +172,15 @@ impl RewardPool {
             .checked_add(weighted_stake)
             .ok_or(MplxRewardsError::MathOverflow)?;
 
-        // TODO: must be written at the end of the staking period, not just pushed
-        // ringbuf and other stuff is per vault
-        // self.ringbuffer.push(weighted_stake_diff);
+        let reward_index = mining.reward_index_mut(*reward_mint);
+        reward_index
+            .weighted_stake_diffs
+            .get_mut(&lockup_period.end_timestamp())
+            .unwrap_or(&mut 0)
+            .checked_add(weighted_stake_diff)
+            .ok_or(MplxRewardsError::MathOverflow)?;
 
-        // TODO: write weighted_stake_diff to user's sorted map.
-        for index in &mut mining.indexes {
-            index
-                .weighted_stake_diffs
-                .get_mut(&lockup_period.end_timestamp())
-                .unwrap_or(&mut 0)
-                .checked_add(weighted_stake_diff)
-                .ok_or(MplxRewardsError::MathOverflow)?;
-        }
-
-        // TODO: implement refresh_rewards_v2 algo
-        mining.refresh_rewards_v2(self.vaults.iter())?;
+        mining.refresh_rewards(self.vaults.iter())?;
 
         Ok(())
     }

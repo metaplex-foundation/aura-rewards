@@ -12,6 +12,7 @@ pub struct DepositMiningContext<'a, 'b> {
     mining: &'a AccountInfo<'b>,
     user: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
+    reward_mint: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> DepositMiningContext<'a, 'b> {
@@ -24,6 +25,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
 
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
+        let reward_mint = AccountLoader::next_unchecked(account_info_iter)?;
         let user = AccountLoader::next_unchecked(account_info_iter)?;
         let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
 
@@ -32,6 +34,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             mining,
             user,
             deposit_authority,
+            reward_mint,
         })
     }
 
@@ -61,7 +64,12 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             assert_account_key(self.user, &mining.owner)?;
         }
 
-        reward_pool.deposit(&mut mining, amount, lockup_period)?;
+        reward_pool.deposit(
+            &mut mining,
+            amount,
+            lockup_period,
+            &self.reward_mint.unsigned_key(),
+        )?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
         Mining::pack(mining, *self.mining.data.borrow_mut())?;

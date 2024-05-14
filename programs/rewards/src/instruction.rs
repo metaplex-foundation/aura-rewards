@@ -66,6 +66,7 @@ pub enum RewardsInstruction {
     /// Accounts:
     /// [W] Reward pool account
     /// [W] Mining
+    /// [R] Mint of rewards account
     /// [R] User
     /// [RS] Deposit authority
     DepositMining {
@@ -212,10 +213,12 @@ pub fn deposit_mining(
     deposit_authority: &Pubkey,
     amount: u64,
     lockup_period: LockupPeriod,
+    mint_account: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
+        AccountMeta::new_readonly(*mint_account, false),
         AccountMeta::new_readonly(*user, false),
         AccountMeta::new_readonly(*deposit_authority, true),
     ];
