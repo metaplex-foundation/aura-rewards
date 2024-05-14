@@ -1,4 +1,5 @@
 use crate::utils::*;
+use mplx_rewards::utils::LockupPeriod;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
@@ -32,8 +33,16 @@ async fn setup() -> (
     let user_mining = test_reward_pool
         .initialize_mining(&mut context, &user.pubkey())
         .await;
+    let lockup_period = LockupPeriod::ThreeMonths;
     test_reward_pool
-        .deposit_mining(&mut context, &user.pubkey(), &user_mining, 100)
+        .deposit_mining(
+            &mut context,
+            &user.pubkey(),
+            &user_mining,
+            100,
+            lockup_period,
+            &mint.pubkey(),
+        )
         .await
         .unwrap();
 
@@ -45,10 +54,10 @@ async fn setup() -> (
         .await
         .unwrap();
 
-    let fee_keypair = Keypair::new();
+    let account = Keypair::new();
     create_token_account(
         &mut context,
-        &fee_keypair,
+        &account,
         &test_reward_pool.token_mint_pubkey,
         &user.pubkey(),
         0,
@@ -56,26 +65,24 @@ async fn setup() -> (
     .await
     .unwrap();
 
-    test_reward_pool
-        .add_vault(&mut context, &fee_keypair.pubkey())
-        .await;
+    test_reward_pool.add_vault(&mut context).await;
 
     (
         context,
         test_reward_pool,
         user,
         user_mining,
-        fee_keypair.pubkey(),
         rewarder.pubkey(),
+        mint.pubkey(),
     )
 }
 
 #[tokio::test]
 async fn success() {
-    let (mut context, test_rewards, user, user_mining, fee, rewarder) = setup().await;
+    let (mut context, test_rewards, user, user_mining, rewarder, _) = setup().await;
 
     test_rewards
-        .fill_vault(&mut context, &fee, &rewarder, 1_000_000)
+        .fill_vault(&mut context, &rewarder, 1_000_000)
         .await
         .unwrap();
 
@@ -103,19 +110,27 @@ async fn success() {
 
 #[tokio::test]
 async fn with_two_users() {
-    let (mut context, test_rewards, user1, user_mining1, fee, rewarder) = setup().await;
+    let (mut context, test_rewards, user1, user_mining1, rewarder, mint) = setup().await;
 
     let user2 = Keypair::new();
     let user_mining2 = test_rewards
         .initialize_mining(&mut context, &user2.pubkey())
         .await;
+    let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(&mut context, &user2.pubkey(), &user_mining2, 50)
+        .deposit_mining(
+            &mut context,
+            &user2.pubkey(),
+            &user_mining2,
+            50,
+            lockup_period,
+            &mint,
+        )
         .await
         .unwrap();
 
     test_rewards
-        .fill_vault(&mut context, &fee, &rewarder, 1_000_000)
+        .fill_vault(&mut context, &rewarder, 1_000_000)
         .await
         .unwrap();
 

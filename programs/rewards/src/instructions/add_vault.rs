@@ -18,7 +18,6 @@ pub struct AddVaultContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     reward_mint: &'a AccountInfo<'b>,
     vault: &'a AccountInfo<'b>,
-    fee_account: &'a AccountInfo<'b>,
     payer: &'a AccountInfo<'b>,
     rent: &'a AccountInfo<'b>,
 }
@@ -35,7 +34,6 @@ impl<'a, 'b> AddVaultContext<'a, 'b> {
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let vault = AccountLoader::next_uninitialized(account_info_iter)?;
-        let fee_account = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let payer = AccountLoader::next_signer(account_info_iter)?;
         let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
         let _system_program =
@@ -47,7 +45,6 @@ impl<'a, 'b> AddVaultContext<'a, 'b> {
             reward_pool,
             reward_mint,
             vault,
-            fee_account,
             payer,
             rent,
         })
@@ -94,7 +91,6 @@ impl<'a, 'b> AddVaultContext<'a, 'b> {
         reward_pool.add_vault(RewardVault {
             bump,
             reward_mint: *self.reward_mint.key,
-            fee_account: *self.fee_account.key,
             ..Default::default()
         })?;
 

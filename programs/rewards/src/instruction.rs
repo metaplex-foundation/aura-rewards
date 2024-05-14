@@ -28,7 +28,6 @@ pub enum RewardsInstruction {
     /// [W] Reward pool account
     /// [R] Reward mint account
     /// [W] Vault account
-    /// [R] Fee account
     /// [WS] Payer
     /// [R] Token program
     /// [R] System program
@@ -41,7 +40,6 @@ pub enum RewardsInstruction {
     /// [W] Reward pool account
     /// [R] Mint of rewards account
     /// [W] Vault for rewards account
-    /// [W] Fee account
     /// [RS] Transfer  account
     /// [W] From account
     /// [R] Token program
@@ -137,7 +135,6 @@ pub fn add_vault(
     reward_pool: &Pubkey,
     reward_mint: &Pubkey,
     vault: &Pubkey,
-    fee_account: &Pubkey,
     payer: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
@@ -145,7 +142,6 @@ pub fn add_vault(
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new_readonly(*reward_mint, false),
         AccountMeta::new(*vault, false),
-        AccountMeta::new_readonly(*fee_account, false),
         AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
@@ -162,7 +158,6 @@ pub fn fill_vault(
     reward_pool: &Pubkey,
     reward_mint: &Pubkey,
     vault: &Pubkey,
-    fee_account: &Pubkey,
     authority: &Pubkey,
     from: &Pubkey,
     amount: u64,
@@ -171,7 +166,6 @@ pub fn fill_vault(
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new_readonly(*reward_mint, false),
         AccountMeta::new(*vault, false),
-        AccountMeta::new(*fee_account, false),
         AccountMeta::new_readonly(*authority, true),
         AccountMeta::new(*from, false),
         AccountMeta::new_readonly(spl_token::id(), false),

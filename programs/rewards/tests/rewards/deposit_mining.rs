@@ -1,5 +1,6 @@
 use crate::utils::*;
 use mplx_rewards::state::{Mining, RewardPool};
+use mplx_rewards::utils::LockupPeriod;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
 use solana_sdk::program_pack::Pack;
@@ -29,17 +30,25 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
 async fn success() {
     let (mut context, test_rewards, user, mining) = setup().await;
 
+    let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(&mut context, &user, &mining, 100)
+        .deposit_mining(
+            &mut context,
+            &user,
+            &mining,
+            100,
+            lockup_period,
+            &test_rewards.token_mint_pubkey,
+        )
         .await
         .unwrap();
 
     let reward_pool_account = get_account(&mut context, &test_rewards.mining_reward_pool).await;
     let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
 
-    assert_eq!(reward_pool.total_share, 100);
+    assert_eq!(reward_pool.total_share, 200);
 
     let mining_account = get_account(&mut context, &mining).await;
     let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining.share, 100);
+    assert_eq!(mining.share, 200);
 }

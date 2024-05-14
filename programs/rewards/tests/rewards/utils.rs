@@ -132,6 +132,7 @@ impl TestRewards {
         mining_account: &Pubkey,
         amount: u64,
         lockup_period: LockupPeriod,
+        mint_account: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
@@ -142,6 +143,7 @@ impl TestRewards {
                 &self.deposit_authority.pubkey(),
                 amount,
                 lockup_period,
+                mint_account,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -175,11 +177,7 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
-    pub async fn add_vault(
-        &self,
-        context: &mut ProgramTestContext,
-        fee_account: &Pubkey,
-    ) -> Pubkey {
+    pub async fn add_vault(&self, context: &mut ProgramTestContext) -> Pubkey {
         let (vault_pubkey, _) = Pubkey::find_program_address(
             &[
                 b"vault".as_ref(),
@@ -196,7 +194,6 @@ impl TestRewards {
                 &self.mining_reward_pool,
                 &self.token_mint_pubkey,
                 &vault_pubkey,
-                fee_account,
                 &self.root_authority.pubkey(),
             )],
             Some(&self.root_authority.pubkey()),
@@ -212,7 +209,6 @@ impl TestRewards {
     pub async fn fill_vault(
         &self,
         context: &mut ProgramTestContext,
-        fee_account: &Pubkey,
         from: &Pubkey,
         amount: u64,
     ) -> BanksClientResult<()> {
@@ -231,7 +227,6 @@ impl TestRewards {
                 &self.mining_reward_pool,
                 &self.token_mint_pubkey,
                 &vault_pubkey,
-                fee_account,
                 &context.payer.pubkey(),
                 from,
                 amount,

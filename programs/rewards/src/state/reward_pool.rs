@@ -217,7 +217,7 @@ pub struct InitRewardPoolParams {
 impl Sealed for RewardPool {}
 impl Pack for RewardPool {
     // TODO: change the Size of the RewardPool
-    const LEN: usize = 1 + (32 + 1 + 32 + 8 + 32);
+    const LEN: usize = 1 + (32 + 1 + 32 + 8 + (4 + RewardVault::LEN) + 32);
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
@@ -249,10 +249,14 @@ pub struct RewardVault {
     pub reward_mint: Pubkey,
     /// Index with precision
     pub index_with_precision: u128,
-    /// Fee account address
-    pub fee_account: Pubkey,
     /// Weighted stake diffs is used to store the modifiers which will be applied to the total_share
     pub weighted_stake_diffs: BTreeMap<u64, u64>,
     /// Cumulative index per day. <Date, index>
     pub cumulative_index: BTreeMap<u64, u128>,
+}
+
+impl RewardVault {
+    // TODO: change the size
+    /// LEN of RewardVault when btrees are empty
+    pub const LEN: usize = 1 + 32 + 16 + 32 + (24) + (24);
 }

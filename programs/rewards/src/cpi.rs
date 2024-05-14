@@ -96,7 +96,6 @@ pub fn fill_vault<'a>(
     program_id: &Pubkey,
     reward_pool: AccountInfo<'a>,
     reward_mint: AccountInfo<'a>,
-    fee_account: AccountInfo<'a>,
     vault: AccountInfo<'a>,
     from: AccountInfo<'a>,
     authority: AccountInfo<'a>,
@@ -108,7 +107,6 @@ pub fn fill_vault<'a>(
         reward_pool.key,
         reward_mint.key,
         vault.key,
-        fee_account.key,
         authority.key,
         from.key,
         amount,
@@ -116,14 +114,7 @@ pub fn fill_vault<'a>(
 
     invoke_signed(
         &ix,
-        &[
-            reward_pool,
-            reward_mint,
-            vault,
-            fee_account,
-            from,
-            authority,
-        ],
+        &[reward_pool, reward_mint, vault, from, authority],
         signers_seeds,
     )
 }

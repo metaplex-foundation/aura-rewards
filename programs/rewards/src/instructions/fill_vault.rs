@@ -12,7 +12,6 @@ pub struct FillVaultContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     reward_mint: &'a AccountInfo<'b>,
     vault: &'a AccountInfo<'b>,
-    fee_account: &'a AccountInfo<'b>,
     authority: &'a AccountInfo<'b>,
     source_token_account: &'a AccountInfo<'b>,
 }
@@ -28,7 +27,6 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let vault = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
-        let fee_account = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let authority = AccountLoader::next_signer(account_info_iter)?;
         let source_token_account =
             AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
@@ -38,7 +36,6 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             reward_pool,
             reward_mint,
             vault,
-            fee_account,
             authority,
             source_token_account,
         })
@@ -60,7 +57,6 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
                 &self.reward_mint.key.to_bytes()[..32],
                 &[vault.bump],
             ];
-            assert_account_key(self.fee_account, &vault.fee_account)?;
             assert_account_key(
                 self.vault,
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
