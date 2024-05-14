@@ -48,7 +48,7 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
     }
 
     /// Process instruction
-    pub fn process(&self, program_id: &Pubkey, amount: u64) -> ProgramResult {
+    pub fn process(&self, program_id: &Pubkey, rewards: u64) -> ProgramResult {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
 
         {
@@ -70,34 +70,15 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             )?
         }
 
-        let fee_amount = amount
-            .checked_mul(FEE_PERCENTAGE)
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_div(100)
-            .ok_or(MplxRewardsError::MathOverflow)?;
-        let reward_amount = amount
-            .checked_sub(fee_amount)
-            .ok_or(MplxRewardsError::MathOverflow)?;
-
-        reward_pool.fill(*self.reward_mint.key, reward_amount)?;
+        reward_pool.fill(*self.reward_mint.key, rewards)?;
 
         transfer(
             self.source_token_account.clone(),
             self.vault.clone(),
             self.authority.clone(),
-            reward_amount,
+            rewards,
             &[],
         )?;
-
-        if fee_amount > 0 {
-            transfer(
-                self.source_token_account.clone(),
-                self.fee_account.clone(),
-                self.authority.clone(),
-                fee_amount,
-                &[],
-            )?;
-        }
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
 

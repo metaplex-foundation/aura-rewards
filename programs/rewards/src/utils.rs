@@ -1,6 +1,10 @@
 //! Arbitrary auxilliary functions
 use std::iter::Enumerate;
 
+use borsh::BorshSchema;
+use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::clock::Clock;
+use solana_program::clock::SECONDS_PER_DAY;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -309,5 +313,66 @@ impl AccountLoader {
     pub fn has_more<I: Iterator>(iter: &Enumerate<I>) -> bool {
         let (remaining_len, _) = iter.size_hint();
         remaining_len > 0
+    }
+}
+
+/// LockupPeriod is used to define the time during which the lockup will recieve full reward
+#[repr(u8)]
+#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq, Eq)]
+pub enum LockupPeriod {
+    /// Unreachable option
+    None,
+    /// Three months
+    ThreeMonths,
+    /// SixMonths
+    SixMonths,
+    /// OneYear
+    OneYear,
+    /// Unlimited lockup period.
+    Flex,
+}
+
+impl LockupPeriod {
+    /// Converts LockupPeriod into the Multiplier
+    /// which will be used in rewards calculations
+    pub fn multiplier(&self) -> u64 {
+        match self {
+            // TODO: remove unreachable
+            LockupPeriod::None => unreachable!(),
+            LockupPeriod::ThreeMonths => 2,
+            LockupPeriod::SixMonths => 4,
+            LockupPeriod::OneYear => 6,
+            LockupPeriod::Flex => 1,
+        }
+    }
+
+    /// Calculates the time when a lockup should expire
+    pub fn end_timestamp(&self) -> u64 {
+        // conversion should be unfailable because negative timestamp means the ts is earlier than 1970y
+        let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
+        let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
+
+        match self {
+            // TODO: remove unreachable
+            LockupPeriod::None => unreachable!(),
+            LockupPeriod::ThreeMonths => beginning_of_the_day + SECONDS_PER_DAY * 90,
+            LockupPeriod::SixMonths => beginning_of_the_day + SECONDS_PER_DAY * 180,
+            LockupPeriod::OneYear => beginning_of_the_day + SECONDS_PER_DAY * 365,
+            // TODO: deal with Flex
+            LockupPeriod::Flex => 0,
+        }
+    }
+
+    /// Return number of days plain numbers to make them appliable for the ringbuf's index
+    pub fn days(&self) -> u64 {
+        match self {
+            // TODO: remove unreachable
+            LockupPeriod::None => unreachable!(),
+            LockupPeriod::ThreeMonths => 90,
+            LockupPeriod::SixMonths => 180,
+            LockupPeriod::OneYear => 365,
+            // TODO: deal with Flex
+            LockupPeriod::Flex => 0,
+        }
     }
 }

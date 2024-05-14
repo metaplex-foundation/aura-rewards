@@ -5,6 +5,8 @@ use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::pubkey::Pubkey;
 use solana_program::{system_program, sysvar};
 
+use crate::utils::LockupPeriod;
+
 /// Instructions supported by the program
 #[derive(Debug, BorshDeserialize, BorshSerialize, PartialEq, Eq)]
 pub enum RewardsInstruction {
@@ -69,6 +71,8 @@ pub enum RewardsInstruction {
     DepositMining {
         /// Amount to deposit
         amount: u64,
+        /// Lockup Period
+        lockup_period: LockupPeriod,
     },
 
     /// Withdraws amount of supply to the mining account
@@ -207,6 +211,7 @@ pub fn deposit_mining(
     user: &Pubkey,
     deposit_authority: &Pubkey,
     amount: u64,
+    lockup_period: LockupPeriod,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -217,7 +222,10 @@ pub fn deposit_mining(
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::DepositMining { amount },
+        &RewardsInstruction::DepositMining {
+            amount,
+            lockup_period,
+        },
         accounts,
     )
 }

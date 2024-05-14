@@ -1,18 +1,22 @@
-use crate::error::MplxRewardsError;
-use crate::state::{RewardVault, MAX_REWARDS, PRECISION};
+use crate::{
+    error::MplxRewardsError,
+    state::{RewardVault, MAX_REWARDS, PRECISION},
+};
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-use solana_program::entrypoint::ProgramResult;
-use solana_program::msg;
-use solana_program::program_error::ProgramError;
-use solana_program::program_pack::{IsInitialized, Pack, Sealed};
-use solana_program::pubkey::Pubkey;
-use std::slice::Iter;
+use solana_program::{
+    clock::{Clock, SECONDS_PER_DAY},
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    program_pack::{IsInitialized, Pack, Sealed},
+    pubkey::Pubkey,
+    sysvar::Sysvar,
+};
+use std::{collections::BTreeMap, slice::Iter};
 
 /// Mining
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct Mining {
-    /// Anchor id(For Anchor legacy contract compatibility)
-    pub anchor_id: [u8; 8],
     /// Reward pool address
     pub reward_pool: Pubkey,
     /// Saved bump for mining account
@@ -29,7 +33,6 @@ impl Mining {
     /// Initialize a Reward Pool
     pub fn initialize(reward_pool: Pubkey, bump: u8, owner: Pubkey) -> Mining {
         Mining {
-            anchor_id: Default::default(),
             reward_pool,
             bump,
             share: 0,
@@ -92,6 +95,11 @@ impl Mining {
 
         Ok(())
     }
+
+    /// Refresh rewards v2
+    pub fn refresh_rewards_v2(&mut self, pool_vaults: Iter<RewardVault>) -> ProgramResult {
+        todo!()
+    }
 }
 
 impl Sealed for Mining {}
@@ -128,9 +136,12 @@ pub struct RewardIndex {
     pub index_with_precision: u128,
     /// Rewards amount
     pub rewards: u64,
+    /// Shows the changes of the weighted stake.<Date, index>
+    pub weighted_stake_diffs: BTreeMap<u64, u64>,
 }
 
 impl RewardIndex {
+    // TODO: change size of RewardIndex
     /// 32 + 16 + 8
     pub const LEN: usize = 56;
 }

@@ -5,6 +5,8 @@ use solana_program::entrypoint::ProgramResult;
 use solana_program::program::{invoke, invoke_signed};
 use solana_program::pubkey::Pubkey;
 
+use crate::utils::LockupPeriod;
+
 /// Rewards initialize mining
 #[allow(clippy::too_many_arguments)]
 pub fn initialize_mining<'a>(
@@ -39,6 +41,7 @@ pub fn deposit_mining<'a>(
     user: AccountInfo<'a>,
     deposit_authority: AccountInfo<'a>,
     amount: u64,
+    lockup_period: LockupPeriod,
     signers_seeds: &[&[&[u8]]],
 ) -> ProgramResult {
     let ix = crate::instruction::deposit_mining(
@@ -48,6 +51,7 @@ pub fn deposit_mining<'a>(
         user.key,
         deposit_authority.key,
         amount,
+        lockup_period,
     );
 
     invoke_signed(

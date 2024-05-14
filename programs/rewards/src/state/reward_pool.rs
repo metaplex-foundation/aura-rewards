@@ -1,16 +1,26 @@
+use std::collections::BTreeMap;
+
 use crate::error::MplxRewardsError;
-use crate::state::{AccountType, DeprecatedRewardPool, Mining};
+use crate::state::{AccountType, Mining};
+use crate::utils::LockupPeriod;
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-use solana_program::entrypoint::ProgramResult;
-use solana_program::msg;
-use solana_program::program_error::ProgramError;
-use solana_program::program_pack::{IsInitialized, Pack, Sealed};
-use solana_program::pubkey::Pubkey;
+use solana_program::{
+    clock::{Clock, SECONDS_PER_DAY},
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    program_pack::{IsInitialized, Pack, Sealed},
+    pubkey::Pubkey,
+    sysvar::Sysvar,
+};
 
 /// Precision for index calculation
 pub const PRECISION: u128 = 10_000_000_000_000_000;
 /// Max reward vaults
 pub const MAX_REWARDS: usize = 5;
+
+/// Ring buffer capacity
+pub const RINGBUF_CAP: usize = 365;
 
 /// Reward pool
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
@@ -66,6 +76,10 @@ impl RewardPool {
         if self.total_share == 0 {
             return Err(MplxRewardsError::RewardsNoDeposits.into());
         }
+        // TODO: distribute rewards which means fill the vault's
+        // cumulative index in btreemap
+        let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
+        let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
 
         let vault = self
             .vaults
@@ -73,32 +87,102 @@ impl RewardPool {
             .find(|v| v.reward_mint == reward_mint)
             .ok_or(MplxRewardsError::RewardsInvalidVault)?;
 
-        let index = PRECISION
-            .checked_mul(rewards as u128)
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_div(self.total_share as u128)
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        while let Some((date, _index)) = vault.cumulative_index.last_key_value() {
+            let day_to_process = date
+                .checked_add(SECONDS_PER_DAY)
+                .ok_or(MplxRewardsError::MathOverflow)?;
 
-        vault.index_with_precision = vault
-            .index_with_precision
-            .checked_add(index)
-            .ok_or(MplxRewardsError::MathOverflow)?;
+            if day_to_process <= beginning_of_the_day {
+                break;
+            }
+
+            self.total_share -= vault
+                .weighted_stake_diffs
+                .get(&day_to_process)
+                .unwrap_or(&0);
+
+            let index = PRECISION
+                .checked_mul(rewards as u128)
+                .ok_or(MplxRewardsError::MathOverflow)?
+                .checked_div(self.total_share as u128)
+                .ok_or(MplxRewardsError::MathOverflow)?;
+
+            let cumulative_index = index
+                .checked_add(index)
+                .ok_or(MplxRewardsError::MathOverflow)?;
+            vault
+                .cumulative_index
+                .insert(day_to_process, cumulative_index);
+
+            vault.index_with_precision = vault
+                .index_with_precision
+                .checked_add(index)
+                .ok_or(MplxRewardsError::MathOverflow)?;
+        }
+
+        // drop keys because they have been already consumed and no longer needed
+        let keys_to_drop: Vec<u64> = vault
+            .weighted_stake_diffs
+            .keys()
+            .cloned()
+            .filter(|&k| k < curr_ts)
+            .collect();
+        for key in keys_to_drop {
+            vault.weighted_stake_diffs.remove(&key);
+        }
 
         Ok(())
     }
 
     /// Process deposit
-    pub fn deposit(&mut self, mining: &mut Mining, amount: u64) -> ProgramResult {
-        mining.refresh_rewards(self.vaults.iter())?;
+    pub fn deposit(
+        &mut self,
+        mining: &mut Mining,
+        amount: u64,
+        lockup_period: LockupPeriod,
+    ) -> ProgramResult {
+        // regular weighted stake which will be used in rewards distribution
+        let weighted_stake = amount
+            .checked_mul(lockup_period.multiplier())
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        // shows how weighted stake will change at the end of the staking period
+        // weighted_stake_diff = weighted_stake - (amount * flex_multiplier)
+        let weighted_stake_diff = weighted_stake
+            .checked_sub(
+                amount
+                    .checked_mul(LockupPeriod::Flex.multiplier())
+                    .ok_or(MplxRewardsError::MathOverflow)?,
+            )
+            .ok_or(MplxRewardsError::MathOverflow)?;
 
         self.total_share = self
             .total_share
-            .checked_add(amount)
+            .checked_add(weighted_stake)
             .ok_or(MplxRewardsError::MathOverflow)?;
+
+        // TODO: for now `share` is shared between all vaults, which must be fixed?
         mining.share = mining
             .share
-            .checked_add(amount)
+            .checked_add(weighted_stake)
             .ok_or(MplxRewardsError::MathOverflow)?;
+
+        // TODO: must be written at the end of the staking period, not just pushed
+        // ringbuf and other stuff is per vault
+        // self.ringbuffer.push(weighted_stake_diff);
+
+        // TODO: write weighted_stake_diff to user's sorted map.
+        for index in &mut mining.indexes {
+            index
+                .weighted_stake_diffs
+                .get_mut(&lockup_period.end_timestamp())
+                .unwrap_or(&mut 0)
+                .checked_add(weighted_stake_diff)
+                .ok_or(MplxRewardsError::MathOverflow)?;
+        }
+
+        // TODO: implement refresh_rewards_v2 algo
+        mining.refresh_rewards_v2(self.vaults.iter())?;
 
         Ok(())
     }
@@ -118,19 +202,6 @@ impl RewardPool {
 
         Ok(())
     }
-
-    /// Process migrate
-    pub fn migrate(deprecated_pool: &DeprecatedRewardPool) -> RewardPool {
-        Self {
-            account_type: AccountType::RewardPool,
-            rewards_root: deprecated_pool.rewards_root,
-            bump: deprecated_pool.bump,
-            liquidity_mint: deprecated_pool.liquidity_mint,
-            total_share: deprecated_pool.total_share,
-            vaults: deprecated_pool.vaults.clone(),
-            deposit_authority: deprecated_pool.deposit_authority,
-        }
-    }
 }
 
 /// Initialize a Reward Pool params
@@ -148,6 +219,7 @@ pub struct InitRewardPoolParams {
 
 impl Sealed for RewardPool {}
 impl Pack for RewardPool {
+    // TODO: change the Size of the RewardPool
     const LEN: usize = 1 + (32 + 1 + 32 + 8 + (4 + RewardVault::LEN * MAX_REWARDS) + 32);
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
@@ -172,7 +244,7 @@ impl IsInitialized for RewardPool {
 }
 
 /// Reward vault
-#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone)]
+#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct RewardVault {
     /// Bump of vault account
     pub bump: u8,
@@ -182,9 +254,8 @@ pub struct RewardVault {
     pub index_with_precision: u128,
     /// Fee account address
     pub fee_account: Pubkey,
-}
-
-impl RewardVault {
-    /// LEN
-    pub const LEN: usize = 1 + 32 + 16 + 32;
+    /// Weighted stake diffs is used to store the modifiers which will be applied to the total_share
+    pub weighted_stake_diffs: BTreeMap<u64, u64>,
+    /// Cumulative index per day. <Date, index>
+    pub cumulative_index: BTreeMap<u64, u128>,
 }

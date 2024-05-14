@@ -1,5 +1,5 @@
 use crate::state::{Mining, RewardPool};
-use crate::utils::{assert_account_key, AccountLoader};
+use crate::utils::{assert_account_key, AccountLoader, LockupPeriod};
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
@@ -36,7 +36,12 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
     }
 
     /// Process instruction
-    pub fn process(&self, program_id: &Pubkey, amount: u64) -> ProgramResult {
+    pub fn process(
+        &self,
+        program_id: &Pubkey,
+        amount: u64,
+        lockup_period: LockupPeriod,
+    ) -> ProgramResult {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
         let mut mining = Mining::unpack(&self.mining.data.borrow())?;
 
@@ -56,7 +61,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             assert_account_key(self.user, &mining.owner)?;
         }
 
-        reward_pool.deposit(&mut mining, amount)?;
+        reward_pool.deposit(&mut mining, amount, lockup_period)?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
         Mining::pack(mining, *self.mining.data.borrow_mut())?;

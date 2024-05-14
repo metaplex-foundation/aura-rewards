@@ -1,3 +1,4 @@
+use mplx_rewards::utils::LockupPeriod;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::{processor, BanksClientError, ProgramTest, ProgramTestContext};
 use solana_sdk::account::Account;
@@ -130,6 +131,7 @@ impl TestRewards {
         user: &Pubkey,
         mining_account: &Pubkey,
         amount: u64,
+        lockup_period: LockupPeriod,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
@@ -139,6 +141,7 @@ impl TestRewards {
                 user,
                 &self.deposit_authority.pubkey(),
                 amount,
+                lockup_period,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
