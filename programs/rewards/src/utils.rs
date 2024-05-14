@@ -358,16 +358,14 @@ impl LockupPeriod {
         }
     }
 
-    /// Return number of days plain numbers to make them appliable for the ringbuf's index
-    pub fn days(&self) -> u64 {
+    /// Return number of days plain numbers to make them appliable for the self.weighted_stake_diff
+    pub fn days(&self) -> Result<u64, MplxRewardsError> {
         match self {
-            // TODO: remove unreachable
-            LockupPeriod::None => unreachable!(),
-            LockupPeriod::ThreeMonths => 90,
-            LockupPeriod::SixMonths => 180,
-            LockupPeriod::OneYear => 365,
-            // TODO: deal with Flex
-            LockupPeriod::Flex => 0,
+            LockupPeriod::None => Err(MplxRewardsError::InvalidLockupPeriod),
+            LockupPeriod::ThreeMonths => Ok(90),
+            LockupPeriod::SixMonths => Ok(180),
+            LockupPeriod::OneYear => Ok(365),
+            LockupPeriod::Flex => Ok(0),
         }
     }
 }
