@@ -8,7 +8,7 @@ use solana_program::entrypoint::ProgramResult;
 use solana_program::msg;
 use solana_program::pubkey::Pubkey;
 
-///
+/// default processor function
 pub fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],

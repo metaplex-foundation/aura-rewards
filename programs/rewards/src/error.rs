@@ -156,6 +156,11 @@ pub enum MplxRewardsError {
     /// Check for liquidity amount in rebalance
     #[error("Rebalancing: liquidity check failed")]
     RebalanceLiquidityCheckFailed,
+
+    /// 28
+    /// Check for liquidity amount in rebalance
+    #[error("Rewards: receiving index failed")]
+    IndexMustExist,
 }
 
 impl PrintProgramError for MplxRewardsError {

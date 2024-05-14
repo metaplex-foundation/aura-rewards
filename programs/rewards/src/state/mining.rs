@@ -66,16 +66,31 @@ impl Mining {
     }
 
     /// Refresh rewards
-    pub fn refresh_rewards(&mut self, vaults: Iter<RewardVault>) -> ProgramResult {
-        let share = self.share;
+    pub fn refresh_rewards(&mut self, pool_vaults: Iter<RewardVault>) -> ProgramResult {
+        let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
+        let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
+        let mut share = self.share;
 
-        for vault in vaults {
-            let reward_index = self.reward_index_mut(vault.reward_mint);
+        for pool_vault in pool_vaults {
+            let reward_index = self.reward_index_mut(pool_vault.reward_mint);
 
-            if vault.index_with_precision > reward_index.index_with_precision {
-                let rewards = vault
+            for (date, modifier_diff) in reward_index.weighted_stake_diffs.iter() {
+                if date > &beginning_of_the_day {
+                    break;
+                }
+
+                share = share
+                    .checked_sub(*modifier_diff)
+                    .ok_or(MplxRewardsError::MathOverflow)?;
+
+                let mining_index = *pool_vault
+                    .cumulative_index
+                    .get(date)
+                    .ok_or(MplxRewardsError::IndexMustExist)?;
+
+                let rewards = pool_vault
                     .index_with_precision
-                    .checked_sub(reward_index.index_with_precision)
+                    .checked_sub(mining_index)
                     .ok_or(MplxRewardsError::MathOverflow)?
                     .checked_mul(share as u128)
                     .ok_or(MplxRewardsError::MathOverflow)?
@@ -88,17 +103,17 @@ impl Mining {
                         .checked_add(rewards as u64)
                         .ok_or(MplxRewardsError::MathOverflow)?;
                 }
-            }
 
-            reward_index.index_with_precision = vault.index_with_precision;
+                reward_index
+                    .index_with_precision
+                    .checked_add(mining_index)
+                    .ok_or(MplxRewardsError::MathOverflow)?;
+            }
+            reward_index.weighted_stake_diffs.clear();
+            self.share = share;
         }
 
         Ok(())
-    }
-
-    /// Refresh rewards v2
-    pub fn refresh_rewards_v2(&mut self, pool_vaults: Iter<RewardVault>) -> ProgramResult {
-        todo!()
     }
 }
 

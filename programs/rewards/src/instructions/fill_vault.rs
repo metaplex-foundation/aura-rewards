@@ -1,4 +1,3 @@
-use crate::error::MplxRewardsError;
 use crate::state::RewardPool;
 use crate::utils::{assert_account_key, transfer, AccountLoader};
 
@@ -7,8 +6,6 @@ use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
-
-const FEE_PERCENTAGE: u64 = 2;
 
 /// Instruction context
 pub struct FillVaultContext<'a, 'b> {

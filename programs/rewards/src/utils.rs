@@ -1,7 +1,6 @@
 //! Arbitrary auxilliary functions
 use std::iter::Enumerate;
 
-use borsh::BorshSchema;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::clock::Clock;
 use solana_program::clock::SECONDS_PER_DAY;

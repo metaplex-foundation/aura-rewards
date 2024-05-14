@@ -77,7 +77,6 @@ impl RewardPool {
             return Err(MplxRewardsError::RewardsNoDeposits.into());
         }
         // TODO: distribute rewards which means fill the vault's
-        // cumulative index in btreemap
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
 
@@ -96,10 +95,15 @@ impl RewardPool {
                 break;
             }
 
-            self.total_share -= vault
-                .weighted_stake_diffs
-                .get(&day_to_process)
-                .unwrap_or(&0);
+            self.total_share -= self
+                .total_share
+                .checked_sub(
+                    *vault
+                        .weighted_stake_diffs
+                        .get(&day_to_process)
+                        .unwrap_or(&0),
+                )
+                .ok_or(MplxRewardsError::MathOverflow)?;
 
             let index = PRECISION
                 .checked_mul(rewards as u128)
@@ -220,7 +224,7 @@ pub struct InitRewardPoolParams {
 impl Sealed for RewardPool {}
 impl Pack for RewardPool {
     // TODO: change the Size of the RewardPool
-    const LEN: usize = 1 + (32 + 1 + 32 + 8 + (4 + RewardVault::LEN * MAX_REWARDS) + 32);
+    const LEN: usize = 1 + (32 + 1 + 32 + 8 + 32);
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
