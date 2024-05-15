@@ -95,13 +95,17 @@ impl RewardPool {
                 break;
             }
 
-            self.total_share -= self
+            self.total_share = self
                 .total_share
                 .checked_sub(
-                    *vault
-                        .weighted_stake_diffs
-                        .get(&day_to_process)
-                        .unwrap_or(&0),
+                    self.total_share
+                        .checked_sub(
+                            *vault
+                                .weighted_stake_diffs
+                                .get(&day_to_process)
+                                .unwrap_or(&0),
+                        )
+                        .ok_or(MplxRewardsError::MathOverflow)?,
                 )
                 .ok_or(MplxRewardsError::MathOverflow)?;
 
@@ -172,10 +176,11 @@ impl RewardPool {
             .ok_or(MplxRewardsError::MathOverflow)?;
 
         let reward_index = mining.reward_index_mut(*reward_mint);
-        reward_index
+        let modifier = reward_index
             .weighted_stake_diffs
-            .get_mut(&lockup_period.end_timestamp()?)
-            .unwrap_or(&mut 0)
+            .entry(lockup_period.end_timestamp()?)
+            .or_default();
+        *modifier = modifier
             .checked_add(weighted_stake_diff)
             .ok_or(MplxRewardsError::MathOverflow)?;
 
