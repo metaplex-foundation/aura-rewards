@@ -1,3 +1,5 @@
+use std::borrow::BorrowMut;
+
 use mplx_rewards::utils::LockupPeriod;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::{processor, BanksClientError, ProgramTest, ProgramTestContext};
@@ -384,10 +386,22 @@ pub async fn presetup() -> (ProgramTestContext, Keypair) {
     let mut context = test.start_with_context().await;
     let payer_pubkey = context.payer.pubkey();
 
-    // // TODO: check liquidity ming
+    // // TODO: check liquidity mint
     let liquidity_mint = Keypair::new();
     create_mint(&mut context, &liquidity_mint, &payer_pubkey)
         .await
         .unwrap();
     (context, liquidity_mint)
+}
+
+pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) {
+    let old_clock = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap();
+
+    let mut new_clock = old_clock.clone();
+    new_clock.unix_timestamp += ts;
+    context.borrow_mut().set_sysvar(&new_clock);
 }
