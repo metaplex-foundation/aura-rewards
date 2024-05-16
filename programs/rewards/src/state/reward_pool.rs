@@ -86,7 +86,8 @@ impl RewardPool {
             .find(|v| v.reward_mint == reward_mint)
             .ok_or(MplxRewardsError::RewardsInvalidVault)?;
 
-        while let Some((date, _index)) = vault.cumulative_index.last_key_value() {
+        // TODO: extract to a dedicated method
+        while let Some((date, last_index)) = vault.cumulative_index.last_key_value() {
             let day_to_process = date
                 .checked_add(SECONDS_PER_DAY)
                 .ok_or(MplxRewardsError::MathOverflow)?;
@@ -115,7 +116,7 @@ impl RewardPool {
                 .checked_div(self.total_share as u128)
                 .ok_or(MplxRewardsError::MathOverflow)?;
 
-            let cumulative_index = index
+            let cumulative_index = last_index
                 .checked_add(index)
                 .ok_or(MplxRewardsError::MathOverflow)?;
             vault
@@ -127,17 +128,36 @@ impl RewardPool {
                 .checked_add(index)
                 .ok_or(MplxRewardsError::MathOverflow)?;
         }
-
         // drop keys because they have been already consumed and no longer needed
-        let keys_to_drop: Vec<u64> = vault
+        vault
             .weighted_stake_diffs
-            .keys()
-            .cloned()
-            .filter(|&k| k < curr_ts)
-            .collect();
-        for key in keys_to_drop {
-            vault.weighted_stake_diffs.remove(&key);
-        }
+            .retain(|date, _modifier| date < &beginning_of_the_day);
+
+        // TODO: remove code duplication
+        let index = PRECISION
+            .checked_mul(rewards as u128)
+            .ok_or(MplxRewardsError::MathOverflow)?
+            .checked_div(self.total_share as u128)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        let cumulative_index = {
+            if let Some((_, index)) = vault.cumulative_index.last_key_value() {
+                index.to_owned()
+            } else {
+                0
+            }
+            .checked_add(index)
+            .ok_or(MplxRewardsError::MathOverflow)?
+        };
+
+        vault
+            .cumulative_index
+            .insert(beginning_of_the_day, cumulative_index);
+
+        vault.index_with_precision = vault
+            .index_with_precision
+            .checked_add(index)
+            .ok_or(MplxRewardsError::MathOverflow)?;
 
         Ok(())
     }
