@@ -21,6 +21,16 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
         .await
         .unwrap();
 
+    let rewarder = Keypair::new();
+    create_token_account(&mut context, &rewarder, &mint.pubkey(), owner, 0)
+        .await
+        .unwrap();
+    mint_tokens(&mut context, &mint.pubkey(), &rewarder.pubkey(), 1_000_000)
+        .await
+        .unwrap();
+
+    let vault = test_reward_pool.add_vault(&mut context).await;
+
     let user = Keypair::new();
     let user_mining = test_reward_pool
         .initialize_mining(&mut context, &user.pubkey())
@@ -38,14 +48,6 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
         .await
         .unwrap();
 
-    let rewarder = Keypair::new();
-    create_token_account(&mut context, &rewarder, &mint.pubkey(), owner, 0)
-        .await
-        .unwrap();
-    mint_tokens(&mut context, &mint.pubkey(), &rewarder.pubkey(), 1_000_000)
-        .await
-        .unwrap();
-
     let account = Keypair::new();
     create_token_account(
         &mut context,
@@ -56,8 +58,6 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
     )
     .await
     .unwrap();
-
-    let vault = test_reward_pool.add_vault(&mut context).await;
 
     (context, test_reward_pool, vault, rewarder.pubkey())
 }

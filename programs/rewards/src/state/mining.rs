@@ -84,27 +84,24 @@ impl Mining {
                     .checked_sub(*modifier_diff)
                     .ok_or(MplxRewardsError::MathOverflow)?;
 
-                let vault_index_for_date = *pool_vault
-                    .cumulative_index
-                    .get(date)
-                    .ok_or(MplxRewardsError::IndexMustExist)?;
-
-                let rewards = vault_index_for_date
-                    .checked_sub(reward_index.index_with_precision)
-                    .ok_or(MplxRewardsError::MathOverflow)?
-                    .checked_mul(share as u128)
-                    .ok_or(MplxRewardsError::MathOverflow)?
-                    .checked_div(PRECISION)
-                    .ok_or(MplxRewardsError::MathOverflow)?;
-
-                if rewards > 0 {
-                    reward_index.rewards = reward_index
-                        .rewards
-                        .checked_add(rewards as u64)
+                if let Some(vault_index_for_date) = pool_vault.cumulative_index.get(date) {
+                    let rewards = vault_index_for_date
+                        .checked_sub(reward_index.index_with_precision)
+                        .ok_or(MplxRewardsError::MathOverflow)?
+                        .checked_mul(share as u128)
+                        .ok_or(MplxRewardsError::MathOverflow)?
+                        .checked_div(PRECISION)
                         .ok_or(MplxRewardsError::MathOverflow)?;
-                }
 
-                reward_index.index_with_precision = vault_index_for_date;
+                    if rewards > 0 {
+                        reward_index.rewards = reward_index
+                            .rewards
+                            .checked_add(rewards as u64)
+                            .ok_or(MplxRewardsError::MathOverflow)?;
+                    }
+
+                    reward_index.index_with_precision = *vault_index_for_date;
+                }
             }
             reward_index
                 .weighted_stake_diffs

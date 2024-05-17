@@ -87,27 +87,14 @@ impl RewardPool {
             .ok_or(MplxRewardsError::RewardsInvalidVault)?;
 
         // TODO: extract to a dedicated method
-        while let Some((date, last_index)) = vault.cumulative_index.last_key_value() {
-            let day_to_process = date
-                .checked_add(SECONDS_PER_DAY)
-                .ok_or(MplxRewardsError::MathOverflow)?;
-
-            if day_to_process <= beginning_of_the_day {
+        for (date_to_process, modifier) in vault.weighted_stake_diffs.iter() {
+            if date_to_process > &beginning_of_the_day {
                 break;
             }
 
             self.total_share = self
                 .total_share
-                .checked_sub(
-                    self.total_share
-                        .checked_sub(
-                            *vault
-                                .weighted_stake_diffs
-                                .get(&day_to_process)
-                                .unwrap_or(&0),
-                        )
-                        .ok_or(MplxRewardsError::MathOverflow)?,
-                )
+                .checked_sub(*modifier)
                 .ok_or(MplxRewardsError::MathOverflow)?;
 
             let index = PRECISION
@@ -116,12 +103,19 @@ impl RewardPool {
                 .checked_div(self.total_share as u128)
                 .ok_or(MplxRewardsError::MathOverflow)?;
 
-            let cumulative_index = last_index
+            let cumulative_index = {
+                if let Some((_, index)) = vault.cumulative_index.last_key_value() {
+                    index.to_owned()
+                } else {
+                    0
+                }
                 .checked_add(index)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+                .ok_or(MplxRewardsError::MathOverflow)?
+            };
+
             vault
                 .cumulative_index
-                .insert(day_to_process, cumulative_index);
+                .insert(*date_to_process, cumulative_index);
 
             vault.index_with_precision = vault
                 .index_with_precision
@@ -131,7 +125,11 @@ impl RewardPool {
         // drop keys because they have been already consumed and no longer needed
         vault
             .weighted_stake_diffs
-            .retain(|date, _modifier| date < &beginning_of_the_day);
+            .retain(|date, _modifier| date > &beginning_of_the_day);
+
+        if vault.cumulative_index.contains_key(&beginning_of_the_day) {
+            return Ok(());
+        }
 
         // TODO: remove code duplication
         let index = PRECISION
@@ -158,7 +156,6 @@ impl RewardPool {
             .index_with_precision
             .checked_add(index)
             .ok_or(MplxRewardsError::MathOverflow)?;
-
         Ok(())
     }
 
@@ -193,6 +190,19 @@ impl RewardPool {
         mining.share = mining
             .share
             .checked_add(weighted_stake)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        let vault = self
+            .vaults
+            .iter_mut()
+            .find(|v| v.reward_mint == *reward_mint)
+            .ok_or(MplxRewardsError::RewardsInvalidVault)?;
+        let modifier = vault
+            .weighted_stake_diffs
+            .entry(lockup_period.end_timestamp()?)
+            .or_default();
+        *modifier = modifier
+            .checked_add(weighted_stake_diff)
             .ok_or(MplxRewardsError::MathOverflow)?;
 
         let reward_index = mining.reward_index_mut(*reward_mint);

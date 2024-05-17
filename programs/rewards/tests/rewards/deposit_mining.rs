@@ -23,6 +23,8 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
         .initialize_mining(&mut context, &user.pubkey())
         .await;
 
+    test_reward_pool.add_vault(&mut context).await;
+
     (context, test_reward_pool, user.pubkey(), user_mining)
 }
 
