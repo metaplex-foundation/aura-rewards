@@ -74,61 +74,8 @@ impl Mining {
         for pool_vault in pool_vaults {
             let reward_index = self.reward_index_mut(pool_vault.reward_mint);
 
-            // extract function into a dedicated function
-            for (date, modifier_diff) in reward_index.weighted_stake_diffs.iter() {
-                if date > &beginning_of_the_day {
-                    break;
-                }
-
-                share = share
-                    .checked_sub(*modifier_diff)
-                    .ok_or(MplxRewardsError::MathOverflow)?;
-
-                if let Some(vault_index_for_date) = pool_vault.cumulative_index.get(date) {
-                    let rewards = vault_index_for_date
-                        .checked_sub(reward_index.index_with_precision)
-                        .ok_or(MplxRewardsError::MathOverflow)?
-                        .checked_mul(share as u128)
-                        .ok_or(MplxRewardsError::MathOverflow)?
-                        .checked_div(PRECISION)
-                        .ok_or(MplxRewardsError::MathOverflow)?;
-
-                    if rewards > 0 {
-                        reward_index.rewards = reward_index
-                            .rewards
-                            .checked_add(rewards as u64)
-                            .ok_or(MplxRewardsError::MathOverflow)?;
-                    }
-
-                    reward_index.index_with_precision = *vault_index_for_date;
-                }
-            }
-            reward_index
-                .weighted_stake_diffs
-                .retain(|date, _modifier| date > &beginning_of_the_day);
-
-            if let Some(vault_index_for_date) =
-                pool_vault.cumulative_index.get(&beginning_of_the_day)
-            {
-                let rewards = vault_index_for_date
-                    .checked_sub(reward_index.index_with_precision)
-                    .ok_or(MplxRewardsError::MathOverflow)?
-                    .checked_mul(share as u128)
-                    .ok_or(MplxRewardsError::MathOverflow)?
-                    .checked_div(PRECISION)
-                    .ok_or(MplxRewardsError::MathOverflow)?;
-
-                if rewards > 0 {
-                    reward_index.rewards = reward_index
-                        .rewards
-                        .checked_add(rewards as u64)
-                        .ok_or(MplxRewardsError::MathOverflow)?;
-                }
-
-                reward_index.index_with_precision = *vault_index_for_date;
-            }
-
-            self.share = share;
+            share = reward_index.consume_old_modifiers(beginning_of_the_day, pool_vault, share)?;
+            reward_index.update_index(pool_vault, &beginning_of_the_day, share)?;
         }
 
         Ok(())
@@ -178,31 +125,54 @@ impl RewardIndex {
     /// TODO: data isn't large enough
     pub const LEN: usize = 32 + 16 + 8 + (4 + (8 + 8) * 100);
 
+    /// Consume old modifiers
+    pub fn consume_old_modifiers(
+        &mut self,
+        beginning_of_the_day: u64,
+        pool_vault: &RewardVault,
+        mut total_share: u64,
+    ) -> Result<u64, ProgramError> {
+        for (date, modifier_diff) in self.weighted_stake_diffs.clone().iter() {
+            if date > &beginning_of_the_day {
+                break;
+            }
+
+            total_share = total_share
+                .checked_sub(*modifier_diff)
+                .ok_or(MplxRewardsError::MathOverflow)?;
+
+            self.update_index(pool_vault, date, total_share)?;
+        }
+        self.weighted_stake_diffs
+            .retain(|date, _modifier| date > &beginning_of_the_day);
+
+        Ok(total_share)
+    }
+
     /// Updates index and distributes rewards
     pub fn update_index(
         &mut self,
         pool_vault: &RewardVault,
         date: &u64,
-        share: u128,
+        total_share: u64,
     ) -> ProgramResult {
-        let vault_index_for_date = *pool_vault
-            .cumulative_index
-            .get(date)
-            .ok_or(MplxRewardsError::IndexMustExist)?;
-
-        let rewards = vault_index_for_date
-            .checked_sub(self.index_with_precision)
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_mul(share)
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_div(PRECISION)
-            .ok_or(MplxRewardsError::MathOverflow)?;
-
-        if rewards > 0 {
-            self.rewards = self
-                .rewards
-                .checked_add(rewards as u64)
+        if let Some(vault_index_for_date) = pool_vault.cumulative_index.get(date) {
+            let rewards = vault_index_for_date
+                .checked_sub(self.index_with_precision)
+                .ok_or(MplxRewardsError::MathOverflow)?
+                .checked_mul(total_share as u128)
+                .ok_or(MplxRewardsError::MathOverflow)?
+                .checked_div(PRECISION)
                 .ok_or(MplxRewardsError::MathOverflow)?;
+
+            if rewards > 0 {
+                self.rewards = self
+                    .rewards
+                    .checked_add(rewards as u64)
+                    .ok_or(MplxRewardsError::MathOverflow)?;
+            }
+
+            self.index_with_precision = *vault_index_for_date;
         }
 
         Ok(())
