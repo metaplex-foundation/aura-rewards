@@ -107,7 +107,6 @@ impl Mining {
                 .weighted_stake_diffs
                 .retain(|date, _modifier| date > &beginning_of_the_day);
 
-            // TODO: remove code duplication
             if let Some(vault_index_for_date) =
                 pool_vault.cumulative_index.get(&beginning_of_the_day)
             {
@@ -175,9 +174,9 @@ pub struct RewardIndex {
 }
 
 impl RewardIndex {
-    // TODO: change size of RewardIndex
-    /// 32 + 16 + 8
-    pub const LEN: usize = 56;
+    /// Reward Index size
+    /// TODO: data isn't large enough
+    pub const LEN: usize = 32 + 16 + 8 + (4 + (8 + 8) * 100);
 
     /// Updates index and distributes rewards
     pub fn update_index(

@@ -251,7 +251,7 @@ pub struct InitRewardPoolParams {
 
 impl Sealed for RewardPool {}
 impl Pack for RewardPool {
-    // TODO: change the Size of the RewardPool
+    // RewardPool size
     const LEN: usize = 1 + (32 + 1 + 32 + 8 + (4 + RewardVault::LEN) + 32);
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
@@ -291,7 +291,7 @@ pub struct RewardVault {
 }
 
 impl RewardVault {
-    // TODO: change the size
-    /// LEN of RewardVault when btrees are empty
-    pub const LEN: usize = 1 + 32 + 16 + 32 + (24) + (24);
+    /// Reward Vault size
+    /// TODO: size isn't large enough
+    pub const LEN: usize = 1 + 32 + 16 + 32 + (4 + (8 + 8) * 100) + (4 + (8 + 16) * 100);
 }

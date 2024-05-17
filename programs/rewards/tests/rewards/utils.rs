@@ -66,7 +66,7 @@ impl TestRewards {
     }
 
     pub async fn initialize_pool(&self, context: &mut ProgramTestContext) -> BanksClientResult<()> {
-        transfer(context, &self.root_authority.pubkey(), 10000000)
+        transfer(context, &self.root_authority.pubkey(), 100000000)
             .await
             .unwrap();
 
@@ -399,6 +399,11 @@ pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) {
         .banks_client
         .get_sysvar::<solana_program::clock::Clock>()
         .await
+        .unwrap();
+
+    let initial_slot = context.banks_client.get_root_slot().await.unwrap();
+    context
+        .warp_to_slot(initial_slot + (ts / 2) as u64)
         .unwrap();
 
     let mut new_clock = old_clock.clone();

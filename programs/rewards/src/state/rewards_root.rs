@@ -26,7 +26,7 @@ impl RewardsRoot {
 
 impl Sealed for RewardsRoot {}
 impl Pack for RewardsRoot {
-    const LEN: usize = 1 + (32);
+    const LEN: usize = 1 + 32;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
