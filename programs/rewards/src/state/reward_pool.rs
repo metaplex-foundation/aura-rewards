@@ -150,6 +150,16 @@ impl RewardPool {
             .ok_or(MplxRewardsError::MathOverflow)?;
 
         let reward_index = mining.reward_index_mut(*reward_mint);
+
+        // Guard for the case when fill had been made before the deposit
+        // in that case end-user shouldn't receive rewards for that day
+        // TODO: chech if it's safe to do, because in case user has valid unclaimed
+        // rewards and user's diffs are empty for some reason (e.g. consumed on the previous refresh rewards calculations),
+        //the reward will be lost
+        if reward_index.weighted_stake_diffs.is_empty() {
+            reward_index.index_with_precision = vault.index_with_precision;
+        };
+
         let modifier = reward_index
             .weighted_stake_diffs
             .entry(lockup_period.end_timestamp()?)
