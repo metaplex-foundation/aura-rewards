@@ -86,76 +86,13 @@ impl RewardPool {
             .find(|v| v.reward_mint == reward_mint)
             .ok_or(MplxRewardsError::RewardsInvalidVault)?;
 
-        // TODO: extract to a dedicated method
-        for (date_to_process, modifier) in vault.weighted_stake_diffs.iter() {
-            if date_to_process > &beginning_of_the_day {
-                break;
-            }
-
-            self.total_share = self
-                .total_share
-                .checked_sub(*modifier)
-                .ok_or(MplxRewardsError::MathOverflow)?;
-
-            let index = PRECISION
-                .checked_mul(rewards as u128)
-                .ok_or(MplxRewardsError::MathOverflow)?
-                .checked_div(self.total_share as u128)
-                .ok_or(MplxRewardsError::MathOverflow)?;
-
-            let cumulative_index = {
-                if let Some((_, index)) = vault.cumulative_index.last_key_value() {
-                    index.to_owned()
-                } else {
-                    0
-                }
-                .checked_add(index)
-                .ok_or(MplxRewardsError::MathOverflow)?
-            };
-
-            vault
-                .cumulative_index
-                .insert(*date_to_process, cumulative_index);
-
-            vault.index_with_precision = vault
-                .index_with_precision
-                .checked_add(index)
-                .ok_or(MplxRewardsError::MathOverflow)?;
-        }
-        // drop keys because they have been already consumed and no longer needed
-        vault
-            .weighted_stake_diffs
-            .retain(|date, _modifier| date > &beginning_of_the_day);
-
+        self.total_share =
+            vault.consume_old_modifiers(beginning_of_the_day, self.total_share, rewards)?;
         if vault.cumulative_index.contains_key(&beginning_of_the_day) {
             return Ok(());
         }
 
-        // TODO: remove code duplication
-        let index = PRECISION
-            .checked_mul(rewards as u128)
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_div(self.total_share as u128)
-            .ok_or(MplxRewardsError::MathOverflow)?;
-
-        let cumulative_index = {
-            if let Some((_, index)) = vault.cumulative_index.last_key_value() {
-                index.to_owned()
-            } else {
-                0
-            }
-            .checked_add(index)
-            .ok_or(MplxRewardsError::MathOverflow)?
-        };
-
-        vault
-            .cumulative_index
-            .insert(beginning_of_the_day, cumulative_index);
-
-        vault.index_with_precision = vault
-            .index_with_precision
-            .checked_add(index)
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        vault.update_index(rewards, self.total_share, beginning_of_the_day)?;
         Ok(())
     }
 
@@ -294,4 +231,63 @@ impl RewardVault {
     /// Reward Vault size
     /// TODO: size isn't large enough
     pub const LEN: usize = 1 + 32 + 16 + 32 + (4 + (8 + 8) * 100) + (4 + (8 + 16) * 100);
+
+    /// Consuming old total share modifiers in order to change the total share for the current date
+    pub fn consume_old_modifiers(
+        &mut self,
+        beginning_of_the_day: u64,
+        mut total_share: u64,
+        rewards: u64,
+    ) -> Result<u64, ProgramError> {
+        // TODO: remove that clone
+        for (date_to_process, modifier) in self.weighted_stake_diffs.clone().iter() {
+            if date_to_process > &beginning_of_the_day {
+                break;
+            }
+
+            total_share = total_share
+                .checked_sub(*modifier)
+                .ok_or(MplxRewardsError::MathOverflow)?;
+
+            self.update_index(rewards, total_share, *date_to_process)?;
+        }
+        // drop keys because they have been already consumed and no longer needed
+        self.weighted_stake_diffs
+            .retain(|date, _modifier| date > &beginning_of_the_day);
+        Ok(total_share)
+    }
+
+    /// recalculates the index for the given rewards and total share
+    pub fn update_index(
+        &mut self,
+        rewards: u64,
+        total_share: u64,
+        date_to_process: u64,
+    ) -> ProgramResult {
+        let index = PRECISION
+            .checked_mul(rewards as u128)
+            .ok_or(MplxRewardsError::MathOverflow)?
+            .checked_div(total_share as u128)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        let cumulative_index = {
+            if let Some((_, index)) = self.cumulative_index.last_key_value() {
+                index.to_owned()
+            } else {
+                0
+            }
+            .checked_add(index)
+            .ok_or(MplxRewardsError::MathOverflow)?
+        };
+
+        self.cumulative_index
+            .insert(date_to_process, cumulative_index);
+
+        self.index_with_precision = self
+            .index_with_precision
+            .checked_add(index)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        Ok(())
+    }
 }
