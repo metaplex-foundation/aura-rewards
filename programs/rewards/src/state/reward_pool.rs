@@ -92,7 +92,14 @@ impl RewardPool {
             return Ok(());
         }
 
-        vault.update_index(rewards, self.total_share, beginning_of_the_day)?;
+        RewardVault::update_index(
+            &mut vault.cumulative_index,
+            &mut vault.index_with_precision,
+            rewards,
+            self.total_share,
+            beginning_of_the_day,
+        )?;
+
         Ok(())
     }
 
@@ -239,8 +246,7 @@ impl RewardVault {
         mut total_share: u64,
         rewards: u64,
     ) -> Result<u64, ProgramError> {
-        // TODO: remove that clone
-        for (date_to_process, modifier) in self.weighted_stake_diffs.clone().iter() {
+        for (date_to_process, modifier) in self.weighted_stake_diffs.iter() {
             if date_to_process > &beginning_of_the_day {
                 break;
             }
@@ -249,7 +255,13 @@ impl RewardVault {
                 .checked_sub(*modifier)
                 .ok_or(MplxRewardsError::MathOverflow)?;
 
-            self.update_index(rewards, total_share, *date_to_process)?;
+            RewardVault::update_index(
+                &mut self.cumulative_index,
+                &mut self.index_with_precision,
+                rewards,
+                total_share,
+                *date_to_process,
+            )?;
         }
         // drop keys because they have been already consumed and no longer needed
         self.weighted_stake_diffs
@@ -259,7 +271,8 @@ impl RewardVault {
 
     /// recalculates the index for the given rewards and total share
     pub fn update_index(
-        &mut self,
+        cumulative_index: &mut BTreeMap<u64, u128>,
+        index_with_precision: &mut u128,
         rewards: u64,
         total_share: u64,
         date_to_process: u64,
@@ -270,8 +283,8 @@ impl RewardVault {
             .checked_div(total_share as u128)
             .ok_or(MplxRewardsError::MathOverflow)?;
 
-        let cumulative_index = {
-            if let Some((_, index)) = self.cumulative_index.last_key_value() {
+        let cumulative_index_to_insert = {
+            if let Some((_, index)) = cumulative_index.last_key_value() {
                 index.to_owned()
             } else {
                 0
@@ -280,11 +293,9 @@ impl RewardVault {
             .ok_or(MplxRewardsError::MathOverflow)?
         };
 
-        self.cumulative_index
-            .insert(date_to_process, cumulative_index);
+        cumulative_index.insert(date_to_process, cumulative_index_to_insert);
 
-        self.index_with_precision = self
-            .index_with_precision
+        *index_with_precision = index_with_precision
             .checked_add(index)
             .ok_or(MplxRewardsError::MathOverflow)?;
 
