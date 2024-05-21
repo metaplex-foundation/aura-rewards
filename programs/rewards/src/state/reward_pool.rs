@@ -86,8 +86,7 @@ impl RewardPool {
             .find(|v| v.reward_mint == reward_mint)
             .ok_or(MplxRewardsError::RewardsInvalidVault)?;
 
-        self.total_share =
-            vault.consume_old_modifiers(beginning_of_the_day, self.total_share, rewards)?;
+        self.total_share = vault.consume_old_modifiers(beginning_of_the_day, self.total_share)?;
         if vault.cumulative_index.contains_key(&beginning_of_the_day) {
             return Ok(());
         }
@@ -254,7 +253,6 @@ impl RewardVault {
         &mut self,
         beginning_of_the_day: u64,
         mut total_share: u64,
-        rewards: u64,
     ) -> Result<u64, ProgramError> {
         for (date_to_process, modifier) in self.weighted_stake_diffs.iter() {
             if date_to_process > &beginning_of_the_day {
@@ -264,14 +262,6 @@ impl RewardVault {
             total_share = total_share
                 .checked_sub(*modifier)
                 .ok_or(MplxRewardsError::MathOverflow)?;
-
-            RewardVault::update_index(
-                &mut self.cumulative_index,
-                &mut self.index_with_precision,
-                rewards,
-                total_share,
-                *date_to_process,
-            )?;
         }
         // drop keys because they have been already consumed and no longer needed
         self.weighted_stake_diffs

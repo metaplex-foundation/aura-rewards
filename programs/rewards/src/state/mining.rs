@@ -74,7 +74,7 @@ impl Mining {
         for pool_vault in pool_vaults {
             let reward_index = self.reward_index_mut(pool_vault.reward_mint);
 
-            share = reward_index.consume_old_modifiers(beginning_of_the_day, pool_vault, share)?;
+            share = reward_index.consume_old_modifiers(beginning_of_the_day, share)?;
             RewardIndex::update_index(
                 pool_vault,
                 &beginning_of_the_day,
@@ -135,7 +135,6 @@ impl RewardIndex {
     pub fn consume_old_modifiers(
         &mut self,
         beginning_of_the_day: u64,
-        pool_vault: &RewardVault,
         mut total_share: u64,
     ) -> Result<u64, ProgramError> {
         for (date, modifier_diff) in self.weighted_stake_diffs.clone().iter() {
@@ -146,14 +145,6 @@ impl RewardIndex {
             total_share = total_share
                 .checked_sub(*modifier_diff)
                 .ok_or(MplxRewardsError::MathOverflow)?;
-
-            RewardIndex::update_index(
-                pool_vault,
-                date,
-                total_share,
-                &mut self.rewards,
-                &mut self.index_with_precision,
-            )?;
         }
         self.weighted_stake_diffs
             .retain(|date, _modifier| date > &beginning_of_the_day);
