@@ -1,14 +1,10 @@
-use std::borrow::Borrow;
-
 use crate::utils::*;
 use mplx_rewards::utils::LockupPeriod;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
 use solana_sdk::clock::SECONDS_PER_DAY;
-use solana_sdk::program_pack::Pack;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
-use spl_token::state::Account;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Keypair) {
     let (mut context, _) = presetup().await;
@@ -150,7 +146,6 @@ async fn success() {
         .await
         .unwrap();
     // User B unstakes and claims D3
-    // TODO: test user B claimed amount
     test_rewards_pool
         .withdraw_mining(&mut context, &user_b.pubkey(), &user_mining_b, 100_000)
         .await
@@ -250,32 +245,4 @@ async fn success() {
         .await
         .unwrap();
     assert_tokens(&mut context, &user_reward_c.pubkey(), 122).await;
-}
-
-async fn create_user(
-    context: &mut ProgramTestContext,
-    test_rewards_pool: &TestRewards,
-) -> (Keypair, Keypair, Pubkey) {
-    let user = Keypair::new();
-    let user_reward = Keypair::new();
-    create_token_account(
-        context,
-        &user_reward,
-        &test_rewards_pool.token_mint_pubkey,
-        &user.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-    let user_mining = test_rewards_pool
-        .initialize_mining(context, &user.pubkey())
-        .await;
-
-    (user, user_reward, user_mining)
-}
-
-async fn assert_tokens(context: &mut ProgramTestContext, reward_account: &Pubkey, amount: u64) {
-    let user_reward_account_b = get_account(context, reward_account).await;
-    let user_reward2 = Account::unpack(user_reward_account_b.data.borrow()).unwrap();
-    assert_eq!(user_reward2.amount, amount);
 }

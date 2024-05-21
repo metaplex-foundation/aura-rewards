@@ -1,4 +1,4 @@
-use std::borrow::BorrowMut;
+use std::borrow::{Borrow, BorrowMut};
 
 use mplx_rewards::utils::LockupPeriod;
 use solana_program::pubkey::Pubkey;
@@ -8,6 +8,7 @@ use solana_sdk::program_pack::Pack;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::system_instruction;
 use solana_sdk::transaction::Transaction;
+use spl_token::state::Account as SplTokenAccount;
 
 pub type BanksClientResult<T> = Result<T, BanksClientError>;
 
@@ -409,4 +410,32 @@ pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) {
     let mut new_clock = old_clock.clone();
     new_clock.unix_timestamp += ts;
     context.borrow_mut().set_sysvar(&new_clock);
+}
+
+pub async fn create_user(
+    context: &mut ProgramTestContext,
+    test_rewards_pool: &TestRewards,
+) -> (Keypair, Keypair, Pubkey) {
+    let user = Keypair::new();
+    let user_reward = Keypair::new();
+    create_token_account(
+        context,
+        &user_reward,
+        &test_rewards_pool.token_mint_pubkey,
+        &user.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+    let user_mining = test_rewards_pool
+        .initialize_mining(context, &user.pubkey())
+        .await;
+
+    (user, user_reward, user_mining)
+}
+
+pub async fn assert_tokens(context: &mut ProgramTestContext, reward_account: &Pubkey, amount: u64) {
+    let user_reward_account_b = get_account(context, reward_account).await;
+    let user_reward = SplTokenAccount::unpack(user_reward_account_b.data.borrow()).unwrap();
+    assert_eq!(user_reward.amount, amount);
 }

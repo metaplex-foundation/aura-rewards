@@ -40,20 +40,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Keypair) {
 async fn success() {
     let (mut context, test_rewards_pool, rewarder, mint) = setup().await;
 
-    let user = Keypair::new();
-    let account = Keypair::new();
-    create_token_account(
-        &mut context,
-        &account,
-        &test_rewards_pool.token_mint_pubkey,
-        &user.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-    let user_mining = test_rewards_pool
-        .initialize_mining(&mut context, &user.pubkey())
-        .await;
+    let (user, user_rewards, user_mining) = create_user(&mut context, &test_rewards_pool).await;
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards_pool
         .deposit_mining(
@@ -72,23 +59,12 @@ async fn success() {
         .await
         .unwrap();
 
-    let user_reward = Keypair::new();
-    create_token_account(
-        &mut context,
-        &user_reward,
-        &test_rewards_pool.token_mint_pubkey,
-        &user.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-
     test_rewards_pool
-        .claim(&mut context, &user, &user_mining, &user_reward.pubkey())
+        .claim(&mut context, &user, &user_mining, &user_rewards.pubkey())
         .await
         .unwrap();
 
-    let user_reward_account = get_account(&mut context, &user_reward.pubkey()).await;
+    let user_reward_account = get_account(&mut context, &user_rewards.pubkey()).await;
     let user_reward = Account::unpack(user_reward_account.data.borrow()).unwrap();
 
     assert_eq!(user_reward.amount, 1_000_000);
@@ -98,26 +74,14 @@ async fn success() {
 async fn with_two_users() {
     let (mut context, test_rewards_pool, rewarder, mint) = setup().await;
 
-    let user1 = Keypair::new();
-    let account = Keypair::new();
-    create_token_account(
-        &mut context,
-        &account,
-        &test_rewards_pool.token_mint_pubkey,
-        &user1.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-    let user_mining1 = test_rewards_pool
-        .initialize_mining(&mut context, &user1.pubkey())
-        .await;
+    let (user_a, user_rewards_a, user_mining_a) =
+        create_user(&mut context, &test_rewards_pool).await;
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user1.pubkey(),
-            &user_mining1,
+            &user_a.pubkey(),
+            &user_mining_a,
             100,
             lockup_period,
             &mint.pubkey(),
@@ -125,16 +89,14 @@ async fn with_two_users() {
         .await
         .unwrap();
 
-    let user2 = Keypair::new();
-    let user_mining2 = test_rewards_pool
-        .initialize_mining(&mut context, &user2.pubkey())
-        .await;
+    let (user_b, user_rewards_b, user_mining_b) =
+        create_user(&mut context, &test_rewards_pool).await;
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user2.pubkey(),
-            &user_mining2,
+            &user_b.pubkey(),
+            &user_mining_b,
             100,
             lockup_period,
             &test_rewards_pool.token_mint_pubkey,
@@ -147,73 +109,50 @@ async fn with_two_users() {
         .await
         .unwrap();
 
-    let user_reward1 = Keypair::new();
-    create_token_account(
-        &mut context,
-        &user_reward1,
-        &test_rewards_pool.token_mint_pubkey,
-        &user1.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-
     test_rewards_pool
-        .claim(&mut context, &user1, &user_mining1, &user_reward1.pubkey())
+        .claim(
+            &mut context,
+            &user_a,
+            &user_mining_a,
+            &user_rewards_a.pubkey(),
+        )
         .await
         .unwrap();
 
-    let user_reward2 = Keypair::new();
-    create_token_account(
-        &mut context,
-        &user_reward2,
-        &test_rewards_pool.token_mint_pubkey,
-        &user2.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-
     test_rewards_pool
-        .claim(&mut context, &user2, &user_mining2, &user_reward2.pubkey())
+        .claim(
+            &mut context,
+            &user_b,
+            &user_mining_b,
+            &user_rewards_b.pubkey(),
+        )
         .await
         .unwrap();
 
-    let user_reward_account1 = get_account(&mut context, &user_reward1.pubkey()).await;
-    let user_reward1 = Account::unpack(user_reward_account1.data.borrow()).unwrap();
+    let user_reward_account_a = get_account(&mut context, &user_rewards_a.pubkey()).await;
+    let user_rewards_a = Account::unpack(user_reward_account_a.data.borrow()).unwrap();
 
-    assert_eq!(user_reward1.amount, 500_000);
+    assert_eq!(user_rewards_a.amount, 500_000);
 
-    let user_reward_account2 = get_account(&mut context, &user_reward2.pubkey()).await;
-    let user_reward2 = Account::unpack(user_reward_account2.data.borrow()).unwrap();
+    let user_reward_account_b = get_account(&mut context, &user_rewards_b.pubkey()).await;
+    let user_rewards_b = Account::unpack(user_reward_account_b.data.borrow()).unwrap();
 
-    assert_eq!(user_reward2.amount, 500_000);
+    assert_eq!(user_rewards_b.amount, 500_000);
 }
 
 #[tokio::test]
 async fn flex_vs_three_months() {
     let (mut context, test_rewards_pool, rewarder, mint) = setup().await;
 
-    let user1 = Keypair::new();
-    let account = Keypair::new();
-    create_token_account(
-        &mut context,
-        &account,
-        &test_rewards_pool.token_mint_pubkey,
-        &user1.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-    let user_mining1 = test_rewards_pool
-        .initialize_mining(&mut context, &user1.pubkey())
-        .await;
+    let (user_a, user_rewards_a, user_mining_a) =
+        create_user(&mut context, &test_rewards_pool).await;
+
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user1.pubkey(),
-            &user_mining1,
+            &user_a.pubkey(),
+            &user_mining_a,
             100,
             lockup_period,
             &mint.pubkey(),
@@ -223,16 +162,14 @@ async fn flex_vs_three_months() {
     // warp to three month ahead
     advance_clock_by_ts(&mut context, (SECONDS_PER_DAY * 90).try_into().unwrap()).await;
 
-    let user2 = Keypair::new();
-    let user_mining2 = test_rewards_pool
-        .initialize_mining(&mut context, &user2.pubkey())
-        .await;
+    let (user_b, user_rewards_b, user_mining_b) =
+        create_user(&mut context, &test_rewards_pool).await;
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user2.pubkey(),
-            &user_mining2,
+            &user_b.pubkey(),
+            &user_mining_b,
             100,
             lockup_period,
             &test_rewards_pool.token_mint_pubkey,
@@ -245,47 +182,35 @@ async fn flex_vs_three_months() {
         .await
         .unwrap();
 
-    let user_reward1 = Keypair::new();
-    create_token_account(
-        &mut context,
-        &user_reward1,
-        &test_rewards_pool.token_mint_pubkey,
-        &user1.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-
     test_rewards_pool
-        .claim(&mut context, &user1, &user_mining1, &user_reward1.pubkey())
+        .claim(
+            &mut context,
+            &user_a,
+            &user_mining_a,
+            &user_rewards_a.pubkey(),
+        )
         .await
         .unwrap();
 
-    let user_reward2 = Keypair::new();
-    create_token_account(
-        &mut context,
-        &user_reward2,
-        &test_rewards_pool.token_mint_pubkey,
-        &user2.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-
     test_rewards_pool
-        .claim(&mut context, &user2, &user_mining2, &user_reward2.pubkey())
+        .claim(
+            &mut context,
+            &user_b,
+            &user_mining_b,
+            &user_rewards_b.pubkey(),
+        )
         .await
         .unwrap();
 
-    let user_reward_account1 = get_account(&mut context, &user_reward1.pubkey()).await;
-    let user_reward1 = Account::unpack(user_reward_account1.data.borrow()).unwrap();
+    let user_reward_account_a = get_account(&mut context, &user_rewards_a.pubkey()).await;
+    let user_rewards_a = Account::unpack(user_reward_account_a.data.borrow()).unwrap();
 
-    assert_eq!(user_reward1.amount, 333_333);
+    assert_eq!(user_rewards_a.amount, 333_333);
 
-    let user_reward_account2 = get_account(&mut context, &user_reward2.pubkey()).await;
-    let user_reward2 = Account::unpack(user_reward_account2.data.borrow()).unwrap();
+    let user_reward_account_b = get_account(&mut context, &user_rewards_b.pubkey()).await;
+    let user_rewards_b = Account::unpack(user_reward_account_b.data.borrow()).unwrap();
 
-    assert_eq!(user_reward2.amount, 666_666);
+    assert_eq!(user_rewards_b.amount, 666_666);
 }
 
 #[tokio::test]
@@ -294,69 +219,35 @@ async fn flex_vs_three_months() {
 async fn multiple_consequantial_distributions_for_two_user() {
     let (mut context, test_rewards_pool, rewarder, mint) = setup().await;
 
-    let user1 = Keypair::new();
-    let account = Keypair::new();
-    create_token_account(
-        &mut context,
-        &account,
-        &test_rewards_pool.token_mint_pubkey,
-        &user1.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-    let user_mining1 = test_rewards_pool
-        .initialize_mining(&mut context, &user1.pubkey())
-        .await;
+    let (user_a, user_rewards_a, user_mining_a) =
+        create_user(&mut context, &test_rewards_pool).await;
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user1.pubkey(),
-            &user_mining1,
+            &user_a.pubkey(),
+            &user_mining_a,
             100,
             lockup_period,
             &mint.pubkey(),
         )
         .await
         .unwrap();
-    let user_reward1 = Keypair::new();
-    create_token_account(
-        &mut context,
-        &user_reward1,
-        &test_rewards_pool.token_mint_pubkey,
-        &user1.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
 
-    let user2 = Keypair::new();
-    let user_mining2 = test_rewards_pool
-        .initialize_mining(&mut context, &user2.pubkey())
-        .await;
+    let (user_b, user_rewards_b, user_mining_b) =
+        create_user(&mut context, &test_rewards_pool).await;
     let lockup_period = LockupPeriod::OneYear;
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user2.pubkey(),
-            &user_mining2,
+            &user_b.pubkey(),
+            &user_mining_b,
             100,
             lockup_period,
             &test_rewards_pool.token_mint_pubkey,
         )
         .await
         .unwrap();
-    let user_reward2 = Keypair::new();
-    create_token_account(
-        &mut context,
-        &user_reward2,
-        &test_rewards_pool.token_mint_pubkey,
-        &user2.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
 
     // 4 days of daily reward claiming for user2
     for _ in 0..4 {
@@ -366,7 +257,12 @@ async fn multiple_consequantial_distributions_for_two_user() {
             .unwrap();
 
         test_rewards_pool
-            .claim(&mut context, &user2, &user_mining2, &user_reward2.pubkey())
+            .claim(
+                &mut context,
+                &user_b,
+                &user_mining_b,
+                &user_rewards_b.pubkey(),
+            )
             .await
             .unwrap();
 
@@ -380,23 +276,34 @@ async fn multiple_consequantial_distributions_for_two_user() {
         .unwrap();
 
     test_rewards_pool
-        .claim(&mut context, &user2, &user_mining2, &user_reward2.pubkey())
+        .claim(
+            &mut context,
+            &user_b,
+            &user_mining_b,
+            &user_rewards_b.pubkey(),
+        )
         .await
         .unwrap();
 
     test_rewards_pool
-        .claim(&mut context, &user1, &user_mining1, &user_reward1.pubkey())
+        .claim(
+            &mut context,
+            &user_a,
+            &user_mining_a,
+            &user_rewards_a.pubkey(),
+        )
         .await
         .unwrap();
 
-    let user_reward_account1 = get_account(&mut context, &user_reward1.pubkey()).await;
-    let user_reward1 = Account::unpack(user_reward_account1.data.borrow()).unwrap();
-    assert_eq!(user_reward1.amount, 125);
+    let user_reward_account_a = get_account(&mut context, &user_rewards_a.pubkey()).await;
+    let user_rewards_a = Account::unpack(user_reward_account_a.data.borrow()).unwrap();
 
-    let user_reward_account2 = get_account(&mut context, &user_reward2.pubkey()).await;
-    let user_reward2 = Account::unpack(user_reward_account2.data.borrow()).unwrap();
+    assert_eq!(user_rewards_a.amount, 125);
 
-    assert_eq!(user_reward2.amount, 375);
+    let user_reward_account_b = get_account(&mut context, &user_rewards_b.pubkey()).await;
+    let user_rewards_b = Account::unpack(user_reward_account_b.data.borrow()).unwrap();
+
+    assert_eq!(user_rewards_b.amount, 375);
 }
 
 #[tokio::test]
@@ -405,28 +312,15 @@ async fn multiple_consequantial_distributions_for_two_user() {
 async fn rewards_after_distribution_are_unclaimable() {
     let (mut context, test_rewards_pool, rewarder, mint) = setup().await;
 
-    let user = Keypair::new();
-    let account = Keypair::new();
-    create_token_account(
-        &mut context,
-        &account,
-        &test_rewards_pool.token_mint_pubkey,
-        &user.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-    let user_mining = test_rewards_pool
-        .initialize_mining(&mut context, &user.pubkey())
-        .await;
-    let lockup_period = LockupPeriod::ThreeMonths;
+    let (user_a, user_rewards_a, user_mining_a) =
+        create_user(&mut context, &test_rewards_pool).await;
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user.pubkey(),
-            &user_mining,
+            &user_a.pubkey(),
+            &user_mining_a,
             100,
-            lockup_period,
+            LockupPeriod::ThreeMonths,
             &mint.pubkey(),
         )
         .await
@@ -437,23 +331,17 @@ async fn rewards_after_distribution_are_unclaimable() {
         .await
         .unwrap();
 
-    let user_reward = Keypair::new();
-    create_token_account(
-        &mut context,
-        &user_reward,
-        &test_rewards_pool.token_mint_pubkey,
-        &user.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-
     test_rewards_pool
-        .claim(&mut context, &user, &user_mining, &user_reward.pubkey())
+        .claim(
+            &mut context,
+            &user_a,
+            &user_mining_a,
+            &user_rewards_a.pubkey(),
+        )
         .await
         .unwrap();
 
-    let user_reward_account = get_account(&mut context, &user_reward.pubkey()).await;
+    let user_reward_account = get_account(&mut context, &user_rewards_a.pubkey()).await;
     let user_reward = Account::unpack(user_reward_account.data.borrow()).unwrap();
     assert_eq!(user_reward.amount, 1_000);
 
@@ -463,39 +351,31 @@ async fn rewards_after_distribution_are_unclaimable() {
         .await
         .unwrap();
 
-    let user2 = Keypair::new();
-    let user_mining2 = test_rewards_pool
-        .initialize_mining(&mut context, &user2.pubkey())
-        .await;
-    let lockup_period = LockupPeriod::OneYear;
+    let (user_b, user_rewards_b, user_mining_b) =
+        create_user(&mut context, &test_rewards_pool).await;
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user2.pubkey(),
-            &user_mining2,
+            &user_b.pubkey(),
+            &user_mining_b,
             100,
-            lockup_period,
+            LockupPeriod::OneYear,
             &test_rewards_pool.token_mint_pubkey,
         )
         .await
         .unwrap();
-    let user_reward2 = Keypair::new();
-    create_token_account(
-        &mut context,
-        &user_reward2,
-        &test_rewards_pool.token_mint_pubkey,
-        &user2.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
 
     test_rewards_pool
-        .claim(&mut context, &user2, &user_mining2, &user_reward2.pubkey())
+        .claim(
+            &mut context,
+            &user_b,
+            &user_mining_b,
+            &user_rewards_b.pubkey(),
+        )
         .await
         .unwrap();
 
-    let user_reward_account2 = get_account(&mut context, &user_reward2.pubkey()).await;
+    let user_reward_account2 = get_account(&mut context, &user_rewards_b.pubkey()).await;
     let user_reward2 = Account::unpack(user_reward_account2.data.borrow()).unwrap();
 
     assert_eq!(user_reward2.amount, 0);
