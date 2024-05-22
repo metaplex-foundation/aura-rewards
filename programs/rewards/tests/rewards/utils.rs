@@ -439,3 +439,18 @@ pub async fn assert_tokens(context: &mut ProgramTestContext, reward_account: &Pu
     let user_reward = SplTokenAccount::unpack(user_reward_account_b.data.borrow()).unwrap();
     assert_eq!(user_reward.amount, amount);
 }
+
+pub async fn claim_and_assert(
+    test_rewards_pool: &TestRewards,
+    context: &mut ProgramTestContext,
+    user: &Keypair,
+    user_mining: &Pubkey,
+    user_reward: &Pubkey,
+    amount: u64,
+) {
+    test_rewards_pool
+        .claim(context, user, user_mining, user_reward)
+        .await
+        .unwrap();
+    assert_tokens(context, user_reward, amount).await;
+}

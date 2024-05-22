@@ -84,6 +84,7 @@ impl Mining {
                 &mut reward_index.index_with_precision,
             )?;
         }
+        self.share = share;
 
         Ok(())
     }
