@@ -110,6 +110,8 @@ impl RewardPool {
         lockup_period: LockupPeriod,
         reward_mint: &Pubkey,
     ) -> ProgramResult {
+        mining.refresh_rewards(self.vaults.iter())?;
+
         // regular weighted stake which will be used in rewards distribution
         let weighted_stake = amount
             .checked_mul(lockup_period.multiplier())
@@ -150,15 +152,6 @@ impl RewardPool {
 
         let reward_index = mining.reward_index_mut(*reward_mint);
 
-        // Guard for the case when fill had been made before the deposit
-        // in that case end-user shouldn't receive rewards for that day
-        // TODO: check if it's safe to do, because in case user has valid unclaimed
-        // rewards and user's diffs are empty for some reason (e.g. consumed on the previous refresh rewards calculations),
-        //the reward will be lost
-        if reward_index.weighted_stake_diffs.is_empty() {
-            reward_index.index_with_precision = vault.index_with_precision;
-        };
-
         let modifier = reward_index
             .weighted_stake_diffs
             .entry(lockup_period.end_timestamp()?)
@@ -166,8 +159,6 @@ impl RewardPool {
         *modifier = modifier
             .checked_add(weighted_stake_diff)
             .ok_or(MplxRewardsError::MathOverflow)?;
-
-        mining.refresh_rewards(self.vaults.iter())?;
 
         Ok(())
     }
@@ -285,7 +276,7 @@ impl RewardVault {
 
         let cumulative_index_to_insert = {
             if let Some((_, index)) = cumulative_index.last_key_value() {
-                index.to_owned()
+                *index
             } else {
                 0
             }

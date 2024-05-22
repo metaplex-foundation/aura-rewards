@@ -84,9 +84,9 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
         mining.refresh_rewards(reward_pool.vaults.iter())?;
 
         let reward_index = mining.reward_index_mut(*self.reward_mint.key);
-        let amount = reward_index.rewards;
+        let amount = reward_index.unclaimed_rewards;
 
-        reward_index.rewards = 0;
+        reward_index.unclaimed_rewards = 0;
 
         transfer(
             self.vault.clone(),

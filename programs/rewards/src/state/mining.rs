@@ -12,6 +12,7 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
+use std::ops::Bound::{Excluded, Included};
 use std::{collections::BTreeMap, slice::Iter};
 
 /// Mining
@@ -62,7 +63,7 @@ impl Mining {
     /// Claim reward
     pub fn claim(&mut self, reward_mint: Pubkey) {
         let reward_index = self.reward_index_mut(reward_mint);
-        reward_index.rewards = 0;
+        reward_index.unclaimed_rewards = 0;
     }
 
     /// Refresh rewards
@@ -74,12 +75,12 @@ impl Mining {
         for pool_vault in pool_vaults {
             let reward_index = self.reward_index_mut(pool_vault.reward_mint);
 
-            share = reward_index.consume_old_modifiers(beginning_of_the_day, share)?;
+            share = reward_index.consume_old_modifiers(beginning_of_the_day, share, pool_vault)?;
             RewardIndex::update_index(
                 pool_vault,
-                &beginning_of_the_day,
+                curr_ts,
                 share,
-                &mut reward_index.rewards,
+                &mut reward_index.unclaimed_rewards,
                 &mut reward_index.index_with_precision,
             )?;
         }
@@ -121,7 +122,7 @@ pub struct RewardIndex {
     /// Index with precision
     pub index_with_precision: u128,
     /// Rewards amount
-    pub rewards: u64,
+    pub unclaimed_rewards: u64,
     /// Shows the changes of the weighted stake.<Date, index>
     pub weighted_stake_diffs: BTreeMap<u64, u64>,
 }
@@ -136,18 +137,28 @@ impl RewardIndex {
         &mut self,
         beginning_of_the_day: u64,
         mut total_share: u64,
+        pool_vault: &RewardVault,
     ) -> Result<u64, ProgramError> {
-        for (date, modifier_diff) in self.weighted_stake_diffs.clone().iter() {
+        for (date, modifier_diff) in self.weighted_stake_diffs.iter() {
             if date > &beginning_of_the_day {
                 break;
             }
+
+            Self::update_index(
+                pool_vault,
+                *date,
+                total_share,
+                &mut self.unclaimed_rewards,
+                &mut self.index_with_precision,
+            )?;
 
             total_share = total_share
                 .checked_sub(*modifier_diff)
                 .ok_or(MplxRewardsError::MathOverflow)?;
         }
+        // TODO: split_off should be used insed of retain
         self.weighted_stake_diffs
-            .retain(|date, _modifier| date > &beginning_of_the_day);
+            .retain(|date, _| date > &beginning_of_the_day);
 
         Ok(total_share)
     }
@@ -155,28 +166,33 @@ impl RewardIndex {
     /// Updates index and distributes rewards
     pub fn update_index(
         pool_vault: &RewardVault,
-        date: &u64,
+        date: u64,
         total_share: u64,
-        current_rewards: &mut u64,
+        unclaimed_rewards: &mut u64,
         index_with_precision: &mut u128,
     ) -> ProgramResult {
-        if let Some(vault_index_for_date) = pool_vault.cumulative_index.get(date) {
-            let rewards = vault_index_for_date
-                .checked_sub(*index_with_precision)
-                .ok_or(MplxRewardsError::MathOverflow)?
-                .checked_mul(total_share as u128)
-                .ok_or(MplxRewardsError::MathOverflow)?
-                .checked_div(PRECISION)
-                .ok_or(MplxRewardsError::MathOverflow)? as u64;
+        let vault_index_for_date = pool_vault
+            .cumulative_index
+            .range((Included(0), Excluded(date)))
+            .last()
+            .unwrap_or((&0, &0))
+            .1;
 
-            if rewards > 0 {
-                *current_rewards = current_rewards
-                    .checked_add(rewards)
-                    .ok_or(MplxRewardsError::MathOverflow)?;
-            }
+        let rewards: u64 = vault_index_for_date
+            .checked_sub(*index_with_precision)
+            .ok_or(MplxRewardsError::MathOverflow)?
+            .checked_mul(total_share as u128)
+            .ok_or(MplxRewardsError::MathOverflow)?
+            .checked_div(PRECISION)
+            .ok_or(MplxRewardsError::MathOverflow)? as u64;
 
-            *index_with_precision = *vault_index_for_date;
+        if rewards > 0 {
+            *unclaimed_rewards = unclaimed_rewards
+                .checked_add(rewards)
+                .ok_or(MplxRewardsError::MathOverflow)?;
         }
+
+        *index_with_precision = *vault_index_for_date;
 
         Ok(())
     }
