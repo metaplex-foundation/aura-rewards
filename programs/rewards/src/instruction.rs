@@ -105,6 +105,23 @@ pub enum RewardsInstruction {
     /// [WS] Authority
     /// [R] System program
     InitializeRoot,
+
+    /// Restakes deposit
+    ///
+    /// Accounts:
+    /// [W] Reward pool account
+    /// [W] Mining
+    /// [R] Mint of rewards account
+    /// [R] User
+    /// [RS] Deposit authority
+    RestakeDeposit {
+        /// Requested lockup period for restaking
+        lockup_period: LockupPeriod,
+        /// Amount of tokens to be restaked
+        amount: u64,
+        /// Deposit start_ts
+        deposit_start_ts: u64,
+    },
 }
 
 /// Creates 'InitializePool' instruction.
@@ -288,4 +305,36 @@ pub fn initialize_root(
     ];
 
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializeRoot, accounts)
+}
+
+/// Creates 'RestakeDeposit" instruction.
+#[allow(clippy::too_many_arguments)]
+pub fn restake_deposit(
+    program_id: &Pubkey,
+    reward_pool: &Pubkey,
+    mining: &Pubkey,
+    user: &Pubkey,
+    mint_account: &Pubkey,
+    deposit_authority: &Pubkey,
+    lockup_period: LockupPeriod,
+    amount: u64,
+    deposit_start_ts: u64,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(*reward_pool, false),
+        AccountMeta::new(*mining, false),
+        AccountMeta::new_readonly(*mint_account, false),
+        AccountMeta::new_readonly(*user, false),
+        AccountMeta::new_readonly(*deposit_authority, true),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::RestakeDeposit {
+            lockup_period,
+            amount,
+            deposit_start_ts,
+        },
+        accounts,
+    )
 }

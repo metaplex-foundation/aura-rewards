@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::error::MplxRewardsError;
 use crate::state::{AccountType, Mining};
-use crate::utils::LockupPeriod;
+use crate::utils::{get_curr_unix_ts, LockupPeriod};
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
     clock::{Clock, SECONDS_PER_DAY},
@@ -142,9 +142,10 @@ impl RewardPool {
             .iter_mut()
             .find(|v| v.reward_mint == *reward_mint)
             .ok_or(MplxRewardsError::RewardsInvalidVault)?;
+
         let modifier = vault
             .weighted_stake_diffs
-            .entry(lockup_period.end_timestamp()?)
+            .entry(lockup_period.end_timestamp(get_curr_unix_ts())?)
             .or_default();
         *modifier = modifier
             .checked_add(weighted_stake_diff)
@@ -154,7 +155,7 @@ impl RewardPool {
 
         let modifier = reward_index
             .weighted_stake_diffs
-            .entry(lockup_period.end_timestamp()?)
+            .entry(lockup_period.end_timestamp(get_curr_unix_ts())?)
             .or_default();
         *modifier = modifier
             .checked_add(weighted_stake_diff)
@@ -175,6 +176,83 @@ impl RewardPool {
             .share
             .checked_sub(amount)
             .ok_or(MplxRewardsError::MathOverflow)?;
+
+        Ok(())
+    }
+
+    /// Process deposit
+    pub fn restake(
+        &mut self,
+        mining: &mut Mining,
+        reward_mint: &Pubkey,
+        amount: u64,
+        lockup_period: LockupPeriod,
+        deposit_start_ts: u64,
+    ) -> ProgramResult {
+        let curr_ts = get_curr_unix_ts();
+        let deposit_old_expiration_ts = lockup_period.end_timestamp(deposit_start_ts)?;
+        let restake_modifier = if deposit_old_expiration_ts < curr_ts {
+            amount
+        } else {
+            0
+        };
+
+        let weighted_stake = amount
+            .checked_mul(lockup_period.multiplier())
+            .ok_or(MplxRewardsError::MathOverflow)?
+            .checked_sub(restake_modifier)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        let weighted_stake_diff = weighted_stake
+            .checked_sub(
+                amount
+                    .checked_mul(LockupPeriod::Flex.multiplier())
+                    .ok_or(MplxRewardsError::MathOverflow)?,
+            )
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        self.total_share = self
+            .total_share
+            .checked_add(weighted_stake)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        mining.share = mining
+            .share
+            .checked_add(weighted_stake)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        let vault = self
+            .vaults
+            .iter_mut()
+            .find(|v| v.reward_mint == *reward_mint)
+            .ok_or(MplxRewardsError::RewardsInvalidVault)?;
+
+        let modifier = vault
+            .weighted_stake_diffs
+            .entry(lockup_period.end_timestamp(get_curr_unix_ts())?)
+            .or_default();
+        *modifier = modifier
+            .checked_add(weighted_stake_diff)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        let reward_index = mining.reward_index_mut(*reward_mint);
+
+        let modifier = reward_index
+            .weighted_stake_diffs
+            .entry(lockup_period.end_timestamp(get_curr_unix_ts())?)
+            .or_default();
+        *modifier = modifier
+            .checked_add(weighted_stake_diff)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        if deposit_old_expiration_ts > curr_ts {
+            vault
+                .weighted_stake_diffs
+                .entry(deposit_old_expiration_ts)
+                .and_modify(|modifier| *modifier -= weighted_stake_diff);
+        }
+
+        mining.refresh_rewards(self.vaults.iter())?;
 
         Ok(())
     }

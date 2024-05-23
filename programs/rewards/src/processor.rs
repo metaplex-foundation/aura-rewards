@@ -56,5 +56,18 @@ pub fn process_instruction(
             msg!("RewardsInstruction: InitializeRoot");
             InitializeRootContext::new(program_id, accounts)?.process(program_id)
         }
+        RewardsInstruction::RestakeDeposit {
+            lockup_period,
+            amount,
+            deposit_start_ts,
+        } => {
+            msg!("RewardsInstruction: RestakeDeposit");
+            RestakeDepositContext::new(program_id, accounts)?.process(
+                program_id,
+                lockup_period,
+                amount,
+                deposit_start_ts,
+            )
+        }
     }
 }

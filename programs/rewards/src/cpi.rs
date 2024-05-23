@@ -118,3 +118,36 @@ pub fn fill_vault<'a>(
         signers_seeds,
     )
 }
+
+/// Restake deposit
+#[allow(clippy::too_many_arguments)]
+pub fn restake_deposit<'a>(
+    program_id: &Pubkey,
+    reward_pool: AccountInfo<'a>,
+    mining: AccountInfo<'a>,
+    reward_mint: &Pubkey,
+    user: AccountInfo<'a>,
+    deposit_authority: AccountInfo<'a>,
+    amount: u64,
+    lockup_period: LockupPeriod,
+    deposit_start_ts: u64,
+    signers_seeds: &[&[&[u8]]],
+) -> ProgramResult {
+    let ix = crate::instruction::restake_deposit(
+        program_id,
+        reward_pool.key,
+        mining.key,
+        user.key,
+        reward_mint,
+        deposit_authority.key,
+        lockup_period,
+        amount,
+        deposit_start_ts,
+    );
+
+    invoke_signed(
+        &ix,
+        &[reward_pool, mining, user, deposit_authority],
+        signers_seeds,
+    )
+}

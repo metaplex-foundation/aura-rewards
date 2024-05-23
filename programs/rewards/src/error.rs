@@ -50,6 +50,10 @@ pub enum MplxRewardsError {
     /// Invalid lockup period
     #[error("Rewards: lockup period invalid")]
     InvalidLockupPeriod,
+
+    /// 8 Invalid CPI caller
+    #[error("Rewards: only Staking contract is allowed to do CPI calls")]
+    InvalidCpiCaller,
 }
 
 impl PrintProgramError for MplxRewardsError {

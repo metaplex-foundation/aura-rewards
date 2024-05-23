@@ -345,10 +345,9 @@ impl LockupPeriod {
     }
 
     /// Calculates the time when a lockup should expire
-    pub fn end_timestamp(&self) -> Result<u64, MplxRewardsError> {
+    pub fn end_timestamp(&self, start_ts: u64) -> Result<u64, MplxRewardsError> {
         // conversion should be unfailable because negative timestamp means the ts is earlier than 1970y
-        let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
-        let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
+        let beginning_of_the_day = start_ts - (start_ts % SECONDS_PER_DAY);
 
         match self {
             LockupPeriod::None | LockupPeriod::Flex => Err(MplxRewardsError::InvalidLockupPeriod),
@@ -368,4 +367,11 @@ impl LockupPeriod {
             LockupPeriod::Flex => Ok(0),
         }
     }
+}
+
+/// Get current unix time
+pub fn get_curr_unix_ts() -> u64 {
+    // Conversion must be save because negative values
+    // in unix means the date is earlier than 1970y
+    Clock::get().unwrap().unix_timestamp as u64
 }
