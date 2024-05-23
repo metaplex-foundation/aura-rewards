@@ -14,7 +14,7 @@ use solana_program::{
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
-    sysvar::Sysvar,
+    sysvar::{instructions::check_id, Sysvar},
 };
 
 use crate::error::MplxRewardsError;
@@ -374,4 +374,15 @@ pub fn get_curr_unix_ts() -> u64 {
     // Conversion must be save because negative values
     // in unix means the date is earlier than 1970y
     Clock::get().unwrap().unix_timestamp as u64
+}
+
+/// This assert fails if caller_id is something besides Staking Contract ID or self id
+pub fn assert_cpi_caller() -> ProgramResult {
+    // TODO: change the key!
+    pub const STAKING_ID: Pubkey = solana_program::pubkey!("11111111111111111111111111111111");
+
+    if !check_id(&crate::id()) || !check_id(&STAKING_ID) {
+        return Err(MplxRewardsError::InvalidCpiCaller.into());
+    }
+    Ok(())
 }

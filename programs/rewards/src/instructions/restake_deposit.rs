@@ -1,6 +1,5 @@
-use crate::error::MplxRewardsError;
 use crate::state::{Mining, RewardPool};
-use crate::utils::{assert_account_key, AccountLoader, LockupPeriod};
+use crate::utils::{assert_account_key, assert_cpi_caller, AccountLoader, LockupPeriod};
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
@@ -22,6 +21,7 @@ impl<'a, 'b> RestakeDepositContext<'a, 'b> {
         program_id: &Pubkey,
         accounts: &'a [AccountInfo<'b>],
     ) -> Result<RestakeDepositContext<'a, 'b>, ProgramError> {
+        assert_cpi_caller()?;
         let account_info_iter = &mut accounts.iter().enumerate();
 
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;

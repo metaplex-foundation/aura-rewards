@@ -1,5 +1,5 @@
 use crate::state::{Mining, RewardPool};
-use crate::utils::{assert_account_key, AccountLoader};
+use crate::utils::{assert_account_key, assert_cpi_caller, AccountLoader};
 
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
@@ -21,6 +21,7 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         program_id: &Pubkey,
         accounts: &'a [AccountInfo<'b>],
     ) -> Result<WithdrawMiningContext<'a, 'b>, ProgramError> {
+        assert_cpi_caller()?;
         let account_info_iter = &mut accounts.iter().enumerate();
 
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
