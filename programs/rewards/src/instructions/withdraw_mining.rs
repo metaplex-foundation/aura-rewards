@@ -41,22 +41,20 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
     pub fn process(&self, program_id: &Pubkey, amount: u64) -> ProgramResult {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
         let mut mining = Mining::unpack(&self.mining.data.borrow())?;
-
-        {
-            let mining_pubkey = Pubkey::create_program_address(
-                &[
-                    b"mining".as_ref(),
-                    self.user.key.as_ref(),
-                    self.reward_pool.key.as_ref(),
-                    &[mining.bump],
-                ],
-                program_id,
-            )?;
-            assert_account_key(self.mining, &mining_pubkey)?;
-            assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
-            assert_account_key(self.reward_pool, &mining.reward_pool)?;
-            assert_account_key(self.user, &mining.owner)?;
-        }
+        
+        let mining_pubkey = Pubkey::create_program_address(
+            &[
+                b"mining".as_ref(),
+                self.user.key.as_ref(),
+                self.reward_pool.key.as_ref(),
+                &[mining.bump],
+            ],
+            program_id,
+        )?;
+        assert_account_key(self.mining, &mining_pubkey)?;
+        assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
+        assert_account_key(self.reward_pool, &mining.reward_pool)?;
+        assert_account_key(self.user, &mining.owner)?;
 
         reward_pool.withdraw(&mut mining, amount)?;
 

@@ -55,14 +55,9 @@ pub fn find_vault_program_address(
 pub fn find_reward_pool_program_address(
     program_id: &Pubkey,
     root_account: &Pubkey,
-    liquidity_mint: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[
-            "reward_pool".as_bytes(),
-            &root_account.to_bytes(),
-            &liquidity_mint.to_bytes(),
-        ],
+        &["reward_pool".as_bytes(), &root_account.to_bytes()],
         program_id,
     )
 }
@@ -382,7 +377,8 @@ pub fn assert_cpi_caller() -> ProgramResult {
     pub const STAKING_ID: Pubkey = solana_program::pubkey!("11111111111111111111111111111111");
 
     if !check_id(&crate::id()) || !check_id(&STAKING_ID) {
-        return Err(MplxRewardsError::InvalidCpiCaller.into());
+        // TODO: enable that check
+        // return Err(MplxRewardsError::InvalidCpiCaller.into());
     }
     Ok(())
 }

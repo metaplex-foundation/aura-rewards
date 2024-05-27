@@ -15,7 +15,6 @@ pub enum RewardsInstruction {
     /// Accounts:
     /// [R] Root account (ex-Config program account)
     /// [W] Reward pool account
-    /// [R] Liquidity mint account
     /// [R] Deposit authority
     /// [WS] Payer
     /// [R] System program
@@ -129,14 +128,12 @@ pub fn initialize_pool(
     program_id: &Pubkey,
     root_account: &Pubkey,
     reward_pool: &Pubkey,
-    liquidity_mint: &Pubkey,
     authority: &Pubkey,
     payer: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*root_account, false),
         AccountMeta::new(*reward_pool, false),
-        AccountMeta::new_readonly(*liquidity_mint, false),
         AccountMeta::new_readonly(*authority, false),
         AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(system_program::id(), false),

@@ -31,8 +31,6 @@ pub struct RewardPool {
     pub rewards_root: Pubkey,
     /// Saved bump for reward pool account
     pub bump: u8,
-    /// Liquidity mint
-    pub liquidity_mint: Pubkey,
     /// Reward total share
     pub total_share: u64,
     /// A set of all possible rewards that we can get for this pool
@@ -49,7 +47,6 @@ impl RewardPool {
             account_type: AccountType::RewardPool,
             rewards_root: params.rewards_root,
             bump: params.bump,
-            liquidity_mint: params.liquidity_mint,
             total_share: 0,
             vaults: vec![],
             deposit_authority: params.deposit_authority,
@@ -264,8 +261,6 @@ pub struct InitRewardPoolParams {
     pub rewards_root: Pubkey,
     /// Saved bump for reward pool account
     pub bump: u8,
-    /// Liquidity mint
-    pub liquidity_mint: Pubkey,
     /// The address responsible for the charge of rewards for users.
     /// It executes deposits on the rewards pools.
     pub deposit_authority: Pubkey,

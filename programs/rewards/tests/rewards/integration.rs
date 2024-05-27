@@ -7,30 +7,54 @@ use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Keypair) {
-    let (mut context, _) = presetup().await;
+    let test = ProgramTest::new(
+        "mplx_rewards",
+        mplx_rewards::id(),
+        processor!(mplx_rewards::processor::process_instruction),
+    );
+
+    let mut context = test.start_with_context().await;
 
     let owner = &context.payer.pubkey();
 
-    let mint = Keypair::new();
-    create_mint(&mut context, &mint, owner).await.unwrap();
+    let deposit_token_mint = Keypair::new();
+    create_mint(&mut context, &deposit_token_mint, owner)
+        .await
+        .unwrap();
 
-    let test_reward_pool = TestRewards::new(Some(mint.pubkey()));
+    let test_reward_pool = TestRewards::new(deposit_token_mint.pubkey());
     test_reward_pool
         .initialize_pool(&mut context)
         .await
         .unwrap();
 
     let rewarder = Keypair::new();
-    create_token_account(&mut context, &rewarder, &mint.pubkey(), owner, 0)
-        .await
-        .unwrap();
-    mint_tokens(&mut context, &mint.pubkey(), &rewarder.pubkey(), 1_000_000)
-        .await
-        .unwrap();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &deposit_token_mint.pubkey(),
+        owner,
+        0,
+    )
+    .await
+    .unwrap();
+    mint_tokens(
+        &mut context,
+        &deposit_token_mint.pubkey(),
+        &rewarder.pubkey(),
+        1_000_000,
+    )
+    .await
+    .unwrap();
 
     test_reward_pool.add_vault(&mut context).await;
 
-    (context, test_reward_pool, rewarder.pubkey(), mint)
+    (
+        context,
+        test_reward_pool,
+        rewarder.pubkey(),
+        deposit_token_mint,
+    )
 }
 
 #[tokio::test]

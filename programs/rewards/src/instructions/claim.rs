@@ -51,7 +51,6 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
         let reward_pool_seeds = &[
             b"reward_pool".as_ref(),
             &reward_pool.rewards_root.to_bytes()[..32],
-            &reward_pool.liquidity_mint.to_bytes()[..32],
             &[reward_pool.bump],
         ];
 
