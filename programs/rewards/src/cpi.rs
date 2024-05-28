@@ -16,7 +16,6 @@ pub fn initialize_mining<'a>(
     user: AccountInfo<'a>,
     payer: AccountInfo<'a>,
     system_program: AccountInfo<'a>,
-    rent: AccountInfo<'a>,
 ) -> ProgramResult {
     let ix = crate::instruction::initialize_mining(
         program_id,
@@ -26,10 +25,7 @@ pub fn initialize_mining<'a>(
         payer.key,
     );
 
-    invoke(
-        &ix,
-        &[reward_pool, mining, user, payer, system_program, rent],
-    )
+    invoke(&ix, &[reward_pool, mining, user, payer, system_program])
 }
 
 /// Rewards deposit mining

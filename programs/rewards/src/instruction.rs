@@ -55,7 +55,6 @@ pub enum RewardsInstruction {
     /// [R] User
     /// [WS] Payer
     /// [R] System program
-    /// [R] Rent sysvar
     InitializeMining,
 
     /// Deposits amount of supply to the mining account
@@ -206,7 +205,6 @@ pub fn initialize_mining(
         AccountMeta::new_readonly(*user, false),
         AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(system_program::id(), false),
-        AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
 
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializeMining, accounts)
