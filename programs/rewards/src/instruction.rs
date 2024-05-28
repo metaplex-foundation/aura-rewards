@@ -13,7 +13,7 @@ pub enum RewardsInstruction {
     /// Creates and initializes a reward pool account
     ///
     /// Accounts:
-    /// [R] Root account (ex-Config program account)
+    /// [R] Root account
     /// [W] Reward pool account
     /// [R] Deposit authority
     /// [WS] Payer
@@ -23,7 +23,7 @@ pub enum RewardsInstruction {
     /// Creates a new vault account and adds it to the reward pool
     ///
     /// Accounts:
-    /// [R] Root account (ex-Config program account)
+    /// [R] Root account
     /// [W] Reward pool account
     /// [R] Reward mint account
     /// [W] Vault account
@@ -99,7 +99,7 @@ pub enum RewardsInstruction {
     /// Creates and initializes a reward root
     ///
     /// Accounts:
-    /// [WS] Root account (ex-Config program account)
+    /// [WS] Root account
     /// [WS] Authority
     /// [R] System program
     InitializeRoot,

@@ -27,7 +27,7 @@ pub const RINGBUF_CAP: usize = 365;
 pub struct RewardPool {
     /// Account type - RewardPool
     pub account_type: AccountType,
-    /// Rewards root account (ex-Config program account)
+    /// Rewards root account
     pub rewards_root: Pubkey,
     /// Saved bump for reward pool account
     pub bump: u8,
@@ -257,7 +257,7 @@ impl RewardPool {
 
 /// Initialize a Reward Pool params
 pub struct InitRewardPoolParams {
-    /// Rewards Root (ex-Config program account)
+    /// Rewards Root
     pub rewards_root: Pubkey,
     /// Saved bump for reward pool account
     pub bump: u8,
