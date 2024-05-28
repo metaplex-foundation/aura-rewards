@@ -373,8 +373,8 @@ pub fn get_curr_unix_ts() -> u64 {
 
 /// This assert fails if caller_id is something besides Staking Contract ID or self id
 pub fn assert_cpi_caller() -> ProgramResult {
-    // TODO: change the key!
-    pub const STAKING_ID: Pubkey = solana_program::pubkey!("11111111111111111111111111111111");
+    pub const STAKING_ID: Pubkey =
+        solana_program::pubkey!("3GepGwMp6WgPqgNa5NuSpnw3rQjYnqHCcVWhVmpGnw6s");
 
     if !check_id(&crate::id()) || !check_id(&STAKING_ID) {
         // TODO: enable that check

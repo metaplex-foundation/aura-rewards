@@ -14,7 +14,7 @@ pub mod utils;
 pub use solana_program;
 use solana_program::pubkey::Pubkey;
 
-solana_program::declare_id!("5jemiZdnpEATsTYu1E7U47RjFQ4JyVXoMvs1Ht9RXVtp");
+solana_program::declare_id!("J8oa8UUJBydrTKtCdkvwmQQ27ZFDq54zAxWJY5Ey72Ji");
 
 /// Generates mining address
 pub fn find_mining_program_address(
