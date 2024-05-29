@@ -70,6 +70,8 @@ pub enum RewardsInstruction {
         amount: u64,
         /// Lockup Period
         lockup_period: LockupPeriod,
+        /// Specifies mint addr
+        reward_mint_addr: Pubkey,
     },
 
     /// Withdraws amount of supply to the mining account
@@ -220,12 +222,11 @@ pub fn deposit_mining(
     deposit_authority: &Pubkey,
     amount: u64,
     lockup_period: LockupPeriod,
-    mint_account: &Pubkey,
+    reward_mint_addr: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new_readonly(*mint_account, false),
         AccountMeta::new_readonly(*user, false),
         AccountMeta::new_readonly(*deposit_authority, true),
     ];
@@ -235,6 +236,7 @@ pub fn deposit_mining(
         &RewardsInstruction::DepositMining {
             amount,
             lockup_period,
+            reward_mint_addr: *reward_mint_addr,
         },
         accounts,
     )

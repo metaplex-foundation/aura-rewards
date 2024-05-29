@@ -38,8 +38,8 @@ pub fn deposit_mining<'a>(
     deposit_authority: AccountInfo<'a>,
     amount: u64,
     lockup_period: LockupPeriod,
+    reward_mint_addr: &Pubkey,
     signers_seeds: &[&[&[u8]]],
-    reward_mint: &Pubkey,
 ) -> ProgramResult {
     let ix = crate::instruction::deposit_mining(
         program_id,
@@ -49,7 +49,7 @@ pub fn deposit_mining<'a>(
         deposit_authority.key,
         amount,
         lockup_period,
-        reward_mint,
+        reward_mint_addr,
     );
 
     invoke_signed(
