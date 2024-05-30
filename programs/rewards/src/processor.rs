@@ -37,6 +37,7 @@ pub fn process_instruction(
             amount,
             lockup_period,
             reward_mint_addr,
+            owner,
         } => {
             msg!("RewardsInstruction: DepositMining");
             DepositMiningContext::new(program_id, accounts)?.process(
@@ -44,6 +45,7 @@ pub fn process_instruction(
                 amount,
                 lockup_period,
                 &reward_mint_addr,
+                &owner,
             )
         }
         RewardsInstruction::WithdrawMining { amount } => {

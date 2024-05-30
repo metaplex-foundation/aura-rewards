@@ -34,27 +34,27 @@ pub fn deposit_mining<'a>(
     program_id: &Pubkey,
     reward_pool: AccountInfo<'a>,
     mining: AccountInfo<'a>,
-    user: AccountInfo<'a>,
     deposit_authority: AccountInfo<'a>,
     amount: u64,
     lockup_period: LockupPeriod,
     reward_mint_addr: &Pubkey,
+    owner: &Pubkey,
     signers_seeds: &[&[&[u8]]],
 ) -> ProgramResult {
     let ix = crate::instruction::deposit_mining(
         program_id,
         reward_pool.key,
         mining.key,
-        user.key,
         deposit_authority.key,
         amount,
         lockup_period,
         reward_mint_addr,
+        owner,
     );
 
     invoke_signed(
         &ix,
-        &[reward_pool, mining, user, deposit_authority],
+        &[reward_pool, mining, deposit_authority],
         signers_seeds,
     )
 }
