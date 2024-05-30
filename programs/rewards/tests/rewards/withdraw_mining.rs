@@ -53,7 +53,7 @@ async fn success() {
         .unwrap();
 
     test_rewards
-        .withdraw_mining(&mut context, &user, &mining, 30)
+        .withdraw_mining(&mut context, &mining, 30, &user)
         .await
         .unwrap();
 

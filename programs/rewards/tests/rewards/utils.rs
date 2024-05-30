@@ -152,18 +152,18 @@ impl TestRewards {
     pub async fn withdraw_mining(
         &self,
         context: &mut ProgramTestContext,
-        user: &Pubkey,
         mining_account: &Pubkey,
         amount: u64,
+        owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::withdraw_mining(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
                 mining_account,
-                user,
                 &self.deposit_authority.pubkey(),
                 amount,
+                owner,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],

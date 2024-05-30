@@ -663,7 +663,7 @@ async fn claim_after_withdraw_is_correct() {
         .unwrap();
 
     test_rewards_pool
-        .withdraw_mining(&mut context, &user_b.pubkey(), &user_mining_b, 150)
+        .withdraw_mining(&mut context, &user_mining_b, 150, &user_b.pubkey())
         .await
         .unwrap();
 
