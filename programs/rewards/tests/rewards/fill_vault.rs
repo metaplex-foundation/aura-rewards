@@ -45,11 +45,11 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
     test_reward_pool
         .deposit_mining(
             &mut context,
-            &user.pubkey(),
             &user_mining,
             100,
             lockup_period,
             &mint.pubkey(),
+            &user.pubkey(),
         )
         .await
         .unwrap();

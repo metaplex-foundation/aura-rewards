@@ -72,11 +72,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_c.pubkey(),
             &user_mining_c,
             100,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_c.pubkey(),
         )
         .await
         .unwrap();
@@ -90,11 +90,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             1000,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -111,11 +111,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             2000,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -131,11 +131,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100_000,
             LockupPeriod::SixMonths,
             &mint.pubkey(),
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -150,11 +150,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100_000,
             LockupPeriod::SixMonths,
             &mint.pubkey(),
+            &user_b.pubkey(),
         )
         .await
         .unwrap();

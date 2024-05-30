@@ -47,11 +47,11 @@ async fn success() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user,
             &mining,
             100,
             lockup_period,
             &test_rewards.token_mint_pubkey,
+            &user,
         )
         .await
         .unwrap();
