@@ -2,7 +2,6 @@
 
 //! Rewards contract
 
-pub mod cpi;
 pub mod entrypoint;
 pub mod error;
 pub mod instruction;

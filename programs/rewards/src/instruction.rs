@@ -85,6 +85,8 @@ pub enum RewardsInstruction {
     WithdrawMining {
         /// Amount to withdraw
         amount: u64,
+        /// Specifies the owner of the Mining Account
+        owner: Pubkey,
     },
 
     /// Claims amount of rewards
@@ -248,20 +250,22 @@ pub fn withdraw_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
-    user: &Pubkey,
     deposit_authority: &Pubkey,
     amount: u64,
+    owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new_readonly(*user, false),
         AccountMeta::new_readonly(*deposit_authority, true),
     ];
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::WithdrawMining { amount },
+        &RewardsInstruction::WithdrawMining {
+            amount,
+            owner: *owner,
+        },
         accounts,
     )
 }

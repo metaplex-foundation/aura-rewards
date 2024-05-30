@@ -48,9 +48,9 @@ pub fn process_instruction(
                 &owner,
             )
         }
-        RewardsInstruction::WithdrawMining { amount } => {
+        RewardsInstruction::WithdrawMining { amount, owner } => {
             msg!("RewardsInstruction: WithdrawMining");
-            WithdrawMiningContext::new(program_id, accounts)?.process(program_id, amount)
+            WithdrawMiningContext::new(program_id, accounts)?.process(program_id, amount, &owner)
         }
         RewardsInstruction::Claim => {
             msg!("RewardsInstruction: Claim");
