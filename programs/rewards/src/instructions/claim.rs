@@ -2,6 +2,7 @@ use crate::state::{Mining, RewardPool};
 use crate::utils::{assert_account_key, transfer, AccountLoader};
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
+use solana_program::program::set_return_data;
 use solana_program::program_error::ProgramError;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
@@ -96,6 +97,8 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
         )?;
 
         Mining::pack(mining, *self.mining.data.borrow_mut())?;
+
+        set_return_data(&amount.to_le_bytes());
 
         Ok(())
     }
