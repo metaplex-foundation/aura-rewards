@@ -12,21 +12,24 @@ pub struct RewardsRoot {
     pub account_type: AccountType,
     /// Authority address
     pub authority: Pubkey,
+    /// Authority that is responsible for rewards distribution
+    pub distribution_authority: Pubkey,
 }
 
 impl RewardsRoot {
     /// Init root account
-    pub fn init(authority: Pubkey) -> RewardsRoot {
+    pub fn init(authority: Pubkey, distribution_authority: Pubkey) -> RewardsRoot {
         RewardsRoot {
             account_type: AccountType::RewardsRoot,
             authority,
+            distribution_authority,
         }
     }
 }
 
 impl Sealed for RewardsRoot {}
 impl Pack for RewardsRoot {
-    const LEN: usize = 1 + 32;
+    const LEN: usize = 1 + 32 + 32;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;

@@ -38,6 +38,7 @@ pub struct TestRewards {
     pub deposit_authority: Keypair,
     pub root_authority: Keypair,
     pub mining_reward_pool: Pubkey,
+    distribution_authority: Keypair,
 }
 
 impl TestRewards {
@@ -45,6 +46,7 @@ impl TestRewards {
         let deposit_authority = Keypair::new();
         let rewards_root = Keypair::new();
         let root_authority = Keypair::new();
+        let distribution_authority = Keypair::new();
 
         let (mining_reward_pool, _) = Pubkey::find_program_address(
             &[b"reward_pool".as_ref(), &rewards_root.pubkey().to_bytes()],
@@ -57,6 +59,7 @@ impl TestRewards {
             rewards_root,
             root_authority,
             mining_reward_pool,
+            distribution_authority,
         }
     }
 
@@ -72,6 +75,7 @@ impl TestRewards {
                     &mplx_rewards::id(),
                     &self.rewards_root.pubkey(),
                     &self.root_authority.pubkey(),
+                    &self.distribution_authority.pubkey(),
                 ),
                 mplx_rewards::instruction::initialize_pool(
                     &mplx_rewards::id(),

@@ -107,7 +107,10 @@ pub enum RewardsInstruction {
     /// [WS] Root account
     /// [WS] Authority
     /// [R] System program
-    InitializeRoot,
+    InitializeRoot {
+        /// This authority is responsible for rewards distribution
+        distribution_authority: Pubkey,
+    },
 
     /// Restakes deposit
     ///
@@ -299,6 +302,7 @@ pub fn initialize_root(
     program_id: &Pubkey,
     rewards_root: &Pubkey,
     authority: &Pubkey,
+    distribution_authority: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*rewards_root, true),
@@ -306,7 +310,13 @@ pub fn initialize_root(
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 
-    Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializeRoot, accounts)
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::InitializeRoot {
+            distribution_authority: *distribution_authority,
+        },
+        accounts,
+    )
 }
 
 /// Creates 'RestakeDeposit" instruction.

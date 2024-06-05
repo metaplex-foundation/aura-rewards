@@ -56,9 +56,12 @@ pub fn process_instruction(
             msg!("RewardsInstruction: Claim");
             ClaimContext::new(program_id, accounts)?.process(program_id)
         }
-        RewardsInstruction::InitializeRoot => {
+        RewardsInstruction::InitializeRoot {
+            distribution_authority,
+        } => {
             msg!("RewardsInstruction: InitializeRoot");
-            InitializeRootContext::new(program_id, accounts)?.process(program_id)
+            InitializeRootContext::new(program_id, accounts)?
+                .process(program_id, &distribution_authority)
         }
         RewardsInstruction::RestakeDeposit {
             lockup_period,
