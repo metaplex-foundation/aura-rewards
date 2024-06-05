@@ -76,5 +76,9 @@ pub fn process_instruction(
                 deposit_start_ts,
             )
         }
+        RewardsInstruction::DistributeRewards => {
+            msg!("RewardsInstruction: FillVault");
+            DistributeRewardsContext::new(program_id, accounts)?.process(program_id)
+        }
     }
 }

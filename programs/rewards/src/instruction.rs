@@ -128,6 +128,15 @@ pub enum RewardsInstruction {
         /// Deposit start_ts
         deposit_start_ts: u64,
     },
+
+    /// Fills the reward pool with rewards
+    ///
+    /// Accounts:
+    /// [W] Reward pool account
+    /// [R] Mint of rewards account
+    /// [W] Vault for rewards account
+    /// [RS] Distribute rewards authority
+    DistributeRewards,
 }
 
 /// Creates 'InitializePool' instruction.
