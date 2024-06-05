@@ -40,8 +40,7 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
     /// Process instruction
     pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-        let rewards_to_distribute: u64;
-        {
+        let rewards_to_distribute = {
             let vault = reward_pool
                 .vaults
                 .iter()
@@ -57,9 +56,11 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
                 self.vault,
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
             )?;
+
             let vault_token_account = SplTokenAccount::unpack(&self.vault.data.borrow())?;
-            rewards_to_distribute = vault.rewards_to_distribute(vault_token_account.amount);
-        }
+            vault.rewards_to_distribute(vault_token_account.amount)
+        };
+        assert_account_key(self.distribute_authority, &reward_pool.deposit_authority)?;
 
         reward_pool.fill(*self.reward_mint.key, rewards_to_distribute)?;
 

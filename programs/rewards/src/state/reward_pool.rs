@@ -36,6 +36,8 @@ pub struct RewardPool {
     /// The address responsible for the charge of rewards for users.
     /// It executes deposits on the rewards pools.
     pub deposit_authority: Pubkey,
+    /// The address responsible for filling vaults with money
+    pub fill_authority: Pubkey,
 }
 
 impl RewardPool {
@@ -48,6 +50,7 @@ impl RewardPool {
             total_share: 0,
             vaults: vec![],
             deposit_authority: params.deposit_authority,
+            fill_authority: params.fill_authority,
         }
     }
 
@@ -262,6 +265,9 @@ pub struct InitRewardPoolParams {
     /// The address responsible for the charge of rewards for users.
     /// It executes deposits on the rewards pools.
     pub deposit_authority: Pubkey,
+    /// The address responsible for the filling vaults with rewards.
+    /// Those rewards later will be used to distribute rewards.
+    pub fill_authority: Pubkey,
 }
 
 impl Sealed for RewardPool {}

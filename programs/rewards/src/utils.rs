@@ -365,6 +365,7 @@ impl LockupPeriod {
 }
 
 /// Get current unix time
+#[inline(always)]
 pub fn get_curr_unix_ts() -> u64 {
     // Conversion must be save because negative values
     // in unix means the date is earlier than 1970y

@@ -15,10 +15,14 @@ pub enum RewardsInstruction {
     /// Accounts:
     /// [R] Root account
     /// [W] Reward pool account
-    /// [R] Deposit authority
     /// [WS] Payer
     /// [R] System program
-    InitializePool,
+    InitializePool {
+        /// Account responsible for charging users
+        deposit_authority: Pubkey,
+        /// Account can fill the reward vault
+        fill_authority: Pubkey,
+    },
 
     /// Creates a new vault account and adds it to the reward pool
     ///
@@ -45,6 +49,8 @@ pub enum RewardsInstruction {
     FillVault {
         /// Amount to fill
         amount: u64,
+        /// Rewards distribution ends at given date
+        distribution_ends_at: u64,
     },
 
     /// Initializes mining account for the specified user
@@ -107,10 +113,7 @@ pub enum RewardsInstruction {
     /// [WS] Root account
     /// [WS] Authority
     /// [R] System program
-    InitializeRoot {
-        /// This authority is responsible for rewards distribution
-        distribution_authority: Pubkey,
-    },
+    InitializeRoot,
 
     /// Restakes deposit
     ///
@@ -144,18 +147,25 @@ pub fn initialize_pool(
     program_id: &Pubkey,
     root_account: &Pubkey,
     reward_pool: &Pubkey,
-    authority: &Pubkey,
     payer: &Pubkey,
+    deposit_authority: &Pubkey,
+    fill_authority: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*root_account, false),
         AccountMeta::new(*reward_pool, false),
-        AccountMeta::new_readonly(*authority, false),
         AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 
-    Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializePool, accounts)
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::InitializePool {
+            deposit_authority: *deposit_authority,
+            fill_authority: *fill_authority,
+        },
+        accounts,
+    )
 }
 
 /// Creates 'AddVault' instruction.
@@ -191,6 +201,7 @@ pub fn fill_vault(
     authority: &Pubkey,
     from: &Pubkey,
     amount: u64,
+    distribution_ends_at: u64,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -203,7 +214,10 @@ pub fn fill_vault(
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::FillVault { amount },
+        &RewardsInstruction::FillVault {
+            amount,
+            distribution_ends_at,
+        },
         accounts,
     )
 }
@@ -311,7 +325,6 @@ pub fn initialize_root(
     program_id: &Pubkey,
     rewards_root: &Pubkey,
     authority: &Pubkey,
-    distribution_authority: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*rewards_root, true),
@@ -319,13 +332,7 @@ pub fn initialize_root(
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 
-    Instruction::new_with_borsh(
-        *program_id,
-        &RewardsInstruction::InitializeRoot {
-            distribution_authority: *distribution_authority,
-        },
-        accounts,
-    )
+    Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializeRoot, accounts)
 }
 
 /// Creates 'RestakeDeposit" instruction.

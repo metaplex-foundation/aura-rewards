@@ -51,9 +51,15 @@ pub enum MplxRewardsError {
     #[error("Rewards: lockup period invalid")]
     InvalidLockupPeriod,
 
-    /// 8 Invalid CPI caller
+    /// 8
+    /// Invalid CPI caller
     #[error("Rewards: only Staking contract is allowed to do CPI calls")]
     InvalidCpiCaller,
+
+    /// 9
+    /// Invalid distribution_ends_at data
+    #[error("Rewards: distribution_ends_at date is lower than current date ")]
+    DistributionInThePast,
 }
 
 impl PrintProgramError for MplxRewardsError {

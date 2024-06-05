@@ -12,17 +12,14 @@ pub struct RewardsRoot {
     pub account_type: AccountType,
     /// Authority address
     pub authority: Pubkey,
-    /// Authority that is responsible for rewards distribution
-    pub distribution_authority: Pubkey,
 }
 
 impl RewardsRoot {
     /// Init root account
-    pub fn init(authority: Pubkey, distribution_authority: Pubkey) -> RewardsRoot {
+    pub fn init(authority: Pubkey) -> RewardsRoot {
         RewardsRoot {
             account_type: AccountType::RewardsRoot,
             authority,
-            distribution_authority,
         }
     }
 }

@@ -13,7 +13,6 @@ use solana_program::pubkey::Pubkey;
 pub struct InitializePoolContext<'a, 'b> {
     rewards_root: &'a AccountInfo<'b>,
     reward_pool: &'a AccountInfo<'b>,
-    deposit_authority: &'a AccountInfo<'b>,
     payer: &'a AccountInfo<'b>,
 }
 
@@ -27,19 +26,22 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
 
         let rewards_root = AccountLoader::next_with_owner(account_info_iter, &id())?;
         let reward_pool = AccountLoader::next_uninitialized(account_info_iter)?;
-        let deposit_authority = AccountLoader::next_unchecked(account_info_iter)?;
         let payer = AccountLoader::next_signer(account_info_iter)?;
 
         Ok(InitializePoolContext {
             rewards_root,
             reward_pool,
-            deposit_authority,
             payer,
         })
     }
 
     /// Process instruction
-    pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
+    pub fn process(
+        &self,
+        program_id: &Pubkey,
+        deposit_authority: Pubkey,
+        fill_authority: Pubkey,
+    ) -> ProgramResult {
         let bump = {
             let (reward_pool_pubkey, bump) =
                 find_reward_pool_program_address(program_id, self.rewards_root.key);
@@ -68,7 +70,8 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         let reward_pool = RewardPool::init(InitRewardPoolParams {
             rewards_root: *self.rewards_root.key,
             bump,
-            deposit_authority: *self.deposit_authority.key,
+            deposit_authority,
+            fill_authority,
         });
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
 

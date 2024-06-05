@@ -30,7 +30,7 @@ impl<'a, 'b> InitializeRootContext<'a, 'b> {
     }
 
     /// Process instruction
-    pub fn process(&self, program_id: &Pubkey, distribution_authority: &Pubkey) -> ProgramResult {
+    pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
         assert_signer(self.rewards_root)?;
 
         create_account::<RewardsRoot>(
@@ -39,7 +39,7 @@ impl<'a, 'b> InitializeRootContext<'a, 'b> {
             self.rewards_root.clone(),
             &[],
         )?;
-        let rewards_root = RewardsRoot::init(*self.authority.key, *distribution_authority);
+        let rewards_root = RewardsRoot::init(*self.authority.key);
         RewardsRoot::pack(rewards_root, *self.rewards_root.data.borrow_mut())?;
 
         Ok(())

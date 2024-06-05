@@ -17,17 +17,31 @@ pub fn process_instruction(
     let instruction = RewardsInstruction::try_from_slice(input)?;
 
     match instruction {
-        RewardsInstruction::InitializePool => {
+        RewardsInstruction::InitializePool {
+            deposit_authority,
+            fill_authority,
+        } => {
             msg!("RewardsInstruction: InitializePool");
-            InitializePoolContext::new(program_id, accounts)?.process(program_id)
+            InitializePoolContext::new(program_id, accounts)?.process(
+                program_id,
+                deposit_authority,
+                fill_authority,
+            )
         }
         RewardsInstruction::AddVault => {
             msg!("RewardsInstruction: AddVault");
             AddVaultContext::new(program_id, accounts)?.process(program_id)
         }
-        RewardsInstruction::FillVault { amount } => {
+        RewardsInstruction::FillVault {
+            amount,
+            distribution_ends_at,
+        } => {
             msg!("RewardsInstruction: FillVault");
-            FillVaultContext::new(program_id, accounts)?.process(program_id, amount)
+            FillVaultContext::new(program_id, accounts)?.process(
+                program_id,
+                amount,
+                distribution_ends_at,
+            )
         }
         RewardsInstruction::InitializeMining => {
             msg!("RewardsInstruction: InitializeMining");
@@ -56,12 +70,9 @@ pub fn process_instruction(
             msg!("RewardsInstruction: Claim");
             ClaimContext::new(program_id, accounts)?.process(program_id)
         }
-        RewardsInstruction::InitializeRoot {
-            distribution_authority,
-        } => {
+        RewardsInstruction::InitializeRoot => {
             msg!("RewardsInstruction: InitializeRoot");
-            InitializeRootContext::new(program_id, accounts)?
-                .process(program_id, &distribution_authority)
+            InitializeRootContext::new(program_id, accounts)?.process(program_id)
         }
         RewardsInstruction::RestakeDeposit {
             lockup_period,

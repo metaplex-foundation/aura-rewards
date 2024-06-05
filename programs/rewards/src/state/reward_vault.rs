@@ -91,7 +91,7 @@ impl RewardVault {
             self.distribution_ends_at.saturating_sub(get_curr_unix_ts()) / SECONDS_PER_DAY;
 
         if distribution_days_left == 0 {
-            return 0;
+            return vault_balance;
         }
 
         vault_balance / distribution_days_left
