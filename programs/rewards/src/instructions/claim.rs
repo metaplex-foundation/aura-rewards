@@ -1,5 +1,5 @@
 use crate::state::{Mining, RewardPool};
-use crate::utils::{assert_account_key, transfer, AccountLoader};
+use crate::utils::{assert_account_key, spl_transfer, AccountLoader};
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program::set_return_data;
@@ -51,7 +51,8 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
 
         let reward_pool_seeds = &[
             b"reward_pool".as_ref(),
-            &reward_pool.rewards_root.to_bytes()[..32],
+            &reward_pool.deposit_authority.to_bytes(),
+            &reward_pool.fill_authority.to_bytes(),
             &[reward_pool.bump],
         ];
 
@@ -63,32 +64,22 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
                 &Pubkey::create_program_address(reward_pool_seeds, program_id)?,
             )?;
 
-            let bump = reward_pool
-                .vaults
-                .iter()
-                .find(|v| &v.reward_mint == self.reward_mint.key)
-                .ok_or(ProgramError::InvalidArgument)?
-                .bump;
             let vault_seeds = &[
                 b"vault".as_ref(),
-                &self.reward_pool.key.to_bytes()[..32],
-                &self.reward_mint.key.to_bytes()[..32],
-                &[bump],
+                &self.reward_pool.key.to_bytes(),
+                &self.reward_mint.key.to_bytes(),
+                &[reward_pool.vault.bump],
             ];
             assert_account_key(
                 self.vault,
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
             )?;
         }
+        mining.refresh_rewards(&reward_pool.vault)?;
+        let amount = mining.index.unclaimed_rewards;
+        mining.claim();
 
-        mining.refresh_rewards(reward_pool.vaults.iter())?;
-
-        let reward_index = mining.reward_index_mut(*self.reward_mint.key);
-        let amount = reward_index.unclaimed_rewards;
-
-        reward_index.unclaimed_rewards = 0;
-
-        transfer(
+        spl_transfer(
             self.vault.clone(),
             self.user_reward_token_account.clone(),
             self.reward_pool.clone(),

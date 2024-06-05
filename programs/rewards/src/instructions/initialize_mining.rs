@@ -1,6 +1,7 @@
-use crate::find_mining_program_address;
 use crate::state::Mining;
-use crate::utils::{assert_account_key, create_account, AccountLoader};
+use crate::utils::{
+    assert_account_key, create_account, find_mining_program_address, AccountLoader,
+};
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;

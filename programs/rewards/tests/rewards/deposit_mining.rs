@@ -34,8 +34,6 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
         .initialize_mining(&mut context, &user.pubkey())
         .await;
 
-    test_reward_pool.add_vault(&mut context).await;
-
     (context, test_reward_pool, user.pubkey(), user_mining)
 }
 
@@ -45,14 +43,7 @@ async fn success() {
 
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(
-            &mut context,
-            &mining,
-            100,
-            lockup_period,
-            &test_rewards.token_mint_pubkey,
-            &user,
-        )
+        .deposit_mining(&mut context, &mining, 100, lockup_period, &user)
         .await
         .unwrap();
 

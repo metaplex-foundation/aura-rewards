@@ -34,59 +34,71 @@ pub async fn transfer(
 #[derive(Debug)]
 pub struct TestRewards {
     pub token_mint_pubkey: Pubkey,
-    pub rewards_root: Keypair,
     pub deposit_authority: Keypair,
-    pub root_authority: Keypair,
+    pub fill_authority: Keypair,
     pub mining_reward_pool: Pubkey,
-    distribution_authority: Keypair,
+    pub vault_pubkey: Pubkey,
 }
 
 impl TestRewards {
     pub fn new(token_mint_pubkey: Pubkey) -> Self {
         let deposit_authority = Keypair::new();
-        let rewards_root = Keypair::new();
-        let root_authority = Keypair::new();
-        let distribution_authority = Keypair::new();
+        let fill_authority = Keypair::new();
 
         let (mining_reward_pool, _) = Pubkey::find_program_address(
-            &[b"reward_pool".as_ref(), &rewards_root.pubkey().to_bytes()],
+            &[
+                b"reward_pool".as_ref(),
+                &deposit_authority.pubkey().to_bytes(),
+                &fill_authority.pubkey().to_bytes(),
+            ],
+            &mplx_rewards::id(),
+        );
+
+        let (vault_pubkey, _vault_bump) = Pubkey::find_program_address(
+            &[
+                b"vault".as_ref(),
+                &mining_reward_pool.to_bytes(),
+                &token_mint_pubkey.to_bytes(),
+            ],
             &mplx_rewards::id(),
         );
 
         Self {
-            deposit_authority,
             token_mint_pubkey,
-            rewards_root,
-            root_authority,
+            deposit_authority,
+            fill_authority,
             mining_reward_pool,
-            distribution_authority,
+            vault_pubkey,
         }
     }
 
     pub async fn initialize_pool(&self, context: &mut ProgramTestContext) -> BanksClientResult<()> {
-        transfer(context, &self.root_authority.pubkey(), 100000000)
-            .await
-            .unwrap();
+        // transfer(context, &self.root_authority.pubkey(), 100000000)
+        //     .await
+        //     .unwrap();
+
+        let (vault_pubkey, _) = Pubkey::find_program_address(
+            &[
+                b"vault".as_ref(),
+                self.mining_reward_pool.as_ref(),
+                self.token_mint_pubkey.as_ref(),
+            ],
+            &mplx_rewards::id(),
+        );
 
         // Initialize mining pool
         let tx = Transaction::new_signed_with_payer(
-            &[
-                mplx_rewards::instruction::initialize_root(
-                    &mplx_rewards::id(),
-                    &self.rewards_root.pubkey(),
-                    &self.root_authority.pubkey(),
-                    &self.distribution_authority.pubkey(),
-                ),
-                mplx_rewards::instruction::initialize_pool(
-                    &mplx_rewards::id(),
-                    &self.rewards_root.pubkey(),
-                    &self.mining_reward_pool,
-                    &self.deposit_authority.pubkey(),
-                    &self.root_authority.pubkey(),
-                ),
-            ],
-            Some(&self.root_authority.pubkey()),
-            &[&self.root_authority, &self.rewards_root],
+            &[mplx_rewards::instruction::initialize_pool(
+                &mplx_rewards::id(),
+                &self.mining_reward_pool,
+                &self.token_mint_pubkey,
+                &vault_pubkey,
+                &context.payer.pubkey(),
+                &self.deposit_authority.pubkey(),
+                &self.fill_authority.pubkey(),
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer],
             context.last_blockhash,
         );
 
@@ -131,7 +143,6 @@ impl TestRewards {
         mining_account: &Pubkey,
         amount: u64,
         lockup_period: LockupPeriod,
-        mint_account: &Pubkey,
         owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
@@ -142,7 +153,6 @@ impl TestRewards {
                 &self.deposit_authority.pubkey(),
                 amount,
                 lockup_period,
-                mint_account,
                 owner,
             )],
             Some(&context.payer.pubkey()),
@@ -177,62 +187,26 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
-    pub async fn add_vault(&self, context: &mut ProgramTestContext) -> Pubkey {
-        let (vault_pubkey, _) = Pubkey::find_program_address(
-            &[
-                b"vault".as_ref(),
-                self.mining_reward_pool.as_ref(),
-                self.token_mint_pubkey.as_ref(),
-            ],
-            &mplx_rewards::id(),
-        );
-
-        let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::add_vault(
-                &mplx_rewards::id(),
-                &self.rewards_root.pubkey(),
-                &self.mining_reward_pool,
-                &self.token_mint_pubkey,
-                &vault_pubkey,
-                &self.root_authority.pubkey(),
-            )],
-            Some(&self.root_authority.pubkey()),
-            &[&self.root_authority],
-            context.last_blockhash,
-        );
-
-        context.banks_client.process_transaction(tx).await.unwrap();
-
-        vault_pubkey
-    }
-
     pub async fn fill_vault(
         &self,
         context: &mut ProgramTestContext,
         from: &Pubkey,
         amount: u64,
+        distribution_ends_at: u64,
     ) -> BanksClientResult<()> {
-        let (vault_pubkey, _) = Pubkey::find_program_address(
-            &[
-                b"vault".as_ref(),
-                self.mining_reward_pool.as_ref(),
-                self.token_mint_pubkey.as_ref(),
-            ],
-            &mplx_rewards::id(),
-        );
-
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::fill_vault(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
                 &self.token_mint_pubkey,
-                &vault_pubkey,
-                &context.payer.pubkey(),
+                &self.vault_pubkey,
+                &self.fill_authority.pubkey(),
                 from,
                 amount,
+                distribution_ends_at,
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer],
+            &[&context.payer, &self.fill_authority],
             context.last_blockhash,
         );
 
@@ -246,27 +220,38 @@ impl TestRewards {
         mining_account: &Pubkey,
         user_reward_token: &Pubkey,
     ) -> BanksClientResult<()> {
-        let (vault_pubkey, _) = Pubkey::find_program_address(
-            &[
-                b"vault".as_ref(),
-                self.mining_reward_pool.as_ref(),
-                self.token_mint_pubkey.as_ref(),
-            ],
-            &mplx_rewards::id(),
-        );
-
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::claim(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
                 &self.token_mint_pubkey,
-                &vault_pubkey,
+                &self.vault_pubkey,
                 mining_account,
                 &user.pubkey(),
                 user_reward_token,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, user],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
+    pub async fn distribute_rewards(
+        &self,
+        context: &mut ProgramTestContext,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::distribute_rewards(
+                &mplx_rewards::id(),
+                &self.mining_reward_pool,
+                &self.token_mint_pubkey,
+                &self.vault_pubkey,
+                &self.deposit_authority.pubkey(),
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, &self.deposit_authority],
             context.last_blockhash,
         );
 
@@ -391,22 +376,22 @@ pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) {
     context.borrow_mut().set_sysvar(&new_clock);
 }
 
-pub async fn create_user(
+pub async fn create_end_user(
     context: &mut ProgramTestContext,
-    test_rewards_pool: &TestRewards,
+    test_rewards: &TestRewards,
 ) -> (Keypair, Keypair, Pubkey) {
     let user = Keypair::new();
     let user_reward = Keypair::new();
     create_token_account(
         context,
         &user_reward,
-        &test_rewards_pool.token_mint_pubkey,
+        &test_rewards.token_mint_pubkey,
         &user.pubkey(),
         0,
     )
     .await
     .unwrap();
-    let user_mining = test_rewards_pool
+    let user_mining = test_rewards
         .initialize_mining(context, &user.pubkey())
         .await;
 

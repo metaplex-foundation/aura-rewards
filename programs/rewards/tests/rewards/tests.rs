@@ -1,6 +1,6 @@
-mod add_vault;
 mod claim;
 mod deposit_mining;
+mod distribute_rewards;
 mod fill_vault;
 mod initialize_mining;
 mod initialize_pool;

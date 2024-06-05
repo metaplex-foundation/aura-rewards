@@ -54,10 +54,15 @@ pub fn find_vault_program_address(
 /// Generates reward pool address
 pub fn find_reward_pool_program_address(
     program_id: &Pubkey,
-    root_account: &Pubkey,
+    authority_account: &Pubkey,
+    fill_authority: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &["reward_pool".as_bytes(), &root_account.to_bytes()],
+        &[
+            "reward_pool".as_bytes(),
+            &authority_account.to_bytes(),
+            &fill_authority.to_bytes(),
+        ],
         program_id,
     )
 }
@@ -183,7 +188,7 @@ pub fn initialize_account<'a>(
 }
 
 /// SPL transfer instruction.
-pub fn transfer<'a>(
+pub fn spl_transfer<'a>(
     source: AccountInfo<'a>,
     destination: AccountInfo<'a>,
     authority: AccountInfo<'a>,

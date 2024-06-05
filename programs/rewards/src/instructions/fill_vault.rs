@@ -1,7 +1,6 @@
 use crate::error::MplxRewardsError;
 use crate::state::RewardPool;
-use crate::utils::{assert_account_key, get_curr_unix_ts, transfer, AccountLoader};
-
+use crate::utils::{assert_account_key, get_curr_unix_ts, spl_transfer, AccountLoader};
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
     program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
@@ -52,22 +51,19 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
         assert_account_key(self.fill_authority, &reward_pool.fill_authority)?;
 
         {
-            let vault = reward_pool
-                .vaults
-                .iter_mut()
-                .find(|v| &v.reward_mint == self.reward_mint.key)
-                .ok_or(ProgramError::InvalidArgument)?;
             let vault_seeds = &[
                 b"vault".as_ref(),
                 &self.reward_pool.key.to_bytes()[..32],
                 &self.reward_mint.key.to_bytes()[..32],
-                &[vault.bump],
+                &[reward_pool.vault.bump],
             ];
             assert_account_key(
                 self.vault,
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
             )?;
+        }
 
+        {
             // beginning of the day where distribution_ends_at
             let distribution_ends_at_day_start =
                 distribution_ends_at - (distribution_ends_at % SECONDS_PER_DAY);
@@ -77,13 +73,14 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
                 return Err(MplxRewardsError::DistributionInThePast.into());
             }
 
-            vault.distribution_ends_at = vault
+            reward_pool.vault.distribution_ends_at = reward_pool
+                .vault
                 .distribution_ends_at
                 .checked_add(distribution_ends_at_day_start)
                 .ok_or(MplxRewardsError::MathOverflow)?;
         }
 
-        transfer(
+        spl_transfer(
             self.source_token_account.clone(),
             self.vault.clone(),
             self.fill_authority.clone(),

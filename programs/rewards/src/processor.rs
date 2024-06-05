@@ -28,10 +28,6 @@ pub fn process_instruction(
                 fill_authority,
             )
         }
-        RewardsInstruction::AddVault => {
-            msg!("RewardsInstruction: AddVault");
-            AddVaultContext::new(program_id, accounts)?.process(program_id)
-        }
         RewardsInstruction::FillVault {
             amount,
             distribution_ends_at,
@@ -50,7 +46,6 @@ pub fn process_instruction(
         RewardsInstruction::DepositMining {
             amount,
             lockup_period,
-            reward_mint_addr,
             owner,
         } => {
             msg!("RewardsInstruction: DepositMining");
@@ -58,7 +53,6 @@ pub fn process_instruction(
                 program_id,
                 amount,
                 lockup_period,
-                &reward_mint_addr,
                 &owner,
             )
         }
@@ -69,10 +63,6 @@ pub fn process_instruction(
         RewardsInstruction::Claim => {
             msg!("RewardsInstruction: Claim");
             ClaimContext::new(program_id, accounts)?.process(program_id)
-        }
-        RewardsInstruction::InitializeRoot => {
-            msg!("RewardsInstruction: InitializeRoot");
-            InitializeRootContext::new(program_id, accounts)?.process(program_id)
         }
         RewardsInstruction::RestakeDeposit {
             lockup_period,

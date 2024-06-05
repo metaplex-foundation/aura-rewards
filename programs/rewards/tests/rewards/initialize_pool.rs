@@ -13,34 +13,37 @@ async fn setup() -> (ProgramTestContext, TestRewards) {
     );
 
     let mut context = test.start_with_context().await;
-    let owner = &context.payer.pubkey();
 
-    let reward_token_mint = Keypair::new();
-    create_mint(&mut context, &reward_token_mint, owner).await.unwrap();
+    let mint_owner = &context.payer.pubkey();
+    let reward_mint = Keypair::new();
+    create_mint(&mut context, &reward_mint, mint_owner)
+        .await
+        .unwrap();
 
-    let test_reward_pool = TestRewards::new(reward_token_mint.pubkey());
+    let test_rewards = TestRewards::new(reward_mint.pubkey());
 
-    (context, test_reward_pool)
+    (context, test_rewards)
 }
 
 #[tokio::test]
 async fn success() {
-    let (mut context, test_reward_pool) = setup().await;
+    let (mut context, test_rewards) = setup().await;
 
-    test_reward_pool
-        .initialize_pool(&mut context)
-        .await
-        .unwrap();
+    test_rewards.initialize_pool(&mut context).await.unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_reward_pool.mining_reward_pool).await;
+    let reward_pool_account = get_account(&mut context, &test_rewards.mining_reward_pool).await;
     let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
 
     assert_eq!(
-        reward_pool.rewards_root,
-        test_reward_pool.rewards_root.pubkey()
+        reward_pool.deposit_authority,
+        test_rewards.deposit_authority.pubkey()
     );
     assert_eq!(
-        reward_pool.deposit_authority,
-        test_reward_pool.deposit_authority.pubkey()
+        reward_pool.fill_authority,
+        test_rewards.fill_authority.pubkey()
+    );
+    assert_eq!(
+        reward_pool.vault.reward_mint,
+        test_rewards.token_mint_pubkey
     );
 }

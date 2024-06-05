@@ -40,7 +40,6 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         program_id: &Pubkey,
         amount: u64,
         lockup_period: LockupPeriod,
-        reward_mint_addr: &Pubkey,
         owner: &Pubkey,
     ) -> ProgramResult {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
@@ -69,7 +68,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             }
         }
 
-        reward_pool.deposit(&mut mining, amount, lockup_period, reward_mint_addr)?;
+        reward_pool.deposit(&mut mining, amount, lockup_period)?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
         Mining::pack(mining, *self.mining.data.borrow_mut())?;

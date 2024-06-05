@@ -12,8 +12,8 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
+use std::collections::BTreeMap;
 use std::ops::Bound::{Excluded, Included};
-use std::{collections::BTreeMap, slice::Iter};
 
 /// Mining
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
@@ -27,7 +27,7 @@ pub struct Mining {
     /// Mining owner
     pub owner: Pubkey,
     /// Reward indexes
-    pub indexes: Vec<RewardIndex>,
+    pub index: RewardIndex,
 }
 
 impl Mining {
@@ -38,52 +38,31 @@ impl Mining {
             bump,
             share: 0,
             owner,
-            indexes: vec![],
-        }
-    }
-
-    /// Returns reward index
-    pub fn reward_index_mut(&mut self, reward_mint: Pubkey) -> &mut RewardIndex {
-        match self
-            .indexes
-            .iter()
-            .position(|mi| mi.reward_mint == reward_mint)
-        {
-            Some(i) => &mut self.indexes[i],
-            None => {
-                self.indexes.push(RewardIndex {
-                    reward_mint,
-                    ..Default::default()
-                });
-                self.indexes.last_mut().unwrap()
-            }
+            index: RewardIndex::default(),
         }
     }
 
     /// Claim reward
-    pub fn claim(&mut self, reward_mint: Pubkey) {
-        let reward_index = self.reward_index_mut(reward_mint);
-        reward_index.unclaimed_rewards = 0;
+    pub fn claim(&mut self) {
+        self.index.unclaimed_rewards = 0;
     }
 
     /// Refresh rewards
-    pub fn refresh_rewards(&mut self, pool_vaults: Iter<RewardVault>) -> ProgramResult {
+    pub fn refresh_rewards(&mut self, vault: &RewardVault) -> ProgramResult {
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
         let mut share = self.share;
 
-        for pool_vault in pool_vaults {
-            let reward_index = self.reward_index_mut(pool_vault.reward_mint);
-
-            share = reward_index.consume_old_modifiers(beginning_of_the_day, share, pool_vault)?;
-            RewardIndex::update_index(
-                pool_vault,
-                curr_ts,
-                share,
-                &mut reward_index.unclaimed_rewards,
-                &mut reward_index.index_with_precision,
-            )?;
-        }
+        share = self
+            .index
+            .consume_old_modifiers(beginning_of_the_day, share, vault)?;
+        RewardIndex::update_index(
+            vault,
+            curr_ts,
+            share,
+            &mut self.index.unclaimed_rewards,
+            &mut self.index.index_with_precision,
+        )?;
         self.share = share;
 
         Ok(())

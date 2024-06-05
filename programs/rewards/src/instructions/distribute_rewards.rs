@@ -31,9 +31,9 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
 
         Ok(DistributeRewardsContext {
             reward_pool,
-            reward_mint,
             vault,
             distribute_authority,
+            reward_mint,
         })
     }
 
@@ -41,16 +41,11 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
     pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
         let rewards_to_distribute = {
-            let vault = reward_pool
-                .vaults
-                .iter()
-                .find(|v| &v.reward_mint == self.reward_mint.key)
-                .ok_or(ProgramError::InvalidArgument)?;
             let vault_seeds = &[
                 b"vault".as_ref(),
-                &self.reward_pool.key.to_bytes()[..32],
-                &self.reward_mint.key.to_bytes()[..32],
-                &[vault.bump],
+                &self.reward_pool.key.to_bytes(),
+                &self.reward_mint.key.to_bytes(),
+                &[reward_pool.vault.bump],
             ];
             assert_account_key(
                 self.vault,
@@ -58,11 +53,13 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
             )?;
 
             let vault_token_account = SplTokenAccount::unpack(&self.vault.data.borrow())?;
-            vault.rewards_to_distribute(vault_token_account.amount)
+            reward_pool
+                .vault
+                .rewards_to_distribute(vault_token_account.amount)
         };
         assert_account_key(self.distribute_authority, &reward_pool.deposit_authority)?;
 
-        reward_pool.fill(*self.reward_mint.key, rewards_to_distribute)?;
+        reward_pool.fill(rewards_to_distribute)?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
 
