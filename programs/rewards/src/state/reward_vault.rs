@@ -23,6 +23,8 @@ pub struct RewardVault {
     pub cumulative_index: BTreeMap<u64, u128>,
     /// The time where the last distribution made by distribution_authority is allowed
     pub distribution_ends_at: u64,
+    /// Shows amount of tokens are ready to be distributed
+    pub tokens_available_for_distribution: u64, // default: 0, increased on each fill, decreased on each user claim
 }
 
 impl RewardVault {
@@ -85,15 +87,22 @@ impl RewardVault {
     }
 
     /// Defines the amount of money that will be distributed
-    /// The formula is vault_money / (distrtribution_period_ends_at - curr_time)
-    pub fn rewards_to_distribute(&self, vault_balance: u64) -> u64 {
-        let distribution_days_left =
-            self.distribution_ends_at.saturating_sub(get_curr_unix_ts()) / SECONDS_PER_DAY;
+    /// The formula is vault_tokens_are_available_for_distribution / (distrtribution_period_ends_at - curr_time)
+    pub fn rewards_to_distribute(&self) -> Result<u64, ProgramError> {
+        let distribution_days_left: u128 =
+            (self.distribution_ends_at.saturating_sub(get_curr_unix_ts()) / SECONDS_PER_DAY).into();
 
         if distribution_days_left == 0 {
-            return vault_balance;
+            return Ok(self.tokens_available_for_distribution);
         }
 
-        vault_balance / distribution_days_left
+        // ((tokens_available_for_distribution * precision) / days_left) / precision
+        Ok(((self.tokens_available_for_distribution as u128)
+            .checked_mul(PRECISION)
+            .ok_or(MplxRewardsError::MathOverflow)?
+            .checked_div(distribution_days_left)
+            .ok_or(MplxRewardsError::MathOverflow)?)
+        .checked_div(PRECISION)
+        .ok_or(MplxRewardsError::MathOverflow)? as u64)
     }
 }

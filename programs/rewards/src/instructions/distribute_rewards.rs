@@ -1,12 +1,11 @@
+use crate::error::MplxRewardsError;
 use crate::state::RewardPool;
 use crate::utils::{assert_account_key, AccountLoader};
 
-use solana_program::account_info::AccountInfo;
-use solana_program::entrypoint::ProgramResult;
-use solana_program::program_error::ProgramError;
-use solana_program::program_pack::Pack;
-use solana_program::pubkey::Pubkey;
-use spl_token::state::Account as SplTokenAccount;
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
+    program_pack::Pack, pubkey::Pubkey,
+};
 
 /// Instruction context
 pub struct DistributeRewardsContext<'a, 'b> {
@@ -52,14 +51,16 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
             )?;
 
-            let vault_token_account = SplTokenAccount::unpack(&self.vault.data.borrow())?;
-            reward_pool
-                .vault
-                .rewards_to_distribute(vault_token_account.amount)
+            reward_pool.vault.rewards_to_distribute()?
         };
         assert_account_key(self.distribute_authority, &reward_pool.deposit_authority)?;
 
         reward_pool.fill(rewards_to_distribute)?;
+        reward_pool.vault.tokens_available_for_distribution = reward_pool
+            .vault
+            .tokens_available_for_distribution
+            .checked_sub(rewards_to_distribute)
+            .ok_or(MplxRewardsError::MathOverflow)?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
 

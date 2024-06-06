@@ -1,11 +1,9 @@
 use crate::state::{Mining, RewardPool};
 use crate::utils::{assert_account_key, spl_transfer, AccountLoader};
-use solana_program::account_info::AccountInfo;
-use solana_program::entrypoint::ProgramResult;
-use solana_program::program::set_return_data;
-use solana_program::program_error::ProgramError;
-use solana_program::program_pack::Pack;
-use solana_program::pubkey::Pubkey;
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, program::set_return_data,
+    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+};
 
 /// Instruction context
 pub struct ClaimContext<'a, 'b> {
@@ -79,16 +77,17 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
         let amount = mining.index.unclaimed_rewards;
         mining.claim();
 
-        spl_transfer(
-            self.vault.clone(),
-            self.user_reward_token_account.clone(),
-            self.reward_pool.clone(),
-            amount,
-            &[reward_pool_seeds],
-        )?;
+        if amount > 0 {
+            spl_transfer(
+                self.vault.clone(),
+                self.user_reward_token_account.clone(),
+                self.reward_pool.clone(),
+                amount,
+                &[reward_pool_seeds],
+            )?;
+        }
 
         Mining::pack(mining, *self.mining.data.borrow_mut())?;
-
         set_return_data(&amount.to_le_bytes());
 
         Ok(())

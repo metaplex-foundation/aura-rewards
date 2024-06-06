@@ -399,8 +399,8 @@ pub async fn create_end_user(
 }
 
 pub async fn assert_tokens(context: &mut ProgramTestContext, reward_account: &Pubkey, amount: u64) {
-    let user_reward_account_b = get_account(context, reward_account).await;
-    let user_reward = SplTokenAccount::unpack(user_reward_account_b.data.borrow()).unwrap();
+    let user_reward_account: Account = get_account(context, reward_account).await;
+    let user_reward = SplTokenAccount::unpack(user_reward_account.data.borrow()).unwrap();
     assert_eq!(user_reward.amount, amount);
 }
 
