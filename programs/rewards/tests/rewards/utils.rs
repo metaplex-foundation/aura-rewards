@@ -16,6 +16,7 @@ pub type BanksClientResult<T> = Result<T, BanksClientError>;
 pub struct TestRewards {
     pub token_mint_pubkey: Pubkey,
     pub deposit_authority: Keypair,
+    pub distribution_authority: Keypair,
     pub fill_authority: Keypair,
     pub mining_reward_pool: Pubkey,
     pub vault_pubkey: Pubkey,
@@ -25,6 +26,7 @@ impl TestRewards {
     pub fn new(token_mint_pubkey: Pubkey) -> Self {
         let deposit_authority = Keypair::new();
         let fill_authority = Keypair::new();
+        let distribution_authority = Keypair::new();
 
         let (mining_reward_pool, _) = Pubkey::find_program_address(
             &[
@@ -50,6 +52,7 @@ impl TestRewards {
             fill_authority,
             mining_reward_pool,
             vault_pubkey,
+            distribution_authority,
         }
     }
 
@@ -77,6 +80,7 @@ impl TestRewards {
                 &context.payer.pubkey(),
                 &self.deposit_authority.pubkey(),
                 &self.fill_authority.pubkey(),
+                &self.distribution_authority.pubkey(),
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer],
@@ -230,10 +234,10 @@ impl TestRewards {
                 &self.mining_reward_pool,
                 &self.token_mint_pubkey,
                 &self.vault_pubkey,
-                &self.deposit_authority.pubkey(),
+                &self.distribution_authority.pubkey(),
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority],
+            &[&context.payer, &self.distribution_authority],
             context.last_blockhash,
         );
 

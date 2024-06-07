@@ -25,6 +25,8 @@ pub enum RewardsInstruction {
         deposit_authority: Pubkey,
         /// Account can fill the reward vault
         fill_authority: Pubkey,
+        /// Account can distribute rewards for stakers
+        distribute_authority: Pubkey,
     },
 
     /// Fills the reward pool with rewards
@@ -126,6 +128,7 @@ pub enum RewardsInstruction {
 }
 
 /// Creates 'InitializePool' instruction.
+#[allow(clippy::too_many_arguments)]
 pub fn initialize_pool(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
@@ -134,6 +137,7 @@ pub fn initialize_pool(
     payer: &Pubkey,
     deposit_authority: &Pubkey,
     fill_authority: &Pubkey,
+    distribute_authority: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -150,6 +154,7 @@ pub fn initialize_pool(
         &RewardsInstruction::InitializePool {
             deposit_authority: *deposit_authority,
             fill_authority: *fill_authority,
+            distribute_authority: *distribute_authority,
         },
         accounts,
     )
@@ -281,7 +286,7 @@ pub fn claim(
         AccountMeta::new(*vault, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*mining_owner, true),
-        AccountMeta::new(*deposit_authority, true),
+        AccountMeta::new_readonly(*deposit_authority, true),
         AccountMeta::new(*mining_owner_reward_token, false),
         AccountMeta::new_readonly(spl_token::id(), false),
     ];
@@ -328,13 +333,13 @@ pub fn distribute_rewards(
     reward_pool: &Pubkey,
     reward_mint: &Pubkey,
     reward_vault: &Pubkey,
-    deposit_authority: &Pubkey,
+    distribute_authority: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new_readonly(*reward_mint, false),
         AccountMeta::new(*reward_vault, false),
-        AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new_readonly(*distribute_authority, true),
     ];
 
     Instruction::new_with_borsh(

@@ -12,7 +12,7 @@ pub struct DistributeRewardsContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     reward_mint: &'a AccountInfo<'b>,
     vault: &'a AccountInfo<'b>,
-    deposit_authority: &'a AccountInfo<'b>,
+    distribute_authority: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
@@ -26,12 +26,12 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let vault = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
-        let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+        let distribute_authority = AccountLoader::next_signer(account_info_iter)?;
 
         Ok(DistributeRewardsContext {
             reward_pool,
             vault,
-            deposit_authority,
+            distribute_authority,
             reward_mint,
         })
     }
@@ -53,7 +53,7 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
 
             reward_pool.vault.rewards_to_distribute()?
         };
-        assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
+        assert_account_key(self.distribute_authority, &reward_pool.distribute_authority)?;
 
         reward_pool.fill(rewards_to_distribute)?;
         reward_pool.vault.tokens_available_for_distribution = reward_pool

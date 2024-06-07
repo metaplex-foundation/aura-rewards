@@ -38,6 +38,8 @@ pub struct RewardPool {
     /// We want to be sure that some changes might only be done through the
     /// staking contract. It's PDA from staking that will sign transactions.
     pub deposit_authority: Pubkey,
+    /// This address is responsible for distributing rewards
+    pub distribute_authority: Pubkey,
     /// The address is responsible for filling vaults with money.
     pub fill_authority: Pubkey,
 }
@@ -51,6 +53,7 @@ impl RewardPool {
             total_share: 0,
             vault: params.vault,
             deposit_authority: params.deposit_authority,
+            distribute_authority: params.distribute_authority,
             fill_authority: params.fill_authority,
         }
     }
@@ -241,6 +244,8 @@ pub struct InitRewardPoolParams {
     pub fill_authority: Pubkey,
     /// This vault will be responsible for storing rewards
     pub vault: RewardVault,
+    /// This account is responsible for periodical distribution of rewards
+    pub distribute_authority: Pubkey,
 }
 
 impl Sealed for RewardPool {}

@@ -50,6 +50,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         program_id: &Pubkey,
         deposit_authority: Pubkey,
         fill_authority: Pubkey,
+        distribute_authority: Pubkey,
     ) -> ProgramResult {
         let (reward_pool_pubkey, pool_bump) =
             find_reward_pool_program_address(program_id, &deposit_authority, &fill_authority);
@@ -96,6 +97,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             bump: pool_bump,
             deposit_authority,
             fill_authority,
+            distribute_authority,
             vault: RewardVault {
                 bump: vault_bump,
                 reward_mint: *self.reward_mint.key,
