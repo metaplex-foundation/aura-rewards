@@ -14,7 +14,7 @@ use solana_program::{
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
-    sysvar::{instructions::check_id, Sysvar},
+    sysvar::Sysvar,
 };
 
 use crate::error::MplxRewardsError;
@@ -22,13 +22,13 @@ use crate::error::MplxRewardsError;
 /// Generates mining address
 pub fn find_mining_program_address(
     program_id: &Pubkey,
-    user: &Pubkey,
+    mining_owner: &Pubkey,
     reward_pool: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             "mining".as_bytes(),
-            &user.to_bytes(),
+            &mining_owner.to_bytes(),
             &reward_pool.to_bytes(),
         ],
         program_id,
@@ -375,16 +375,4 @@ pub fn get_curr_unix_ts() -> u64 {
     // Conversion must be save because negative values
     // in unix means the date is earlier than 1970y
     Clock::get().unwrap().unix_timestamp as u64
-}
-
-/// This assert fails if caller_id is something besides Staking Contract ID or self id
-pub fn assert_cpi_caller() -> ProgramResult {
-    pub const STAKING_ID: Pubkey =
-        solana_program::pubkey!("3GepGwMp6WgPqgNa5NuSpnw3rQjYnqHCcVWhVmpGnw6s");
-
-    if !check_id(&crate::id()) || !check_id(&STAKING_ID) {
-        // TODO: enable that check
-        // return Err(MplxRewardsError::InvalidCpiCaller.into());
-    }
-    Ok(())
 }

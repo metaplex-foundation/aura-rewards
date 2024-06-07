@@ -23,18 +23,22 @@ pub const RINGBUF_CAP: usize = 365;
 /// Reward pool
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct RewardPool {
-    /// Account type - RewardPool
+    /// Account type - RewardPool. This discriminator should exist in order to prevent
+    /// shenanigans with customly modified accounts and their fields.
     pub account_type: AccountType,
     /// Saved bump for reward pool account
     pub bump: u8,
-    /// Reward total share
+    /// The total share of the pool for the moment of the last distribution.
+    /// It's so-called "weighted_stake" which is the sum of all stakers' weighted staked.
+    /// When somebody deposits or withdraws, or thier stake is expired this value changes.
     pub total_share: u64,
-    /// A set of all possible rewards that we can get for this pool
+    /// Vault which is responsible for storing rewards.
     pub vault: RewardVault,
-    /// The address responsible for the charge of rewards for users.
-    /// It executes deposits on the rewards pools.
+    /// This address is the authority from the staking contract.
+    /// We want to be sure that some changes might only be done through the
+    /// staking contract. It's PDA from staking that will sign transactions.
     pub deposit_authority: Pubkey,
-    /// The address responsible for filling vaults with money
+    /// The address is responsible for filling vaults with money.
     pub fill_authority: Pubkey,
 }
 
@@ -228,8 +232,9 @@ impl RewardPool {
 pub struct InitRewardPoolParams {
     /// Saved bump for reward pool account
     pub bump: u8,
-    /// The address responsible for the charge of rewards for users.
-    /// It executes deposits on the rewards pools.
+    /// This address is the authority of from the staking contract.
+    /// We want to be sure that some changes might only be done through the
+    /// staking contract. It's PDA from staking that will sign transactions.
     pub deposit_authority: Pubkey,
     /// The address responsible for the filling vaults with rewards.
     /// Those rewards later will be used to distribute rewards.

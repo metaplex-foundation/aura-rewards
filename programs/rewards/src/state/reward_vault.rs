@@ -13,17 +13,23 @@ use solana_program::{
 pub struct RewardVault {
     /// Bump of vault account
     pub bump: u8,
-    /// Reward mint address
+    /// The address of the Reward Token mint account.
     pub reward_mint: Pubkey,
-    /// Index with precision
+    /// That is the index that increases on each vault filling.
+    /// It points at the moment of time where the filling has been proceeded.
+    /// Also, it's responsible for rewards distribution calculations.
     pub index_with_precision: u128,
-    /// Weighted stake diffs is used to store the modifiers which will be applied to the total_share
+    /// Weighted stake diffs data structure is used to represent in time
+    /// when total_share (which represents sum of all stakers' weighted stake) must change
+    /// accordingly to the changes in the staking contract.
     pub weighted_stake_diffs: BTreeMap<u64, u64>,
-    /// Cumulative index per day. <Date, index>
+    /// This cumulative "index" increases on each distribution. It represents both the last time when
+    /// the distribution happened and the number which is used in distribution calculations. <Date, index>
     pub cumulative_index: BTreeMap<u64, u128>,
-    /// The time where the last distribution made by distribution_authority is allowed
+    /// The time where the last distribution made by distribution_authority is allowed. When the date expires,
+    /// the only one distribution may be made, distribution all available tokens at once.
     pub distribution_ends_at: u64,
-    /// Shows amount of tokens are ready to be distributed
+    /// Shows the amount of tokens are ready to be distributed
     pub tokens_available_for_distribution: u64, // default: 0, increased on each fill, decreased on each user claim
 }
 

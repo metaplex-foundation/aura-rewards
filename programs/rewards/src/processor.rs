@@ -39,9 +39,9 @@ pub fn process_instruction(
                 distribution_ends_at,
             )
         }
-        RewardsInstruction::InitializeMining => {
+        RewardsInstruction::InitializeMining { mining_owner } => {
             msg!("RewardsInstruction: InitializeMining");
-            InitializeMiningContext::new(program_id, accounts)?.process(program_id)
+            InitializeMiningContext::new(program_id, accounts)?.process(program_id, &mining_owner)
         }
         RewardsInstruction::DepositMining {
             amount,

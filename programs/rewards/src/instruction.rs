@@ -21,7 +21,7 @@ pub enum RewardsInstruction {
     /// [R] Token program
     /// [R] System program
     InitializePool {
-        /// Account responsible for charging users
+        /// Account responsible for charging mining owners
         deposit_authority: Pubkey,
         /// Account can fill the reward vault
         fill_authority: Pubkey,
@@ -43,15 +43,17 @@ pub enum RewardsInstruction {
         distribution_ends_at: u64,
     },
 
-    /// Initializes mining account for the specified user
+    /// Initializes mining account for the specified mining owner
     ///
     /// Accounts:
     /// [W] Reward pool account
     /// [W] Mining
-    /// [R] User
     /// [WS] Payer
     /// [R] System program
-    InitializeMining,
+    InitializeMining {
+        /// Represent the end-user, owner of the mining
+        mining_owner: Pubkey,
+    },
 
     /// Deposits amount of supply to the mining account
     ///
@@ -74,7 +76,7 @@ pub enum RewardsInstruction {
     /// Accounts:
     /// [W] Reward pool account
     /// [W] Mining
-    /// [R] User
+    /// [R] Mining owner
     /// [RS] Deposit authority
     WithdrawMining {
         /// Amount to withdraw
@@ -90,8 +92,9 @@ pub enum RewardsInstruction {
     /// [R] Mint of rewards account
     /// [W] Vault for rewards account
     /// [W] Mining
-    /// [RS] User
-    /// [W] User reward token account
+    /// [RS] Mining owner
+    /// [RS] Deposit authority
+    /// [W] Mining owner reward token account
     /// [R] Token program
     Claim,
 
@@ -101,7 +104,7 @@ pub enum RewardsInstruction {
     /// [W] Reward pool account
     /// [W] Mining
     /// [R] Mint of rewards account
-    /// [R] User
+    /// [R] Mining owner
     /// [RS] Deposit authority
     RestakeDeposit {
         /// Requested lockup period for restaking
@@ -112,7 +115,7 @@ pub enum RewardsInstruction {
         deposit_start_ts: u64,
     },
 
-    /// Distributes tokens among users
+    /// Distributes tokens among mining owners
     ///
     /// Accounts:
     /// [W] Reward pool account
@@ -188,18 +191,23 @@ pub fn initialize_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
-    user: &Pubkey,
     payer: &Pubkey,
+    mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new_readonly(*user, false),
         AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 
-    Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializeMining, accounts)
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::InitializeMining {
+            mining_owner: *mining_owner,
+        },
+        accounts,
+    )
 }
 
 /// Creates 'DepositMining' instruction.
@@ -263,16 +271,18 @@ pub fn claim(
     reward_mint: &Pubkey,
     vault: &Pubkey,
     mining: &Pubkey,
-    user: &Pubkey,
-    user_reward_token: &Pubkey,
+    mining_owner: &Pubkey,
+    deposit_authority: &Pubkey,
+    mining_owner_reward_token: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*reward_pool, false),
         AccountMeta::new_readonly(*reward_mint, false),
         AccountMeta::new(*vault, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new_readonly(*user, true),
-        AccountMeta::new(*user_reward_token, false),
+        AccountMeta::new_readonly(*mining_owner, true),
+        AccountMeta::new(*deposit_authority, true),
+        AccountMeta::new(*mining_owner_reward_token, false),
         AccountMeta::new_readonly(spl_token::id(), false),
     ];
 
@@ -285,7 +295,7 @@ pub fn restake_deposit(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
-    user: &Pubkey,
+    mining_owner: &Pubkey,
     mint_account: &Pubkey,
     deposit_authority: &Pubkey,
     lockup_period: LockupPeriod,
@@ -296,7 +306,7 @@ pub fn restake_deposit(
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*mint_account, false),
-        AccountMeta::new_readonly(*user, false),
+        AccountMeta::new_readonly(*mining_owner, false),
         AccountMeta::new_readonly(*deposit_authority, true),
     ];
 

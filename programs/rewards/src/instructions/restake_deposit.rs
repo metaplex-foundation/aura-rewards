@@ -1,5 +1,5 @@
 use crate::state::{Mining, RewardPool};
-use crate::utils::{assert_account_key, assert_cpi_caller, AccountLoader, LockupPeriod};
+use crate::utils::{assert_account_key, AccountLoader, LockupPeriod};
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program_error::ProgramError;
@@ -10,7 +10,7 @@ use solana_program::pubkey::Pubkey;
 pub struct RestakeDepositContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     mining: &'a AccountInfo<'b>,
-    user: &'a AccountInfo<'b>,
+    mining_owner: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
 }
 
@@ -20,18 +20,17 @@ impl<'a, 'b> RestakeDepositContext<'a, 'b> {
         program_id: &Pubkey,
         accounts: &'a [AccountInfo<'b>],
     ) -> Result<RestakeDepositContext<'a, 'b>, ProgramError> {
-        assert_cpi_caller()?;
         let account_info_iter = &mut accounts.iter().enumerate();
 
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
-        let user = AccountLoader::next_unchecked(account_info_iter)?;
+        let mining_owner = AccountLoader::next_unchecked(account_info_iter)?;
         let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
 
         Ok(RestakeDepositContext {
             reward_pool,
             mining,
-            user,
+            mining_owner,
             deposit_authority,
         })
     }
@@ -51,7 +50,7 @@ impl<'a, 'b> RestakeDepositContext<'a, 'b> {
             let mining_pubkey = Pubkey::create_program_address(
                 &[
                     b"mining".as_ref(),
-                    self.user.key.as_ref(),
+                    self.mining_owner.key.as_ref(),
                     self.reward_pool.key.as_ref(),
                     &[mining.bump],
                 ],
@@ -60,7 +59,7 @@ impl<'a, 'b> RestakeDepositContext<'a, 'b> {
             assert_account_key(self.mining, &mining_pubkey)?;
             assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
             assert_account_key(self.reward_pool, &mining.reward_pool)?;
-            assert_account_key(self.user, &mining.owner)?;
+            assert_account_key(self.mining_owner, &mining.owner)?;
         }
 
         reward_pool.restake(&mut mining, amount, lockup_period, deposit_start_ts)?;

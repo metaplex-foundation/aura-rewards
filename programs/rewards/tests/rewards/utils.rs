@@ -12,25 +12,6 @@ use spl_token::state::Account as SplTokenAccount;
 
 pub type BanksClientResult<T> = Result<T, BanksClientError>;
 
-pub async fn transfer(
-    context: &mut ProgramTestContext,
-    pubkey: &Pubkey,
-    amount: u64,
-) -> BanksClientResult<()> {
-    let tx = Transaction::new_signed_with_payer(
-        &[system_instruction::transfer(
-            &context.payer.pubkey(),
-            pubkey,
-            amount,
-        )],
-        Some(&context.payer.pubkey()),
-        &[&context.payer],
-        context.last_blockhash,
-    );
-
-    context.banks_client.process_transaction(tx).await
-}
-
 #[derive(Debug)]
 pub struct TestRewards {
     pub token_mint_pubkey: Pubkey,
@@ -124,8 +105,8 @@ impl TestRewards {
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
                 &mining_account,
-                user,
                 &context.payer.pubkey(),
+                user,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer],
@@ -228,10 +209,11 @@ impl TestRewards {
                 &self.vault_pubkey,
                 mining_account,
                 &user.pubkey(),
+                &self.deposit_authority.pubkey(),
                 user_reward_token,
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, user],
+            &[&context.payer, user, &self.deposit_authority],
             context.last_blockhash,
         );
 

@@ -18,15 +18,17 @@ use std::ops::Bound::{Excluded, Included};
 /// Mining
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct Mining {
-    /// Reward pool address
+    /// The address of corresponding Reward pool.
     pub reward_pool: Pubkey,
     /// Saved bump for mining account
     pub bump: u8,
-    /// Share
+    /// Weighted stake on the processed day.
     pub share: u64,
-    /// Mining owner
+    /// Mining owner. This user corresponds to the voter_authority
+    /// on the staking contract, which means those idendities are the same.
     pub owner: Pubkey,
-    /// Reward indexes
+    /// That "index" points at the moment when the last reward has been recieved. Also,
+    /// it' s responsible for weighted_stake changes and, therefore, rewards calculations.
     pub index: RewardIndex,
 }
 
@@ -97,13 +99,18 @@ impl IsInitialized for Mining {
 /// Reward index
 #[derive(Debug, BorshSerialize, BorshDeserialize, BorshSchema, Default, Clone)]
 pub struct RewardIndex {
-    /// Reward mint
+    /// That is the mint of the Rewards Token
     pub reward_mint: Pubkey,
-    /// Index with precision
+    /// That is the index that increases on each distribution.
+    /// It points at the moment of time where the last reward was claimed.
+    /// Also, responsible for rewards calculations for each staker.
     pub index_with_precision: u128,
-    /// Rewards amount
+    /// Amount of unclaimed rewards.
+    /// After claim the value is set to zero.
     pub unclaimed_rewards: u64,
-    /// Shows the changes of the weighted stake.<Date, index>
+    /// This structures stores the weighted stake modifiers on the date,
+    /// where staking ends. This modifier will be applied on the specified date to the global stake,
+    /// so that rewards distribution will change. BTreeMap<unix_timestamp, modifier diff>
     pub weighted_stake_diffs: BTreeMap<u64, u64>,
 }
 
