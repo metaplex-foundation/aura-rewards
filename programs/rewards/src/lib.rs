@@ -12,4 +12,4 @@ pub mod utils;
 
 pub use solana_program;
 
-solana_program::declare_id!("J8oa8UUJBydrTKtCdkvwmQQ27ZFDq54zAxWJY5Ey72Ji");
+solana_program::declare_id!("BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR");
