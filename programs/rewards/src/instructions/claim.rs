@@ -1,5 +1,6 @@
 use crate::state::{Mining, RewardPool};
 use crate::utils::{assert_account_key, spl_transfer, AccountLoader};
+use borsh::BorshSerialize;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program::set_return_data,
     program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
@@ -107,7 +108,9 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
         }
 
         Mining::pack(mining, *self.mining.data.borrow_mut())?;
-        set_return_data(&amount.to_le_bytes());
+        let mut amount_writer = vec![];
+        amount.serialize(&mut amount_writer)?;
+        set_return_data(&amount_writer);
 
         Ok(())
     }
