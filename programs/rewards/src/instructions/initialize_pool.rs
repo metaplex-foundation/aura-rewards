@@ -54,13 +54,12 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         distribute_authority: Pubkey,
     ) -> ProgramResult {
         let (reward_pool_pubkey, pool_bump) =
-            find_reward_pool_program_address(program_id, &deposit_authority, &fill_authority);
+            find_reward_pool_program_address(program_id, &deposit_authority);
         assert_account_key(self.reward_pool, &reward_pool_pubkey)?;
 
         let reward_pool_seeds = &[
             "reward_pool".as_bytes(),
             &deposit_authority.to_bytes(),
-            &fill_authority.to_bytes(),
             &[pool_bump],
         ];
 

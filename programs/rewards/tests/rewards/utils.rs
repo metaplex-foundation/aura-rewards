@@ -32,7 +32,6 @@ impl TestRewards {
             &[
                 b"reward_pool".as_ref(),
                 &deposit_authority.pubkey().to_bytes(),
-                &fill_authority.pubkey().to_bytes(),
             ],
             &mplx_rewards::id(),
         );
