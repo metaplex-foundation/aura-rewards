@@ -66,7 +66,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         let (vault_pubkey, vault_bump) =
             find_vault_program_address(program_id, self.reward_pool.key, self.reward_mint.key);
         assert_account_key(self.reward_vault, &vault_pubkey)?;
-        let signers_seeds = &[
+        let vault_seeds = &[
             b"vault".as_ref(),
             self.reward_pool.key.as_ref(),
             self.reward_mint.key.as_ref(),
@@ -84,7 +84,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             &spl_token::id(),
             self.payer.clone(),
             self.reward_vault.clone(),
-            &[signers_seeds],
+            &[vault_seeds],
         )?;
         initialize_account(
             self.reward_vault.clone(),
