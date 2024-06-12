@@ -7,7 +7,6 @@ use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey, rent::Rent, system_program, sysvar::SysvarId,
 };
-
 use spl_token::state::Account as SplTokenAccount;
 
 /// Instruction context
@@ -30,7 +29,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         let reward_pool = AccountLoader::next_uninitialized(account_info_iter)?;
         let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let reward_vault = AccountLoader::next_uninitialized(account_info_iter)?;
-        let payer = AccountLoader::next_with_owner(account_info_iter, &system_program::ID)?;
+        let payer = AccountLoader::next_signer(account_info_iter)?;
         let rent = AccountLoader::next_with_key(account_info_iter, &Rent::id())?;
         let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
         let _system_program =
