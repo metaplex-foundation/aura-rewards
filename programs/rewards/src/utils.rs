@@ -216,11 +216,20 @@ impl AccountLoader {
         iter: &mut Enumerate<I>,
     ) -> Result<I::Item, ProgramError> {
         let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
-        if acc.owner.eq(&Pubkey::default()) {
+
+        let AccountInfo {
+            key,
+            lamports,
+            data,
+            owner,
+            ..
+        } = acc;
+
+        if **lamports.borrow() == 0 && data.borrow().is_empty() && *owner == &Pubkey::default() {
             return Ok(acc);
         }
 
-        msg!("Account #{}:{} already initialized", idx, acc.key,);
+        msg!("Account #{}:{} already initialized", idx, key,);
         Err(ProgramError::AccountAlreadyInitialized)
     }
 
