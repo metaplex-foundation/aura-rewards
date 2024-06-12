@@ -30,6 +30,8 @@ pub struct Mining {
     /// That "index" points at the moment when the last reward has been recieved. Also,
     /// it' s responsible for weighted_stake changes and, therefore, rewards calculations.
     pub index: RewardIndex,
+    /// Delegate address where tokens will be staked in "delegated staking model".
+    pub delegate: Pubkey,
 }
 
 impl Mining {
@@ -41,6 +43,7 @@ impl Mining {
             share: 0,
             owner,
             index: RewardIndex::default(),
+            delegate: owner,
         }
     }
 
