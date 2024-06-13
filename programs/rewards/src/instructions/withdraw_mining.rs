@@ -1,5 +1,5 @@
 use crate::state::{Mining, RewardPool};
-use crate::utils::{assert_account_key, assert_cpi_caller, AccountLoader};
+use crate::utils::{assert_account_key, AccountLoader};
 
 use solana_program::account_info::AccountInfo;
 use solana_program::entrypoint::ProgramResult;
@@ -21,7 +21,6 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         program_id: &Pubkey,
         accounts: &'a [AccountInfo<'b>],
     ) -> Result<WithdrawMiningContext<'a, 'b>, ProgramError> {
-        assert_cpi_caller()?;
         let account_info_iter = &mut accounts.iter().enumerate();
 
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
@@ -36,14 +35,19 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
     }
 
     /// Process instruction
-    pub fn process(&self, program_id: &Pubkey, amount: u64, owner: &Pubkey) -> ProgramResult {
+    pub fn process(
+        &self,
+        program_id: &Pubkey,
+        amount: u64,
+        mining_owner: &Pubkey,
+    ) -> ProgramResult {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
         let mut mining = Mining::unpack(&self.mining.data.borrow())?;
 
         let mining_pubkey = Pubkey::create_program_address(
             &[
                 b"mining".as_ref(),
-                owner.as_ref(),
+                mining_owner.as_ref(),
                 self.reward_pool.key.as_ref(),
                 &[mining.bump],
             ],
@@ -52,10 +56,10 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         assert_account_key(self.mining, &mining_pubkey)?;
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
         assert_account_key(self.reward_pool, &mining.reward_pool)?;
-        if owner != &mining.owner {
+        if mining_owner != &mining.owner {
             msg!(
                 "Assert account error. Got {} Expected {}",
-                *owner,
+                *mining_owner,
                 mining.owner
             );
             return Err(ProgramError::InvalidArgument);

@@ -14,7 +14,7 @@ use solana_program::{
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
-    sysvar::{instructions::check_id, Sysvar},
+    sysvar::Sysvar,
 };
 
 use crate::error::MplxRewardsError;
@@ -22,13 +22,13 @@ use crate::error::MplxRewardsError;
 /// Generates mining address
 pub fn find_mining_program_address(
     program_id: &Pubkey,
-    user: &Pubkey,
+    mining_owner: &Pubkey,
     reward_pool: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             "mining".as_bytes(),
-            &user.to_bytes(),
+            &mining_owner.to_bytes(),
             &reward_pool.to_bytes(),
         ],
         program_id,
@@ -54,10 +54,10 @@ pub fn find_vault_program_address(
 /// Generates reward pool address
 pub fn find_reward_pool_program_address(
     program_id: &Pubkey,
-    root_account: &Pubkey,
+    authority_account: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &["reward_pool".as_bytes(), &root_account.to_bytes()],
+        &["reward_pool".as_bytes(), &authority_account.to_bytes()],
         program_id,
     )
 }
@@ -97,7 +97,9 @@ pub fn assert_uninitialized<T: Uninitialized>(account: &T) -> ProgramResult {
 
 /// Assert owned by
 pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
-    if account.owner != owner {
+    if account.owner == owner {
+        Ok(())
+    } else {
         msg!(
             "Assert {} owner error. Got {} Expected {}",
             *account.key,
@@ -105,22 +107,20 @@ pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
             *owner
         );
         Err(MplxRewardsError::InvalidAccountOwner.into())
-    } else {
-        Ok(())
     }
 }
 
 /// Assert account key
 pub fn assert_account_key(account_info: &AccountInfo, key: &Pubkey) -> ProgramResult {
-    if *account_info.key != *key {
+    if *account_info.key == *key {
+        Ok(())
+    } else {
         msg!(
             "Assert account error. Got {} Expected {}",
             *account_info.key,
             *key
         );
         Err(ProgramError::InvalidArgument)
-    } else {
-        Ok(())
     }
 }
 
@@ -128,11 +128,11 @@ pub fn assert_account_key(account_info: &AccountInfo, key: &Pubkey) -> ProgramRe
 pub fn assert_rent_exempt(account_info: &AccountInfo) -> ProgramResult {
     let rent = Rent::get()?;
 
-    if !rent.is_exempt(account_info.lamports(), account_info.data_len()) {
+    if rent.is_exempt(account_info.lamports(), account_info.data_len()) {
+        Ok(())
+    } else {
         msg!(&rent.minimum_balance(account_info.data_len()).to_string());
         Err(ProgramError::AccountNotRentExempt)
-    } else {
-        Ok(())
     }
 }
 
@@ -183,7 +183,7 @@ pub fn initialize_account<'a>(
 }
 
 /// SPL transfer instruction.
-pub fn transfer<'a>(
+pub fn spl_transfer<'a>(
     source: AccountInfo<'a>,
     destination: AccountInfo<'a>,
     authority: AccountInfo<'a>,
@@ -211,11 +211,20 @@ impl AccountLoader {
         iter: &mut Enumerate<I>,
     ) -> Result<I::Item, ProgramError> {
         let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
-        if acc.owner.eq(&Pubkey::default()) {
+
+        let AccountInfo {
+            key,
+            lamports,
+            data,
+            owner,
+            ..
+        } = acc;
+
+        if **lamports.borrow() == 0 && data.borrow().is_empty() && *owner == &Pubkey::default() {
             return Ok(acc);
         }
 
-        msg!("Account #{}:{} already initialized", idx, acc.key,);
+        msg!("Account #{}:{} already initialized", idx, key,);
         Err(ProgramError::AccountAlreadyInitialized)
     }
 
@@ -312,7 +321,7 @@ impl AccountLoader {
 
 /// LockupPeriod is used to define the time during which the lockup will recieve full reward
 #[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq, Eq)]
+#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum LockupPeriod {
     /// Unreachable option
     None,
@@ -365,20 +374,9 @@ impl LockupPeriod {
 }
 
 /// Get current unix time
+#[inline]
 pub fn get_curr_unix_ts() -> u64 {
     // Conversion must be save because negative values
     // in unix means the date is earlier than 1970y
     Clock::get().unwrap().unix_timestamp as u64
-}
-
-/// This assert fails if caller_id is something besides Staking Contract ID or self id
-pub fn assert_cpi_caller() -> ProgramResult {
-    pub const STAKING_ID: Pubkey =
-        solana_program::pubkey!("3GepGwMp6WgPqgNa5NuSpnw3rQjYnqHCcVWhVmpGnw6s");
-
-    if !check_id(&crate::id()) || !check_id(&STAKING_ID) {
-        // TODO: enable that check
-        // return Err(MplxRewardsError::InvalidCpiCaller.into());
-    }
-    Ok(())
 }

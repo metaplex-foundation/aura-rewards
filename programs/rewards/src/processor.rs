@@ -1,12 +1,11 @@
 //! Program processor
-
 use crate::instruction::RewardsInstruction;
-use crate::instructions::*;
+use crate::instructions::{
+    ClaimContext, DepositMiningContext, DistributeRewardsContext, FillVaultContext,
+    InitializeMiningContext, InitializePoolContext, RestakeDepositContext, WithdrawMiningContext,
+};
 use borsh::BorshDeserialize;
-use solana_program::account_info::AccountInfo;
-use solana_program::entrypoint::ProgramResult;
-use solana_program::msg;
-use solana_program::pubkey::Pubkey;
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey};
 
 /// default processor function
 pub fn process_instruction(
@@ -17,26 +16,37 @@ pub fn process_instruction(
     let instruction = RewardsInstruction::try_from_slice(input)?;
 
     match instruction {
-        RewardsInstruction::InitializePool => {
+        RewardsInstruction::InitializePool {
+            deposit_authority,
+            fill_authority,
+            distribute_authority,
+        } => {
             msg!("RewardsInstruction: InitializePool");
-            InitializePoolContext::new(program_id, accounts)?.process(program_id)
+            InitializePoolContext::new(program_id, accounts)?.process(
+                program_id,
+                deposit_authority,
+                fill_authority,
+                distribute_authority,
+            )
         }
-        RewardsInstruction::AddVault => {
-            msg!("RewardsInstruction: AddVault");
-            AddVaultContext::new(program_id, accounts)?.process(program_id)
-        }
-        RewardsInstruction::FillVault { amount } => {
+        RewardsInstruction::FillVault {
+            amount,
+            distribution_ends_at,
+        } => {
             msg!("RewardsInstruction: FillVault");
-            FillVaultContext::new(program_id, accounts)?.process(program_id, amount)
+            FillVaultContext::new(program_id, accounts)?.process(
+                program_id,
+                amount,
+                distribution_ends_at,
+            )
         }
-        RewardsInstruction::InitializeMining => {
+        RewardsInstruction::InitializeMining { mining_owner } => {
             msg!("RewardsInstruction: InitializeMining");
-            InitializeMiningContext::new(program_id, accounts)?.process(program_id)
+            InitializeMiningContext::new(program_id, accounts)?.process(program_id, &mining_owner)
         }
         RewardsInstruction::DepositMining {
             amount,
             lockup_period,
-            reward_mint_addr,
             owner,
         } => {
             msg!("RewardsInstruction: DepositMining");
@@ -44,7 +54,6 @@ pub fn process_instruction(
                 program_id,
                 amount,
                 lockup_period,
-                &reward_mint_addr,
                 &owner,
             )
         }
@@ -56,22 +65,28 @@ pub fn process_instruction(
             msg!("RewardsInstruction: Claim");
             ClaimContext::new(program_id, accounts)?.process(program_id)
         }
-        RewardsInstruction::InitializeRoot => {
-            msg!("RewardsInstruction: InitializeRoot");
-            InitializeRootContext::new(program_id, accounts)?.process(program_id)
-        }
         RewardsInstruction::RestakeDeposit {
-            lockup_period,
-            amount,
+            old_lockup_period,
+            new_lockup_period,
             deposit_start_ts,
+            base_amount,
+            additional_amount,
+            mining_owner,
         } => {
             msg!("RewardsInstruction: RestakeDeposit");
             RestakeDepositContext::new(program_id, accounts)?.process(
                 program_id,
-                lockup_period,
-                amount,
+                old_lockup_period,
+                new_lockup_period,
                 deposit_start_ts,
+                base_amount,
+                additional_amount,
+                &mining_owner,
             )
+        }
+        RewardsInstruction::DistributeRewards => {
+            msg!("RewardsInstruction: FillVault");
+            DistributeRewardsContext::new(program_id, accounts)?.process(program_id)
         }
     }
 }

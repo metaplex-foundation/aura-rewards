@@ -8,7 +8,7 @@ use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use std::borrow::Borrow;
 
-async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey, Pubkey) {
+async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
     let test = ProgramTest::new(
         "mplx_rewards",
         mplx_rewards::id(),
@@ -31,24 +31,17 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey, Pubkey) {
     let user_mining = test_reward_pool
         .initialize_mining(&mut context, &user.pubkey())
         .await;
-    test_reward_pool.add_vault(&mut context).await;
 
-    (
-        context,
-        test_reward_pool,
-        user.pubkey(),
-        user_mining,
-        mint.pubkey(),
-    )
+    (context, test_reward_pool, user.pubkey(), user_mining)
 }
 
 #[tokio::test]
 async fn success() {
-    let (mut context, test_rewards, user, mining, mint) = setup().await;
+    let (mut context, test_rewards, user, mining) = setup().await;
 
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, lockup_period, &mint, &user)
+        .deposit_mining(&mut context, &mining, 100, lockup_period, &user)
         .await
         .unwrap();
 
