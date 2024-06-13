@@ -39,7 +39,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         program_id: &Pubkey,
         amount: u64,
         lockup_period: LockupPeriod,
-        owner: &Pubkey,
+        mining_owner: &Pubkey,
     ) -> ProgramResult {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
         let mut mining = Mining::unpack(&self.mining.data.borrow())?;
@@ -48,7 +48,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             let mining_pubkey = Pubkey::create_program_address(
                 &[
                     b"mining".as_ref(),
-                    owner.as_ref(),
+                    mining_owner.as_ref(),
                     self.reward_pool.key.as_ref(),
                     &[mining.bump],
                 ],
@@ -57,10 +57,10 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             assert_account_key(self.mining, &mining_pubkey)?;
             assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
             assert_account_key(self.reward_pool, &mining.reward_pool)?;
-            if owner != &mining.owner {
+            if mining_owner != &mining.owner {
                 msg!(
                     "Assert account error. Got {} Expected {}",
-                    *owner,
+                    *mining_owner,
                     mining.owner
                 );
                 return Err(ProgramError::InvalidArgument);

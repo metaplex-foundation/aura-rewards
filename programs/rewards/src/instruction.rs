@@ -109,12 +109,22 @@ pub enum RewardsInstruction {
     /// [R] Mining owner
     /// [RS] Deposit authority
     RestakeDeposit {
+        /// Lockup period before restaking. Actually it's only needed
+        /// for Flex to AnyPeriod edge case
+        old_lockup_period: LockupPeriod,
         /// Requested lockup period for restaking
-        lockup_period: LockupPeriod,
-        /// Amount of tokens to be restaked
-        amount: u64,
+        new_lockup_period: LockupPeriod,
         /// Deposit start_ts
         deposit_start_ts: u64,
+        /// Amount of tokens to be restaked, this
+        /// number cannot be decreased. It reflects the number of staked tokens
+        /// before the restake function call
+        base_amount: u64,
+        /// In case user wants to increase it's staked number of tokens,
+        /// the addition amount might be provided
+        additional_amount: u64,
+        /// The wallet who owns the mining account
+        mining_owner: Pubkey,
     },
 
     /// Distributes tokens among mining owners
@@ -300,27 +310,29 @@ pub fn restake_deposit(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
-    mining_owner: &Pubkey,
-    mint_account: &Pubkey,
     deposit_authority: &Pubkey,
-    lockup_period: LockupPeriod,
-    amount: u64,
+    old_lockup_period: LockupPeriod,
+    new_lockup_period: LockupPeriod,
     deposit_start_ts: u64,
+    base_amount: u64,
+    additional_amount: u64,
+    mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new_readonly(*mint_account, false),
-        AccountMeta::new_readonly(*mining_owner, false),
         AccountMeta::new_readonly(*deposit_authority, true),
     ];
 
     Instruction::new_with_borsh(
         *program_id,
         &RewardsInstruction::RestakeDeposit {
-            lockup_period,
-            amount,
+            old_lockup_period,
+            new_lockup_period,
             deposit_start_ts,
+            base_amount,
+            additional_amount,
+            mining_owner: *mining_owner,
         },
         accounts,
     )

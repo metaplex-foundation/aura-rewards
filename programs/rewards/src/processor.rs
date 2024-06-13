@@ -67,16 +67,22 @@ pub fn process_instruction(
             ClaimContext::new(program_id, accounts)?.process(program_id)
         }
         RewardsInstruction::RestakeDeposit {
-            lockup_period,
-            amount,
+            old_lockup_period,
+            new_lockup_period,
             deposit_start_ts,
+            base_amount,
+            additional_amount,
+            mining_owner,
         } => {
             msg!("RewardsInstruction: RestakeDeposit");
             RestakeDepositContext::new(program_id, accounts)?.process(
                 program_id,
-                lockup_period,
-                amount,
+                old_lockup_period,
+                new_lockup_period,
                 deposit_start_ts,
+                base_amount,
+                additional_amount,
+                &mining_owner,
             )
         }
         RewardsInstruction::DistributeRewards => {

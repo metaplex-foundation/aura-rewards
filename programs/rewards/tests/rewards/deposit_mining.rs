@@ -41,9 +41,8 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
 async fn success() {
     let (mut context, test_rewards, user, mining) = setup().await;
 
-    let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, lockup_period, &user)
+        .deposit_mining(&mut context, &mining, 100, LockupPeriod::ThreeMonths, &user)
         .await
         .unwrap();
 

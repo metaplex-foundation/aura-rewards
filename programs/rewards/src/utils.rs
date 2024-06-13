@@ -321,7 +321,7 @@ impl AccountLoader {
 
 /// LockupPeriod is used to define the time during which the lockup will recieve full reward
 #[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq, Eq)]
+#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum LockupPeriod {
     /// Unreachable option
     None,
