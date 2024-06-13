@@ -10,14 +10,19 @@ use spl_token::state::Account;
 use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Keypair) {
-    let (mut context, _) = presetup().await;
+    let test = ProgramTest::new(
+        "mplx_rewards",
+        mplx_rewards::id(),
+        processor!(mplx_rewards::processor::process_instruction),
+    );
+    let mut context = test.start_with_context().await;
 
     let owner = &context.payer.pubkey();
 
     let mint = Keypair::new();
     create_mint(&mut context, &mint, owner).await.unwrap();
 
-    let test_reward_pool = TestRewards::new(Some(mint.pubkey()));
+    let test_reward_pool = TestRewards::new(mint.pubkey());
     test_reward_pool
         .initialize_pool(&mut context)
         .await
@@ -44,11 +49,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user.pubkey(),
             &user_mining,
             100,
             LockupPeriod::ThreeMonths,
             &mint.pubkey(),
+            &user.pubkey(),
         )
         .await
         .unwrap();
@@ -78,11 +83,11 @@ async fn with_two_users() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -92,11 +97,11 @@ async fn with_two_users() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100,
             LockupPeriod::ThreeMonths,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -147,11 +152,11 @@ async fn flex_vs_three_months() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -163,11 +168,11 @@ async fn flex_vs_three_months() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100,
             LockupPeriod::ThreeMonths,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -219,11 +224,11 @@ async fn multiple_consequantial_distributions_for_two_user() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -233,11 +238,11 @@ async fn multiple_consequantial_distributions_for_two_user() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100,
             LockupPeriod::OneYear,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -310,11 +315,11 @@ async fn rewards_after_distribution_are_unclaimable() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -349,11 +354,11 @@ async fn rewards_after_distribution_are_unclaimable() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100,
             LockupPeriod::OneYear,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -385,11 +390,11 @@ async fn switch_to_flex_is_correct() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -399,11 +404,11 @@ async fn switch_to_flex_is_correct() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100,
             LockupPeriod::OneYear,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -456,11 +461,11 @@ async fn two_deposits_vs_one() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             100,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -470,11 +475,11 @@ async fn two_deposits_vs_one() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             50,
             LockupPeriod::OneYear,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -484,11 +489,11 @@ async fn two_deposits_vs_one() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             50,
             LockupPeriod::OneYear,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -538,11 +543,11 @@ async fn claim_tokens_after_deposit_expiration() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             100,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -552,11 +557,11 @@ async fn claim_tokens_after_deposit_expiration() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             300,
             LockupPeriod::ThreeMonths,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -609,11 +614,11 @@ async fn claim_after_withdraw_is_correct() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             100,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -622,22 +627,22 @@ async fn claim_after_withdraw_is_correct() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             50,
             LockupPeriod::OneYear,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             150,
             LockupPeriod::ThreeMonths,
             &test_rewards_pool.token_mint_pubkey,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -658,7 +663,7 @@ async fn claim_after_withdraw_is_correct() {
         .unwrap();
 
     test_rewards_pool
-        .withdraw_mining(&mut context, &user_b.pubkey(), &user_mining_b, 150)
+        .withdraw_mining(&mut context, &user_mining_b, 150, &user_b.pubkey())
         .await
         .unwrap();
 

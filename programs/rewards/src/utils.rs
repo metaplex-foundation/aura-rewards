@@ -14,7 +14,7 @@ use solana_program::{
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
-    sysvar::Sysvar,
+    sysvar::{instructions::check_id, Sysvar},
 };
 
 use crate::error::MplxRewardsError;
@@ -55,14 +55,9 @@ pub fn find_vault_program_address(
 pub fn find_reward_pool_program_address(
     program_id: &Pubkey,
     root_account: &Pubkey,
-    liquidity_mint: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[
-            "reward_pool".as_bytes(),
-            &root_account.to_bytes(),
-            &liquidity_mint.to_bytes(),
-        ],
+        &["reward_pool".as_bytes(), &root_account.to_bytes()],
         program_id,
     )
 }
@@ -345,10 +340,9 @@ impl LockupPeriod {
     }
 
     /// Calculates the time when a lockup should expire
-    pub fn end_timestamp(&self) -> Result<u64, MplxRewardsError> {
+    pub fn end_timestamp(&self, start_ts: u64) -> Result<u64, MplxRewardsError> {
         // conversion should be unfailable because negative timestamp means the ts is earlier than 1970y
-        let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
-        let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
+        let beginning_of_the_day = start_ts - (start_ts % SECONDS_PER_DAY);
 
         match self {
             LockupPeriod::None | LockupPeriod::Flex => Err(MplxRewardsError::InvalidLockupPeriod),
@@ -368,4 +362,23 @@ impl LockupPeriod {
             LockupPeriod::Flex => Ok(0),
         }
     }
+}
+
+/// Get current unix time
+pub fn get_curr_unix_ts() -> u64 {
+    // Conversion must be save because negative values
+    // in unix means the date is earlier than 1970y
+    Clock::get().unwrap().unix_timestamp as u64
+}
+
+/// This assert fails if caller_id is something besides Staking Contract ID or self id
+pub fn assert_cpi_caller() -> ProgramResult {
+    pub const STAKING_ID: Pubkey =
+        solana_program::pubkey!("3GepGwMp6WgPqgNa5NuSpnw3rQjYnqHCcVWhVmpGnw6s");
+
+    if !check_id(&crate::id()) || !check_id(&STAKING_ID) {
+        // TODO: enable that check
+        // return Err(MplxRewardsError::InvalidCpiCaller.into());
+    }
+    Ok(())
 }

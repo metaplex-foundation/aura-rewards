@@ -6,12 +6,23 @@ use solana_program_test::*;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 
-use crate::utils::{create_token_account, get_account, presetup, TestRewards};
+use crate::utils::{create_mint, create_token_account, get_account, TestRewards};
 
 async fn setup() -> (ProgramTestContext, TestRewards) {
-    let (mut context, token_mint) = presetup().await;
+    let test = ProgramTest::new(
+        "mplx_rewards",
+        mplx_rewards::id(),
+        processor!(mplx_rewards::processor::process_instruction),
+    );
 
-    let test_reward_pool = TestRewards::new(Some(token_mint.pubkey()));
+    let mut context = test.start_with_context().await;
+    let deposit_token_mint = Keypair::new();
+    let payer = &context.payer.pubkey();
+    create_mint(&mut context, &deposit_token_mint, payer)
+        .await
+        .unwrap();
+
+    let test_reward_pool = TestRewards::new(deposit_token_mint.pubkey());
 
     test_reward_pool
         .initialize_pool(&mut context)

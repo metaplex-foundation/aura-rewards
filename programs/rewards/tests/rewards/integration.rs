@@ -7,30 +7,54 @@ use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Keypair) {
-    let (mut context, _) = presetup().await;
+    let test = ProgramTest::new(
+        "mplx_rewards",
+        mplx_rewards::id(),
+        processor!(mplx_rewards::processor::process_instruction),
+    );
+
+    let mut context = test.start_with_context().await;
 
     let owner = &context.payer.pubkey();
 
-    let mint = Keypair::new();
-    create_mint(&mut context, &mint, owner).await.unwrap();
+    let deposit_token_mint = Keypair::new();
+    create_mint(&mut context, &deposit_token_mint, owner)
+        .await
+        .unwrap();
 
-    let test_reward_pool = TestRewards::new(Some(mint.pubkey()));
+    let test_reward_pool = TestRewards::new(deposit_token_mint.pubkey());
     test_reward_pool
         .initialize_pool(&mut context)
         .await
         .unwrap();
 
     let rewarder = Keypair::new();
-    create_token_account(&mut context, &rewarder, &mint.pubkey(), owner, 0)
-        .await
-        .unwrap();
-    mint_tokens(&mut context, &mint.pubkey(), &rewarder.pubkey(), 1_000_000)
-        .await
-        .unwrap();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &deposit_token_mint.pubkey(),
+        owner,
+        0,
+    )
+    .await
+    .unwrap();
+    mint_tokens(
+        &mut context,
+        &deposit_token_mint.pubkey(),
+        &rewarder.pubkey(),
+        1_000_000,
+    )
+    .await
+    .unwrap();
 
     test_reward_pool.add_vault(&mut context).await;
 
-    (context, test_reward_pool, rewarder.pubkey(), mint)
+    (
+        context,
+        test_reward_pool,
+        rewarder.pubkey(),
+        deposit_token_mint,
+    )
 }
 
 #[tokio::test]
@@ -48,11 +72,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_c.pubkey(),
             &user_mining_c,
             100,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_c.pubkey(),
         )
         .await
         .unwrap();
@@ -66,11 +90,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             1000,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -87,11 +111,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             2000,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -107,11 +131,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100_000,
             LockupPeriod::SixMonths,
             &mint.pubkey(),
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -126,11 +150,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100_000,
             LockupPeriod::SixMonths,
             &mint.pubkey(),
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -176,7 +200,7 @@ async fn success() {
 
     // User B unstakes and claims D3
     test_rewards_pool
-        .withdraw_mining(&mut context, &user_b.pubkey(), &user_mining_b, 100_000)
+        .withdraw_mining(&mut context, &user_mining_b, 100_000, &user_b.pubkey())
         .await
         .unwrap();
 
@@ -301,7 +325,7 @@ async fn success() {
 
     // User A unstakes and claims D1 and D2
     test_rewards_pool
-        .withdraw_mining(&mut context, &user_a.pubkey(), &user_mining_a, 3000)
+        .withdraw_mining(&mut context, &user_mining_a, 3000, &user_a.pubkey())
         .await
         .unwrap();
     claim_and_assert(
@@ -315,7 +339,7 @@ async fn success() {
     .await;
     // Usr B unstakes and claims D4
     test_rewards_pool
-        .withdraw_mining(&mut context, &user_b.pubkey(), &user_mining_b, 100_000)
+        .withdraw_mining(&mut context, &user_mining_b, 100_000, &user_b.pubkey())
         .await
         .unwrap();
     claim_and_assert(

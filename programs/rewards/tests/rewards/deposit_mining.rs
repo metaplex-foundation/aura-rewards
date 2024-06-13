@@ -9,9 +9,20 @@ use solana_sdk::signer::Signer;
 use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
-    let (mut context, token_mint) = presetup().await;
+    let test = ProgramTest::new(
+        "mplx_rewards",
+        mplx_rewards::id(),
+        processor!(mplx_rewards::processor::process_instruction),
+    );
 
-    let test_reward_pool = TestRewards::new(Some(token_mint.pubkey()));
+    let mut context = test.start_with_context().await;
+    let deposit_token_mint = Keypair::new();
+    let payer = &context.payer.pubkey();
+    create_mint(&mut context, &deposit_token_mint, payer)
+        .await
+        .unwrap();
+
+    let test_reward_pool = TestRewards::new(deposit_token_mint.pubkey());
 
     test_reward_pool
         .initialize_pool(&mut context)
@@ -36,11 +47,11 @@ async fn success() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user,
             &mining,
             100,
             lockup_period,
             &test_rewards.token_mint_pubkey,
+            &user,
         )
         .await
         .unwrap();

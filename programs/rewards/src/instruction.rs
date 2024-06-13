@@ -13,9 +13,8 @@ pub enum RewardsInstruction {
     /// Creates and initializes a reward pool account
     ///
     /// Accounts:
-    /// [R] Root account (ex-Config program account)
+    /// [R] Root account
     /// [W] Reward pool account
-    /// [R] Liquidity mint account
     /// [R] Deposit authority
     /// [WS] Payer
     /// [R] System program
@@ -24,7 +23,7 @@ pub enum RewardsInstruction {
     /// Creates a new vault account and adds it to the reward pool
     ///
     /// Accounts:
-    /// [R] Root account (ex-Config program account)
+    /// [R] Root account
     /// [W] Reward pool account
     /// [R] Reward mint account
     /// [W] Vault account
@@ -56,7 +55,6 @@ pub enum RewardsInstruction {
     /// [R] User
     /// [WS] Payer
     /// [R] System program
-    /// [R] Rent sysvar
     InitializeMining,
 
     /// Deposits amount of supply to the mining account
@@ -65,13 +63,16 @@ pub enum RewardsInstruction {
     /// [W] Reward pool account
     /// [W] Mining
     /// [R] Mint of rewards account
-    /// [R] User
     /// [RS] Deposit authority
     DepositMining {
         /// Amount to deposit
         amount: u64,
         /// Lockup Period
         lockup_period: LockupPeriod,
+        /// Specifies mint addr
+        reward_mint_addr: Pubkey,
+        /// Specifies the owner of the Mining Account
+        owner: Pubkey,
     },
 
     /// Withdraws amount of supply to the mining account
@@ -84,6 +85,8 @@ pub enum RewardsInstruction {
     WithdrawMining {
         /// Amount to withdraw
         amount: u64,
+        /// Specifies the owner of the Mining Account
+        owner: Pubkey,
     },
 
     /// Claims amount of rewards
@@ -101,10 +104,27 @@ pub enum RewardsInstruction {
     /// Creates and initializes a reward root
     ///
     /// Accounts:
-    /// [WS] Root account (ex-Config program account)
+    /// [WS] Root account
     /// [WS] Authority
     /// [R] System program
     InitializeRoot,
+
+    /// Restakes deposit
+    ///
+    /// Accounts:
+    /// [W] Reward pool account
+    /// [W] Mining
+    /// [R] Mint of rewards account
+    /// [R] User
+    /// [RS] Deposit authority
+    RestakeDeposit {
+        /// Requested lockup period for restaking
+        lockup_period: LockupPeriod,
+        /// Amount of tokens to be restaked
+        amount: u64,
+        /// Deposit start_ts
+        deposit_start_ts: u64,
+    },
 }
 
 /// Creates 'InitializePool' instruction.
@@ -112,14 +132,12 @@ pub fn initialize_pool(
     program_id: &Pubkey,
     root_account: &Pubkey,
     reward_pool: &Pubkey,
-    liquidity_mint: &Pubkey,
     authority: &Pubkey,
     payer: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*root_account, false),
         AccountMeta::new(*reward_pool, false),
-        AccountMeta::new_readonly(*liquidity_mint, false),
         AccountMeta::new_readonly(*authority, false),
         AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(system_program::id(), false),
@@ -192,7 +210,6 @@ pub fn initialize_mining(
         AccountMeta::new_readonly(*user, false),
         AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(system_program::id(), false),
-        AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
 
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializeMining, accounts)
@@ -204,17 +221,15 @@ pub fn deposit_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
-    user: &Pubkey,
     deposit_authority: &Pubkey,
     amount: u64,
     lockup_period: LockupPeriod,
-    mint_account: &Pubkey,
+    reward_mint_addr: &Pubkey,
+    owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new_readonly(*mint_account, false),
-        AccountMeta::new_readonly(*user, false),
         AccountMeta::new_readonly(*deposit_authority, true),
     ];
 
@@ -223,6 +238,8 @@ pub fn deposit_mining(
         &RewardsInstruction::DepositMining {
             amount,
             lockup_period,
+            reward_mint_addr: *reward_mint_addr,
+            owner: *owner,
         },
         accounts,
     )
@@ -233,20 +250,22 @@ pub fn withdraw_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
-    user: &Pubkey,
     deposit_authority: &Pubkey,
     amount: u64,
+    owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new_readonly(*user, false),
         AccountMeta::new_readonly(*deposit_authority, true),
     ];
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::WithdrawMining { amount },
+        &RewardsInstruction::WithdrawMining {
+            amount,
+            owner: *owner,
+        },
         accounts,
     )
 }
@@ -288,4 +307,36 @@ pub fn initialize_root(
     ];
 
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializeRoot, accounts)
+}
+
+/// Creates 'RestakeDeposit" instruction.
+#[allow(clippy::too_many_arguments)]
+pub fn restake_deposit(
+    program_id: &Pubkey,
+    reward_pool: &Pubkey,
+    mining: &Pubkey,
+    user: &Pubkey,
+    mint_account: &Pubkey,
+    deposit_authority: &Pubkey,
+    lockup_period: LockupPeriod,
+    amount: u64,
+    deposit_start_ts: u64,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(*reward_pool, false),
+        AccountMeta::new(*mining, false),
+        AccountMeta::new_readonly(*mint_account, false),
+        AccountMeta::new_readonly(*user, false),
+        AccountMeta::new_readonly(*deposit_authority, true),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::RestakeDeposit {
+            lockup_period,
+            amount,
+            deposit_start_ts,
+        },
+        accounts,
+    )
 }

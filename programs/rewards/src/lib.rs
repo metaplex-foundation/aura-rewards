@@ -2,7 +2,6 @@
 
 //! Rewards contract
 
-pub mod cpi;
 pub mod entrypoint;
 pub mod error;
 pub mod instruction;
@@ -14,7 +13,7 @@ pub mod utils;
 pub use solana_program;
 use solana_program::pubkey::Pubkey;
 
-solana_program::declare_id!("5jemiZdnpEATsTYu1E7U47RjFQ4JyVXoMvs1Ht9RXVtp");
+solana_program::declare_id!("J8oa8UUJBydrTKtCdkvwmQQ27ZFDq54zAxWJY5Ey72Ji");
 
 /// Generates mining address
 pub fn find_mining_program_address(
@@ -43,22 +42,6 @@ pub fn find_vault_program_address(
             "vault".as_bytes(),
             &reward_pool.to_bytes(),
             &reward_mint.to_bytes(),
-        ],
-        program_id,
-    )
-}
-
-/// Generates reward pool address
-pub fn find_reward_pool_program_address(
-    program_id: &Pubkey,
-    root_account: &Pubkey,
-    liquidity_mint: &Pubkey,
-) -> (Pubkey, u8) {
-    Pubkey::find_program_address(
-        &[
-            "reward_pool".as_bytes(),
-            &root_account.to_bytes(),
-            &liquidity_mint.to_bytes(),
         ],
         program_id,
     )

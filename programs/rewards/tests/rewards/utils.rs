@@ -2,7 +2,7 @@ use std::borrow::{Borrow, BorrowMut};
 
 use mplx_rewards::utils::LockupPeriod;
 use solana_program::pubkey::Pubkey;
-use solana_program_test::{processor, BanksClientError, ProgramTest, ProgramTestContext};
+use solana_program_test::{BanksClientError, ProgramTestContext};
 use solana_sdk::account::Account;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::signature::{Keypair, Signer};
@@ -41,19 +41,13 @@ pub struct TestRewards {
 }
 
 impl TestRewards {
-    pub fn new(token_mint_pubkey: Option<Pubkey>) -> Self {
-        let token_mint_pubkey = token_mint_pubkey.unwrap();
-
+    pub fn new(token_mint_pubkey: Pubkey) -> Self {
         let deposit_authority = Keypair::new();
         let rewards_root = Keypair::new();
         let root_authority = Keypair::new();
 
         let (mining_reward_pool, _) = Pubkey::find_program_address(
-            &[
-                b"reward_pool".as_ref(),
-                &rewards_root.pubkey().to_bytes(),
-                &token_mint_pubkey.to_bytes(),
-            ],
+            &[b"reward_pool".as_ref(), &rewards_root.pubkey().to_bytes()],
             &mplx_rewards::id(),
         );
 
@@ -83,7 +77,6 @@ impl TestRewards {
                     &mplx_rewards::id(),
                     &self.rewards_root.pubkey(),
                     &self.mining_reward_pool,
-                    &self.token_mint_pubkey,
                     &self.deposit_authority.pubkey(),
                     &self.root_authority.pubkey(),
                 ),
@@ -131,22 +124,22 @@ impl TestRewards {
     pub async fn deposit_mining(
         &self,
         context: &mut ProgramTestContext,
-        user: &Pubkey,
         mining_account: &Pubkey,
         amount: u64,
         lockup_period: LockupPeriod,
         mint_account: &Pubkey,
+        owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
                 mining_account,
-                user,
                 &self.deposit_authority.pubkey(),
                 amount,
                 lockup_period,
                 mint_account,
+                owner,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -159,18 +152,18 @@ impl TestRewards {
     pub async fn withdraw_mining(
         &self,
         context: &mut ProgramTestContext,
-        user: &Pubkey,
         mining_account: &Pubkey,
         amount: u64,
+        owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::withdraw_mining(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
                 mining_account,
-                user,
                 &self.deposit_authority.pubkey(),
                 amount,
+                owner,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -375,24 +368,6 @@ pub async fn mint_tokens(
     );
 
     context.banks_client.process_transaction(tx).await
-}
-
-pub async fn presetup() -> (ProgramTestContext, Keypair) {
-    let test = ProgramTest::new(
-        "mplx_rewards",
-        mplx_rewards::id(),
-        processor!(mplx_rewards::processor::process_instruction),
-    );
-
-    let mut context = test.start_with_context().await;
-    let payer_pubkey = context.payer.pubkey();
-
-    // // TODO: check liquidity mint
-    let liquidity_mint = Keypair::new();
-    create_mint(&mut context, &liquidity_mint, &payer_pubkey)
-        .await
-        .unwrap();
-    (context, liquidity_mint)
 }
 
 pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) {
