@@ -1,6 +1,7 @@
 //! Instruction types
 
 use borsh::{BorshDeserialize, BorshSerialize};
+use shank::{ShankContext, ShankInstruction};
 use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::pubkey::Pubkey;
 use solana_program::{system_program, sysvar};
@@ -8,7 +9,9 @@ use solana_program::{system_program, sysvar};
 use crate::utils::LockupPeriod;
 
 /// Instructions supported by the program
-#[derive(Debug, BorshDeserialize, BorshSerialize, PartialEq, Eq)]
+#[derive(
+    Debug, BorshDeserialize, BorshSerialize, PartialEq, Eq, ShankContext, ShankInstruction,
+)]
 pub enum RewardsInstruction {
     /// Creates and initializes a reward pool account
     ///

@@ -1,0 +1,374 @@
+{
+  "version": "0.1.0",
+  "name": "mplx_rewards",
+  "instructions": [],
+  "types": [
+    {
+      "name": "Mining",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rewardPool",
+            "type": "publicKey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "share",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "index",
+            "type": {
+              "defined": "RewardIndex"
+            }
+          },
+          {
+            "name": "delegate",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardIndex",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rewardMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "indexWithPrecision",
+            "type": "u128"
+          },
+          {
+            "name": "unclaimedRewards",
+            "type": "u64"
+          },
+          {
+            "name": "weightedStakeDiffs",
+            "type": {
+              "bTreeMap": [
+                "u64",
+                "u64"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardPool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "accountType",
+            "type": {
+              "defined": "AccountType"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "totalShare",
+            "type": "u64"
+          },
+          {
+            "name": "vault",
+            "type": {
+              "defined": "RewardVault"
+            }
+          },
+          {
+            "name": "depositAuthority",
+            "type": "publicKey"
+          },
+          {
+            "name": "distributeAuthority",
+            "type": "publicKey"
+          },
+          {
+            "name": "fillAuthority",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardVault",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "rewardMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "indexWithPrecision",
+            "type": "u128"
+          },
+          {
+            "name": "weightedStakeDiffs",
+            "type": {
+              "bTreeMap": [
+                "u64",
+                "u64"
+              ]
+            }
+          },
+          {
+            "name": "cumulativeIndex",
+            "type": {
+              "bTreeMap": [
+                "u64",
+                "u128"
+              ]
+            }
+          },
+          {
+            "name": "distributionEndsAt",
+            "type": "u64"
+          },
+          {
+            "name": "tokensAvailableForDistribution",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardsInstruction",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "InitializePool",
+            "fields": [
+              {
+                "name": "deposit_authority",
+                "type": "publicKey"
+              },
+              {
+                "name": "fill_authority",
+                "type": "publicKey"
+              },
+              {
+                "name": "distribute_authority",
+                "type": "publicKey"
+              }
+            ]
+          },
+          {
+            "name": "FillVault",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "distribution_ends_at",
+                "type": "u64"
+              }
+            ]
+          },
+          {
+            "name": "InitializeMining",
+            "fields": [
+              {
+                "name": "mining_owner",
+                "type": "publicKey"
+              }
+            ]
+          },
+          {
+            "name": "DepositMining",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "lockup_period",
+                "type": {
+                  "defined": "LockupPeriod"
+                }
+              },
+              {
+                "name": "owner",
+                "type": "publicKey"
+              }
+            ]
+          },
+          {
+            "name": "WithdrawMining",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              },
+              {
+                "name": "owner",
+                "type": "publicKey"
+              }
+            ]
+          },
+          {
+            "name": "Claim"
+          },
+          {
+            "name": "RestakeDeposit",
+            "fields": [
+              {
+                "name": "old_lockup_period",
+                "type": {
+                  "defined": "LockupPeriod"
+                }
+              },
+              {
+                "name": "new_lockup_period",
+                "type": {
+                  "defined": "LockupPeriod"
+                }
+              },
+              {
+                "name": "deposit_start_ts",
+                "type": "u64"
+              },
+              {
+                "name": "base_amount",
+                "type": "u64"
+              },
+              {
+                "name": "additional_amount",
+                "type": "u64"
+              },
+              {
+                "name": "mining_owner",
+                "type": "publicKey"
+              }
+            ]
+          },
+          {
+            "name": "DistributeRewards"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AccountType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Uninitialized"
+          },
+          {
+            "name": "RewardPool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LockupPeriod",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "ThreeMonths"
+          },
+          {
+            "name": "SixMonths"
+          },
+          {
+            "name": "OneYear"
+          },
+          {
+            "name": "Flex"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 0,
+      "name": "InvalidAccountOwner",
+      "msg": "Input account owner"
+    },
+    {
+      "code": 1,
+      "name": "MathOverflow",
+      "msg": "Math operation overflow"
+    },
+    {
+      "code": 2,
+      "name": "ZeroAmount",
+      "msg": "Zero amount"
+    },
+    {
+      "code": 3,
+      "name": "RewardsInvalidVault",
+      "msg": "Rewards: Invalid vault"
+    },
+    {
+      "code": 4,
+      "name": "RewardsNoDeposits",
+      "msg": "Rewards: No deposits"
+    },
+    {
+      "code": 5,
+      "name": "RebalanceLiquidityCheckFailed",
+      "msg": "Rebalancing: liquidity check failed"
+    },
+    {
+      "code": 6,
+      "name": "IndexMustExist",
+      "msg": "Rewards: index receiving failed"
+    },
+    {
+      "code": 7,
+      "name": "InvalidLockupPeriod",
+      "msg": "Rewards: lockup period invalid"
+    },
+    {
+      "code": 8,
+      "name": "InvalidCpiCaller",
+      "msg": "Rewards: only Staking contract is allowed to do CPI calls"
+    },
+    {
+      "code": 9,
+      "name": "DistributionInThePast",
+      "msg": "Rewards: distribution_ends_at date is lower than current date "
+    },
+    {
+      "code": 10,
+      "name": "InvalidPrimitiveTypesConversion",
+      "msg": "Rewards: distribution_ends_at date is lower than current date "
+    }
+  ],
+  "metadata": {
+    "origin": "shank",
+    "address": "BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR",
+    "binaryVersion": "0.4.2",
+    "libVersion": "0.4.2"
+  }
+}
