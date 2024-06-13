@@ -80,7 +80,7 @@ impl Pack for Mining {
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
-        self.serialize(&mut slice).unwrap()
+        self.serialize(&mut slice).unwrap();
     }
 
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
@@ -129,7 +129,7 @@ impl RewardIndex {
         mut total_share: u64,
         pool_vault: &RewardVault,
     ) -> Result<u64, ProgramError> {
-        for (date, modifier_diff) in self.weighted_stake_diffs.iter() {
+        for (date, modifier_diff) in &self.weighted_stake_diffs {
             if date > &beginning_of_the_day {
                 break;
             }
@@ -168,13 +168,16 @@ impl RewardIndex {
             .unwrap_or((&0, &0))
             .1;
 
-        let rewards: u64 = vault_index_for_date
-            .checked_sub(*index_with_precision)
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_mul(total_share as u128)
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_div(PRECISION)
-            .ok_or(MplxRewardsError::MathOverflow)? as u64;
+        let rewards = u64::try_from(
+            vault_index_for_date
+                .checked_sub(*index_with_precision)
+                .ok_or(MplxRewardsError::MathOverflow)?
+                .checked_mul(u128::from(total_share))
+                .ok_or(MplxRewardsError::MathOverflow)?
+                .checked_div(PRECISION)
+                .ok_or(MplxRewardsError::MathOverflow)?,
+        )
+        .map_err(|_| MplxRewardsError::InvalidPrimitiveTypesConversion)?;
 
         if rewards > 0 {
             *unclaimed_rewards = unclaimed_rewards

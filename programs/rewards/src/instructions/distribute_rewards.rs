@@ -30,9 +30,9 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
 
         Ok(DistributeRewardsContext {
             reward_pool,
+            reward_mint,
             vault,
             distribute_authority,
-            reward_mint,
         })
     }
 

@@ -242,6 +242,39 @@ impl TestRewards {
 
         context.banks_client.process_transaction(tx).await
     }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn restake_deposit(
+        &self,
+        context: &mut ProgramTestContext,
+        mining_account: &Pubkey,
+        old_lockup_period: LockupPeriod,
+        new_lockup_period: LockupPeriod,
+        deposit_start_ts: u64,
+        base_amount: u64,
+        additional_amount: u64,
+        mining_owner: &Pubkey,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::restake_deposit(
+                &mplx_rewards::id(),
+                &self.mining_reward_pool,
+                mining_account,
+                &self.deposit_authority.pubkey(),
+                old_lockup_period,
+                new_lockup_period,
+                deposit_start_ts,
+                base_amount,
+                additional_amount,
+                mining_owner,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, &self.deposit_authority],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
 }
 
 pub async fn create_token_account(
@@ -344,7 +377,7 @@ pub async fn mint_tokens(
     context.banks_client.process_transaction(tx).await
 }
 
-pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) {
+pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) -> i64 {
     let old_clock = context
         .banks_client
         .get_sysvar::<solana_program::clock::Clock>()
@@ -359,6 +392,7 @@ pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) {
     let mut new_clock = old_clock.clone();
     new_clock.unix_timestamp += ts;
     context.borrow_mut().set_sysvar(&new_clock);
+    new_clock.unix_timestamp
 }
 
 pub async fn create_end_user(

@@ -1,12 +1,11 @@
 //! Program processor
-
 use crate::instruction::RewardsInstruction;
-use crate::instructions::*;
+use crate::instructions::{
+    ClaimContext, DepositMiningContext, DistributeRewardsContext, FillVaultContext,
+    InitializeMiningContext, InitializePoolContext, RestakeDepositContext, WithdrawMiningContext,
+};
 use borsh::BorshDeserialize;
-use solana_program::account_info::AccountInfo;
-use solana_program::entrypoint::ProgramResult;
-use solana_program::msg;
-use solana_program::pubkey::Pubkey;
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey};
 
 /// default processor function
 pub fn process_instruction(
@@ -67,16 +66,22 @@ pub fn process_instruction(
             ClaimContext::new(program_id, accounts)?.process(program_id)
         }
         RewardsInstruction::RestakeDeposit {
-            lockup_period,
-            amount,
+            old_lockup_period,
+            new_lockup_period,
             deposit_start_ts,
+            base_amount,
+            additional_amount,
+            mining_owner,
         } => {
             msg!("RewardsInstruction: RestakeDeposit");
             RestakeDepositContext::new(program_id, accounts)?.process(
                 program_id,
-                lockup_period,
-                amount,
+                old_lockup_period,
+                new_lockup_period,
                 deposit_start_ts,
+                base_amount,
+                additional_amount,
+                &mining_owner,
             )
         }
         RewardsInstruction::DistributeRewards => {

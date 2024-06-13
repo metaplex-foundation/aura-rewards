@@ -7,3 +7,5 @@ mod initialize_pool;
 mod integration;
 mod utils;
 mod withdraw_mining;
+
+mod restake_deposit;
