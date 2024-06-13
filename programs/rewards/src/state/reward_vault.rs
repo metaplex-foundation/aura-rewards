@@ -44,7 +44,7 @@ impl RewardVault {
         beginning_of_the_day: u64,
         mut total_share: u64,
     ) -> Result<u64, ProgramError> {
-        for (date_to_process, modifier) in self.weighted_stake_diffs.iter() {
+        for (date_to_process, modifier) in &self.weighted_stake_diffs {
             if date_to_process > &beginning_of_the_day {
                 break;
             }
@@ -68,9 +68,9 @@ impl RewardVault {
         date_to_process: u64,
     ) -> ProgramResult {
         let index = PRECISION
-            .checked_mul(rewards as u128)
+            .checked_mul(u128::from(rewards))
             .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_div(total_share as u128)
+            .checked_div(u128::from(total_share))
             .ok_or(MplxRewardsError::MathOverflow)?;
 
         let cumulative_index_to_insert = {
@@ -103,12 +103,15 @@ impl RewardVault {
         }
 
         // ((tokens_available_for_distribution * precision) / days_left) / precision
-        Ok(((self.tokens_available_for_distribution as u128)
-            .checked_mul(PRECISION)
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_div(distribution_days_left)
-            .ok_or(MplxRewardsError::MathOverflow)?)
-        .checked_div(PRECISION)
-        .ok_or(MplxRewardsError::MathOverflow)? as u64)
+        Ok(u64::try_from(
+            ((u128::from(self.tokens_available_for_distribution))
+                .checked_mul(PRECISION)
+                .ok_or(MplxRewardsError::MathOverflow)?
+                .checked_div(distribution_days_left)
+                .ok_or(MplxRewardsError::MathOverflow)?)
+            .checked_div(PRECISION)
+            .ok_or(MplxRewardsError::MathOverflow)?,
+        )
+        .map_err(|_| MplxRewardsError::InvalidPrimitiveTypesConversion)?)
     }
 }

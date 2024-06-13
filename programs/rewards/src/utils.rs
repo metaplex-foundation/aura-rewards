@@ -97,7 +97,9 @@ pub fn assert_uninitialized<T: Uninitialized>(account: &T) -> ProgramResult {
 
 /// Assert owned by
 pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
-    if account.owner != owner {
+    if account.owner == owner {
+        Ok(())
+    } else {
         msg!(
             "Assert {} owner error. Got {} Expected {}",
             *account.key,
@@ -105,22 +107,20 @@ pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
             *owner
         );
         Err(MplxRewardsError::InvalidAccountOwner.into())
-    } else {
-        Ok(())
     }
 }
 
 /// Assert account key
 pub fn assert_account_key(account_info: &AccountInfo, key: &Pubkey) -> ProgramResult {
-    if *account_info.key != *key {
+    if *account_info.key == *key {
+        Ok(())
+    } else {
         msg!(
             "Assert account error. Got {} Expected {}",
             *account_info.key,
             *key
         );
         Err(ProgramError::InvalidArgument)
-    } else {
-        Ok(())
     }
 }
 
@@ -128,11 +128,11 @@ pub fn assert_account_key(account_info: &AccountInfo, key: &Pubkey) -> ProgramRe
 pub fn assert_rent_exempt(account_info: &AccountInfo) -> ProgramResult {
     let rent = Rent::get()?;
 
-    if !rent.is_exempt(account_info.lamports(), account_info.data_len()) {
+    if rent.is_exempt(account_info.lamports(), account_info.data_len()) {
+        Ok(())
+    } else {
         msg!(&rent.minimum_balance(account_info.data_len()).to_string());
         Err(ProgramError::AccountNotRentExempt)
-    } else {
-        Ok(())
     }
 }
 
@@ -374,7 +374,7 @@ impl LockupPeriod {
 }
 
 /// Get current unix time
-#[inline(always)]
+#[inline]
 pub fn get_curr_unix_ts() -> u64 {
     // Conversion must be save because negative values
     // in unix means the date is earlier than 1970y

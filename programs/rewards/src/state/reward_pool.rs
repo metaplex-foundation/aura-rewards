@@ -266,7 +266,7 @@ impl Pack for RewardPool {
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
-        self.serialize(&mut slice).unwrap()
+        self.serialize(&mut slice).unwrap();
     }
 
     fn unpack_from_slice(src: &[u8]) -> Result<RewardPool, ProgramError> {

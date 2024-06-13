@@ -60,6 +60,11 @@ pub enum MplxRewardsError {
     /// Invalid distribution_ends_at data
     #[error("Rewards: distribution_ends_at date is lower than current date ")]
     DistributionInThePast,
+
+    /// 10
+    /// Invalid math conversion between types
+    #[error("Rewards: distribution_ends_at date is lower than current date ")]
+    InvalidPrimitiveTypesConversion,
 }
 
 impl PrintProgramError for MplxRewardsError {
