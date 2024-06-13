@@ -36,17 +36,21 @@ pub fn process_instruction(
         RewardsInstruction::DepositMining {
             amount,
             lockup_period,
+            reward_mint_addr,
+            owner,
         } => {
             msg!("RewardsInstruction: DepositMining");
             DepositMiningContext::new(program_id, accounts)?.process(
                 program_id,
                 amount,
                 lockup_period,
+                &reward_mint_addr,
+                &owner,
             )
         }
-        RewardsInstruction::WithdrawMining { amount } => {
+        RewardsInstruction::WithdrawMining { amount, owner } => {
             msg!("RewardsInstruction: WithdrawMining");
-            WithdrawMiningContext::new(program_id, accounts)?.process(program_id, amount)
+            WithdrawMiningContext::new(program_id, accounts)?.process(program_id, amount, &owner)
         }
         RewardsInstruction::Claim => {
             msg!("RewardsInstruction: Claim");

@@ -72,11 +72,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_c.pubkey(),
             &user_mining_c,
             100,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_c.pubkey(),
         )
         .await
         .unwrap();
@@ -90,11 +90,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             1000,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -111,11 +111,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_a.pubkey(),
             &user_mining_a,
             2000,
             LockupPeriod::OneYear,
             &mint.pubkey(),
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -131,11 +131,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100_000,
             LockupPeriod::SixMonths,
             &mint.pubkey(),
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -150,11 +150,11 @@ async fn success() {
     test_rewards_pool
         .deposit_mining(
             &mut context,
-            &user_b.pubkey(),
             &user_mining_b,
             100_000,
             LockupPeriod::SixMonths,
             &mint.pubkey(),
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -200,7 +200,7 @@ async fn success() {
 
     // User B unstakes and claims D3
     test_rewards_pool
-        .withdraw_mining(&mut context, &user_b.pubkey(), &user_mining_b, 100_000)
+        .withdraw_mining(&mut context, &user_mining_b, 100_000, &user_b.pubkey())
         .await
         .unwrap();
 
@@ -325,7 +325,7 @@ async fn success() {
 
     // User A unstakes and claims D1 and D2
     test_rewards_pool
-        .withdraw_mining(&mut context, &user_a.pubkey(), &user_mining_a, 3000)
+        .withdraw_mining(&mut context, &user_mining_a, 3000, &user_a.pubkey())
         .await
         .unwrap();
     claim_and_assert(
@@ -339,7 +339,7 @@ async fn success() {
     .await;
     // Usr B unstakes and claims D4
     test_rewards_pool
-        .withdraw_mining(&mut context, &user_b.pubkey(), &user_mining_b, 100_000)
+        .withdraw_mining(&mut context, &user_mining_b, 100_000, &user_b.pubkey())
         .await
         .unwrap();
     claim_and_assert(

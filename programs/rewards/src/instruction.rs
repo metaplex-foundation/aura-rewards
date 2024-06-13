@@ -63,13 +63,16 @@ pub enum RewardsInstruction {
     /// [W] Reward pool account
     /// [W] Mining
     /// [R] Mint of rewards account
-    /// [R] User
     /// [RS] Deposit authority
     DepositMining {
         /// Amount to deposit
         amount: u64,
         /// Lockup Period
         lockup_period: LockupPeriod,
+        /// Specifies mint addr
+        reward_mint_addr: Pubkey,
+        /// Specifies the owner of the Mining Account
+        owner: Pubkey,
     },
 
     /// Withdraws amount of supply to the mining account
@@ -82,6 +85,8 @@ pub enum RewardsInstruction {
     WithdrawMining {
         /// Amount to withdraw
         amount: u64,
+        /// Specifies the owner of the Mining Account
+        owner: Pubkey,
     },
 
     /// Claims amount of rewards
@@ -216,17 +221,15 @@ pub fn deposit_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
-    user: &Pubkey,
     deposit_authority: &Pubkey,
     amount: u64,
     lockup_period: LockupPeriod,
-    mint_account: &Pubkey,
+    reward_mint_addr: &Pubkey,
+    owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new_readonly(*mint_account, false),
-        AccountMeta::new_readonly(*user, false),
         AccountMeta::new_readonly(*deposit_authority, true),
     ];
 
@@ -235,6 +238,8 @@ pub fn deposit_mining(
         &RewardsInstruction::DepositMining {
             amount,
             lockup_period,
+            reward_mint_addr: *reward_mint_addr,
+            owner: *owner,
         },
         accounts,
     )
@@ -245,20 +250,22 @@ pub fn withdraw_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
-    user: &Pubkey,
     deposit_authority: &Pubkey,
     amount: u64,
+    owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new_readonly(*user, false),
         AccountMeta::new_readonly(*deposit_authority, true),
     ];
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::WithdrawMining { amount },
+        &RewardsInstruction::WithdrawMining {
+            amount,
+            owner: *owner,
+        },
         accounts,
     )
 }

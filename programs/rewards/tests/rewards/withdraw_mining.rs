@@ -48,12 +48,12 @@ async fn success() {
 
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(&mut context, &user, &mining, 100, lockup_period, &mint)
+        .deposit_mining(&mut context, &mining, 100, lockup_period, &mint, &user)
         .await
         .unwrap();
 
     test_rewards
-        .withdraw_mining(&mut context, &user, &mining, 30)
+        .withdraw_mining(&mut context, &mining, 30, &user)
         .await
         .unwrap();
 
