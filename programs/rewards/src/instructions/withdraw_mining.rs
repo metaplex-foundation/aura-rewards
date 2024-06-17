@@ -68,8 +68,6 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
             );
             return Err(ProgramError::InvalidArgument);
         }
-        msg!("RP BEFORE {:#?}", reward_pool);
-
         reward_pool.withdraw(&mut mining, amount)?;
 
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;

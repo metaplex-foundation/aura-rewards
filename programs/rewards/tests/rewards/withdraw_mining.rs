@@ -62,19 +62,19 @@ async fn success() {
 }
 
 #[tokio::test]
-async fn success_with_5kk() {
+async fn success_with_5kkk_after_expiring() {
     let (mut context, test_rewards, user, mining) = setup().await;
 
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(&mut context, &mining, 5000000, lockup_period, &user)
+        .deposit_mining(&mut context, &mining, 5000000000, lockup_period, &user)
         .await
         .unwrap();
 
     advance_clock_by_ts(&mut context, (100 * SECONDS_PER_DAY).try_into().unwrap()).await;
 
     test_rewards
-        .withdraw_mining(&mut context, &mining, 5000000, &user)
+        .withdraw_mining(&mut context, &mining, 5000000000, &user)
         .await
         .unwrap();
 
