@@ -83,7 +83,7 @@ async fn success_with_5kk() {
 
     assert_eq!(reward_pool.total_share, 0);
 
-    // let mining_account = get_account(&mut context, &mining).await;
-    // let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
-    // assert_eq!(mining.share, 0);
+    let mining_account = get_account(&mut context, &mining).await;
+    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    assert_eq!(mining.share, 0);
 }
