@@ -333,6 +333,8 @@ pub enum LockupPeriod {
     OneYear,
     /// Unlimited lockup period.
     Flex,
+    /// FOR TESTING PURPOSES ONLY
+    Test,
 }
 
 impl LockupPeriod {
@@ -345,6 +347,7 @@ impl LockupPeriod {
             LockupPeriod::SixMonths => 4,
             LockupPeriod::OneYear => 6,
             LockupPeriod::Flex => 1,
+            LockupPeriod::Test => 1,
         }
     }
 
@@ -358,6 +361,7 @@ impl LockupPeriod {
             LockupPeriod::ThreeMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 90),
             LockupPeriod::SixMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 180),
             LockupPeriod::OneYear => Ok(beginning_of_the_day + SECONDS_PER_DAY * 365),
+            LockupPeriod::Test => Ok(beginning_of_the_day + 120),
         }
     }
 
@@ -369,6 +373,7 @@ impl LockupPeriod {
             LockupPeriod::SixMonths => Ok(180),
             LockupPeriod::OneYear => Ok(365),
             LockupPeriod::Flex => Ok(0),
+            LockupPeriod::Test => Ok(0),
         }
     }
 }
