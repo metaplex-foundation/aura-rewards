@@ -17,4 +17,8 @@ pub enum AccountType {
     Uninitialized,
     /// Reward pool
     RewardPool,
+    /// Mining Account
+    Mining,
+    /// RewardVault
+    RewardVault,
 }

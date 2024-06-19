@@ -5,12 +5,21 @@ use crate::error::MplxRewardsError;
 use crate::utils::get_curr_unix_ts;
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
-    clock::SECONDS_PER_DAY, entrypoint::ProgramResult, program_error::ProgramError, pubkey::Pubkey,
+    clock::SECONDS_PER_DAY,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    program_pack::IsInitialized,
+    program_pack::{Pack, Sealed},
+    pubkey::Pubkey,
 };
+
+use super::AccountType;
 
 /// Reward vault
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct RewardVault {
+    pub account_type: AccountType,
     /// Bump of vault account
     pub bump: u8,
     /// The address of the Reward Token mint account.
@@ -113,5 +122,29 @@ impl RewardVault {
             .ok_or(MplxRewardsError::MathOverflow)?,
         )
         .map_err(|_| MplxRewardsError::InvalidPrimitiveTypesConversion)?)
+    }
+}
+
+impl Sealed for RewardVault {}
+impl Pack for RewardVault {
+    // RewardPool size
+    const LEN: usize = 1 + 1 + 32 + 16 + (4 + (8 + 8) * 100) + (4 + (8 + 16) * 100) + 8 + 8;
+
+    fn pack_into_slice(&self, mut dst: &mut [u8]) {
+        self.serialize(&mut dst).unwrap();
+    }
+
+    fn unpack_from_slice(mut src: &[u8]) -> Result<RewardVault, ProgramError> {
+        Self::deserialize(&mut src).map_err(|err| {
+            msg!("Failed to deserialize");
+            msg!("{}", err.to_string());
+            ProgramError::InvalidAccountData
+        })
+    }
+}
+
+impl IsInitialized for RewardVault {
+    fn is_initialized(&self) -> bool {
+        self.account_type == AccountType::RewardVault
     }
 }

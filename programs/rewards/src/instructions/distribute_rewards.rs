@@ -1,6 +1,6 @@
-use crate::error::MplxRewardsError;
 use crate::state::RewardPool;
-use crate::utils::{assert_account_key, AccountLoader};
+use crate::utils::AccountLoader;
+use crate::{asserts::assert_account_key, error::MplxRewardsError};
 
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,

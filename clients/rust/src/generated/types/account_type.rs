@@ -16,4 +16,6 @@ use num_derive::FromPrimitive;
 pub enum AccountType {
     Uninitialized,
     RewardPool,
+    Mining,
+    RewardVault,
 }

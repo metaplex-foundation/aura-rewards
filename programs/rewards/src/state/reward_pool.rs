@@ -14,8 +14,6 @@ use solana_program::{
 
 /// Precision for index calculation
 pub const PRECISION: u128 = 10_000_000_000_000_000;
-/// Max reward vaults
-pub const MAX_REWARDS: usize = 5;
 
 /// Ring buffer capacity
 pub const RINGBUF_CAP: usize = 365;
@@ -46,15 +44,21 @@ pub struct RewardPool {
 
 impl RewardPool {
     /// Init reward pool
-    pub fn init(params: InitRewardPoolParams) -> RewardPool {
+    pub fn initialize(
+        vault: RewardVault,
+        bump: u8,
+        deposit_authority: Pubkey,
+        distribute_authority: Pubkey,
+        fill_authority: Pubkey,
+    ) -> RewardPool {
         RewardPool {
             account_type: AccountType::RewardPool,
-            bump: params.bump,
+            bump,
             total_share: 0,
-            vault: params.vault,
-            deposit_authority: params.deposit_authority,
-            distribute_authority: params.distribute_authority,
-            fill_authority: params.fill_authority,
+            vault,
+            deposit_authority,
+            distribute_authority,
+            fill_authority,
         }
     }
 
@@ -240,23 +244,6 @@ impl RewardPool {
 
         Ok(())
     }
-}
-
-/// Initialize a Reward Pool params
-pub struct InitRewardPoolParams {
-    /// Saved bump for reward pool account
-    pub bump: u8,
-    /// This address is the authority of from the staking contract.
-    /// We want to be sure that some changes might only be done through the
-    /// staking contract. It's PDA from staking that will sign transactions.
-    pub deposit_authority: Pubkey,
-    /// The address responsible for the filling vaults with rewards.
-    /// Those rewards later will be used to distribute rewards.
-    pub fill_authority: Pubkey,
-    /// This vault will be responsible for storing rewards
-    pub vault: RewardVault,
-    /// This account is responsible for periodical distribution of rewards
-    pub distribute_authority: Pubkey,
 }
 
 impl Sealed for RewardPool {}

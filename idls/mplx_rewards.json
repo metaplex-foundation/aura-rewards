@@ -484,6 +484,12 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "accountType",
+            "type": {
+              "defined": "AccountType"
+            }
+          },
+          {
             "name": "rewardPool",
             "type": "publicKey"
           },
@@ -587,6 +593,12 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "accountType",
+            "type": {
+              "defined": "AccountType"
+            }
+          },
+          {
             "name": "bump",
             "type": "u8"
           },
@@ -637,6 +649,12 @@
           },
           {
             "name": "RewardPool"
+          },
+          {
+            "name": "Mining"
+          },
+          {
+            "name": "RewardVault"
           }
         ]
       }
