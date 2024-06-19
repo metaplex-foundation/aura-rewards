@@ -1,6 +1,7 @@
 //! Instruction types
 
 use borsh::{BorshDeserialize, BorshSerialize};
+use shank::{ShankContext, ShankInstruction};
 use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::pubkey::Pubkey;
 use solana_program::{system_program, sysvar};
@@ -8,18 +9,17 @@ use solana_program::{system_program, sysvar};
 use crate::utils::LockupPeriod;
 
 /// Instructions supported by the program
-#[derive(Debug, BorshDeserialize, BorshSerialize, PartialEq, Eq)]
+#[derive(Debug, BorshDeserialize, BorshSerialize, PartialEq, Eq, ShankInstruction, ShankContext)]
+#[rustfmt::skip]
 pub enum RewardsInstruction {
     /// Creates and initializes a reward pool account
-    ///
-    /// Accounts:
-    /// [W] Reward pool account
-    /// [R] Reward mint account
-    /// [W] Vault account
-    /// [WS] Payer
-    /// [R] Rent sysvar
-    /// [R] Token program
-    /// [R] System program
+    #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, name = "reward_mint", desc = "The address of the reward mint")]
+    #[account(2, writable, name = "vault", desc = "The address of the reward vault")]
+    #[account(3, writable, signer, name = "payer")]
+    #[account(4, name = "rent", desc = "The address of the Rent program")]
+    #[account(5, name = "token_program", desc = "The address of the Token program where rewards are minted")]
+    #[account(6, name = "system_program", desc = "The system program")]
     InitializePool {
         /// Account responsible for charging mining owners
         deposit_authority: Pubkey,
@@ -29,15 +29,12 @@ pub enum RewardsInstruction {
         distribute_authority: Pubkey,
     },
 
-    /// Fills the reward pool with rewards
-    ///
-    /// Accounts:
-    /// [W] Reward pool account
-    /// [R] Mint of rewards account
-    /// [W] Vault for rewards account
-    /// [RS] Transfer  account
-    /// [W] From account
-    /// [R] Token program
+    #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, name = "reward_mint", desc = "The address of the reward mint")]
+    #[account(2, writable, name = "vault", desc = "The address of the reward vault")]
+    #[account(3, signer, name = "fill_authority", desc = "The address of the wallet who is responsible for filling pool's vault with rewards")]
+    #[account(4, name = "source_token_account", desc = "The address of the TA from which tokens will be spent")]
+    #[account(5, name = "token_program", desc = "The address of the Token program where rewards are minted")]
     FillVault {
         /// Amount to fill
         amount: u64,
@@ -46,24 +43,20 @@ pub enum RewardsInstruction {
     },
 
     /// Initializes mining account for the specified mining owner
-    ///
-    /// Accounts:
-    /// [W] Reward pool account
-    /// [W] Mining
-    /// [WS] Payer
-    /// [R] System program
+    #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    #[account(2, writable, signer, name = "payer")]
+    #[account(3, name = "system_program", desc = "The system program")]
     InitializeMining {
         /// Represent the end-user, owner of the mining
         mining_owner: Pubkey,
     },
 
     /// Deposits amount of supply to the mining account
-    ///
-    /// Accounts:
-    /// [W] Reward pool account
-    /// [W] Mining
-    /// [R] Mint of rewards account
-    /// [RS] Deposit authority
+    #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
+    #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
     DepositMining {
         /// Amount to deposit
         amount: u64,
@@ -74,12 +67,9 @@ pub enum RewardsInstruction {
     },
 
     /// Withdraws amount of supply to the mining account
-    ///
-    /// Accounts:
-    /// [W] Reward pool account
-    /// [W] Mining
-    /// [R] Mining owner
-    /// [RS] Deposit authority
+    #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    #[account(2, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
     WithdrawMining {
         /// Amount to withdraw
         amount: u64,
@@ -88,26 +78,21 @@ pub enum RewardsInstruction {
     },
 
     /// Claims amount of rewards
-    ///
-    /// Accounts:
-    /// [R] Reward pool account
-    /// [R] Mint of rewards account
-    /// [W] Vault for rewards account
-    /// [W] Mining
-    /// [RS] Mining owner
-    /// [RS] Deposit authority
-    /// [W] Mining owner reward token account
-    /// [R] Token program
+    #[account(0, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, name = "reward_mint", desc = "The address of the reward mint")]
+    #[account(2, writable, name = "vault", desc = "The address of the reward vault")]
+    #[account(3, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    #[account(4, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
+    #[account(5, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(6, writable, name = "mining_owner_reward_token_account", desc = "ATA where tokens will be claimed to")]
+    #[account(7, name = "token_program", desc = "The address of the Token program where rewards are minted")]
     Claim,
 
     /// Restakes deposit
-    ///
-    /// Accounts:
-    /// [W] Reward pool account
-    /// [W] Mining
-    /// [R] Mint of rewards account
-    /// [R] Mining owner
-    /// [RS] Deposit authority
+    #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
+    #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
     RestakeDeposit {
         /// Lockup period before restaking. Actually it's only needed
         /// for Flex to AnyPeriod edge case
@@ -128,12 +113,10 @@ pub enum RewardsInstruction {
     },
 
     /// Distributes tokens among mining owners
-    ///
-    /// Accounts:
-    /// [W] Reward pool account
-    /// [R] Mint of rewards account
-    /// [W] Vault for rewards account
-    /// [RS] Distribute rewards authority
+    #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, name = "reward_mint", desc = "The address of the reward mint")]
+    #[account(2, writable, name = "vault", desc = "The address of the reward vault")]
+    #[account(3, signer, name = "distribute_authority", desc = "The address of Authority who is eligble for distributiong rewards for users")]
     DistributeRewards,
 }
 
