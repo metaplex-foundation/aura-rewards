@@ -11,7 +11,6 @@ pub(crate) mod r#mining;
 pub(crate) mod r#reward_index;
 pub(crate) mod r#reward_pool;
 pub(crate) mod r#reward_vault;
-pub(crate) mod r#rewards_instruction;
 
 pub use self::r#account_type::*;
 pub use self::r#lockup_period::*;
@@ -19,4 +18,3 @@ pub use self::r#mining::*;
 pub use self::r#reward_index::*;
 pub use self::r#reward_pool::*;
 pub use self::r#reward_vault::*;
-pub use self::r#rewards_instruction::*;

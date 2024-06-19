@@ -11,5 +11,4 @@ export * from './lockupPeriod';
 export * from './mining';
 export * from './rewardIndex';
 export * from './rewardPool';
-export * from './rewardsInstruction';
 export * from './rewardVault';
