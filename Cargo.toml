@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["programs/rewards"]
+members = ["programs/rewards", "clients/rust"]
 
 [profile.release]
 overflow-checks = true # Enable integer overflow checks.

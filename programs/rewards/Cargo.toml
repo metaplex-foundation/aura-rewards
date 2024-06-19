@@ -5,11 +5,12 @@ edition = "2021"
 
 [dependencies]
 solana-program = "^1.18"
-spl-token = { version = "3.1", features = [ "no-entrypoint" ] }
-borsh = { version = "1.5", features = ["derive"] } 
+spl-token = { version = "3.1", features = ["no-entrypoint"] }
+borsh = { version = "1.5", features = ["derive"] }
 num-derive = "0.3"
 num-traits = "0.2"
 thiserror = "1.0"
+shank = "0.4.2"
 
 [dev-dependencies]
 solana-program-test = "^1.18"
@@ -21,4 +22,3 @@ crate-type = ["cdylib", "lib"]
 [[test]]
 name = "integration_tests"
 path = "tests/rewards/tests.rs"
-

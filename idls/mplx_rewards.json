@@ -1,0 +1,731 @@
+{
+  "version": "0.1.0",
+  "name": "mplx_rewards",
+  "instructions": [
+    {
+      "name": "InitializePool",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward mint"
+          ]
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward vault"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the Rent program"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the Token program where rewards are minted"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The system program"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "depositAuthority",
+          "type": "publicKey"
+        },
+        {
+          "name": "fillAuthority",
+          "type": "publicKey"
+        },
+        {
+          "name": "distributeAuthority",
+          "type": "publicKey"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 0
+      }
+    },
+    {
+      "name": "FillVault",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward mint"
+          ]
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward vault"
+          ]
+        },
+        {
+          "name": "fillAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of the wallet who is responsible for filling pool's vault with rewards"
+          ]
+        },
+        {
+          "name": "sourceTokenAccount",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the TA from which tokens will be spent"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the Token program where rewards are minted"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "distributionEndsAt",
+          "type": "u64"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 1
+      }
+    },
+    {
+      "name": "InitializeMining",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "mining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the mining account which belongs to the user and stores info about user's rewards"
+          ]
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The system program"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "miningOwner",
+          "type": "publicKey"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 2
+      }
+    },
+    {
+      "name": "DepositMining",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "mining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the mining account which belongs to the user and stores info about user's rewards"
+          ]
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward mint"
+          ]
+        },
+        {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "lockupPeriod",
+          "type": {
+            "defined": "LockupPeriod"
+          }
+        },
+        {
+          "name": "owner",
+          "type": "publicKey"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 3
+      }
+    },
+    {
+      "name": "WithdrawMining",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "mining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the mining account which belongs to the user and stores info about user's rewards"
+          ]
+        },
+        {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "owner",
+          "type": "publicKey"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 4
+      }
+    },
+    {
+      "name": "Claim",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward mint"
+          ]
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward vault"
+          ]
+        },
+        {
+          "name": "mining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the mining account which belongs to the user and stores info about user's rewards"
+          ]
+        },
+        {
+          "name": "miningOwner",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The end user the mining accounts belongs to"
+          ]
+        },
+        {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        },
+        {
+          "name": "miningOwnerRewardTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "ATA where tokens will be claimed to"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the Token program where rewards are minted"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 5
+      }
+    },
+    {
+      "name": "RestakeDeposit",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "mining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the mining account which belongs to the user and stores info about user's rewards"
+          ]
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward mint"
+          ]
+        },
+        {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "oldLockupPeriod",
+          "type": {
+            "defined": "LockupPeriod"
+          }
+        },
+        {
+          "name": "newLockupPeriod",
+          "type": {
+            "defined": "LockupPeriod"
+          }
+        },
+        {
+          "name": "depositStartTs",
+          "type": "u64"
+        },
+        {
+          "name": "baseAmount",
+          "type": "u64"
+        },
+        {
+          "name": "additionalAmount",
+          "type": "u64"
+        },
+        {
+          "name": "miningOwner",
+          "type": "publicKey"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 6
+      }
+    },
+    {
+      "name": "DistributeRewards",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward mint"
+          ]
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward vault"
+          ]
+        },
+        {
+          "name": "distributeAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of Authority who is eligble for distributiong rewards for users"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 7
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Mining",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rewardPool",
+            "type": "publicKey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "share",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "index",
+            "type": {
+              "defined": "RewardIndex"
+            }
+          },
+          {
+            "name": "delegate",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardIndex",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rewardMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "indexWithPrecision",
+            "type": "u128"
+          },
+          {
+            "name": "unclaimedRewards",
+            "type": "u64"
+          },
+          {
+            "name": "weightedStakeDiffs",
+            "type": {
+              "bTreeMap": [
+                "u64",
+                "u64"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardPool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "accountType",
+            "type": {
+              "defined": "AccountType"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "totalShare",
+            "type": "u64"
+          },
+          {
+            "name": "vault",
+            "type": {
+              "defined": "RewardVault"
+            }
+          },
+          {
+            "name": "depositAuthority",
+            "type": "publicKey"
+          },
+          {
+            "name": "distributeAuthority",
+            "type": "publicKey"
+          },
+          {
+            "name": "fillAuthority",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardVault",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "rewardMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "indexWithPrecision",
+            "type": "u128"
+          },
+          {
+            "name": "weightedStakeDiffs",
+            "type": {
+              "bTreeMap": [
+                "u64",
+                "u64"
+              ]
+            }
+          },
+          {
+            "name": "cumulativeIndex",
+            "type": {
+              "bTreeMap": [
+                "u64",
+                "u128"
+              ]
+            }
+          },
+          {
+            "name": "distributionEndsAt",
+            "type": "u64"
+          },
+          {
+            "name": "tokensAvailableForDistribution",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AccountType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Uninitialized"
+          },
+          {
+            "name": "RewardPool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LockupPeriod",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "ThreeMonths"
+          },
+          {
+            "name": "SixMonths"
+          },
+          {
+            "name": "OneYear"
+          },
+          {
+            "name": "Flex"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 0,
+      "name": "InvalidAccountOwner",
+      "msg": "Input account owner"
+    },
+    {
+      "code": 1,
+      "name": "MathOverflow",
+      "msg": "Math operation overflow"
+    },
+    {
+      "code": 2,
+      "name": "ZeroAmount",
+      "msg": "Zero amount"
+    },
+    {
+      "code": 3,
+      "name": "RewardsInvalidVault",
+      "msg": "Rewards: Invalid vault"
+    },
+    {
+      "code": 4,
+      "name": "RewardsNoDeposits",
+      "msg": "Rewards: No deposits"
+    },
+    {
+      "code": 5,
+      "name": "RebalanceLiquidityCheckFailed",
+      "msg": "Rebalancing: liquidity check failed"
+    },
+    {
+      "code": 6,
+      "name": "IndexMustExist",
+      "msg": "Rewards: index receiving failed"
+    },
+    {
+      "code": 7,
+      "name": "InvalidLockupPeriod",
+      "msg": "Rewards: lockup period invalid"
+    },
+    {
+      "code": 8,
+      "name": "InvalidCpiCaller",
+      "msg": "Rewards: only Staking contract is allowed to do CPI calls"
+    },
+    {
+      "code": 9,
+      "name": "DistributionInThePast",
+      "msg": "Rewards: distribution_ends_at date is lower than current date "
+    },
+    {
+      "code": 10,
+      "name": "InvalidPrimitiveTypesConversion",
+      "msg": "Rewards: distribution_ends_at date is lower than current date "
+    }
+  ],
+  "metadata": {
+    "origin": "shank",
+    "address": "BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR",
+    "binaryVersion": "0.4.2",
+    "libVersion": "0.4.2"
+  }
+}
