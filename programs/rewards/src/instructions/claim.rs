@@ -86,7 +86,7 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
                 b"vault".as_ref(),
                 &self.reward_pool.key.to_bytes(),
                 &self.reward_mint.key.to_bytes(),
-                &[reward_pool.vault.bump],
+                &[reward_pool.vault.token_account_bump],
             ];
             assert_account_key(
                 self.vault,

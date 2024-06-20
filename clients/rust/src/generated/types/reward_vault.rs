@@ -15,7 +15,7 @@ use std::collections::HashMap;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RewardVault {
     pub account_type: AccountType,
-    pub bump: u8,
+    pub token_account_bump: u8,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")

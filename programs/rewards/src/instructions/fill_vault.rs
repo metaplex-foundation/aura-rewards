@@ -54,9 +54,9 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
         {
             let vault_seeds = &[
                 b"vault".as_ref(),
-                &self.reward_pool.key.to_bytes()[..32],
-                &self.reward_mint.key.to_bytes()[..32],
-                &[reward_pool.vault.bump],
+                self.reward_pool.key.as_ref(),
+                self.reward_mint.key.as_ref(),
+                &[reward_pool.vault.token_account_bump],
             ];
             assert_account_key(
                 self.vault,

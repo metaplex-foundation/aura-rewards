@@ -66,14 +66,14 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             &[pool_bump],
         ];
 
-        let (vault_pubkey, vault_bump) =
+        let (vault_pubkey, token_account_bump) =
             find_vault_program_address(program_id, self.reward_pool.key, self.reward_mint.key);
         assert_account_key(self.reward_vault, &vault_pubkey)?;
         let vault_seeds = &[
             b"vault".as_ref(),
             self.reward_pool.key.as_ref(),
             self.reward_mint.key.as_ref(),
-            &[vault_bump],
+            &[token_account_bump],
         ];
 
         create_account::<RewardPool>(
@@ -97,7 +97,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         )?;
 
         let reward_vault = RewardVault {
-            bump: vault_bump,
+            token_account_bump,
             reward_mint: *self.reward_mint.key,
             ..Default::default()
         };

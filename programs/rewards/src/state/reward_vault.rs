@@ -21,7 +21,7 @@ use super::AccountType;
 pub struct RewardVault {
     pub account_type: AccountType,
     /// Bump of vault account
-    pub bump: u8,
+    pub token_account_bump: u8,
     /// The address of the Reward Token mint account.
     pub reward_mint: Pubkey,
     /// That is the index that increases on each vault filling.

@@ -56,26 +56,13 @@ impl TestRewards {
     }
 
     pub async fn initialize_pool(&self, context: &mut ProgramTestContext) -> BanksClientResult<()> {
-        // transfer(context, &self.root_authority.pubkey(), 100000000)
-        //     .await
-        //     .unwrap();
-
-        let (vault_pubkey, _) = Pubkey::find_program_address(
-            &[
-                b"vault".as_ref(),
-                self.mining_reward_pool.as_ref(),
-                self.token_mint_pubkey.as_ref(),
-            ],
-            &mplx_rewards::id(),
-        );
-
         // Initialize mining pool
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::initialize_pool(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
                 &self.token_mint_pubkey,
-                &vault_pubkey,
+                &self.vault_pubkey,
                 &context.payer.pubkey(),
                 &self.deposit_authority.pubkey(),
                 &self.fill_authority.pubkey(),
@@ -231,8 +218,6 @@ impl TestRewards {
             &[mplx_rewards::instruction::distribute_rewards(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
-                &self.token_mint_pubkey,
-                &self.vault_pubkey,
                 &self.distribution_authority.pubkey(),
             )],
             Some(&context.payer.pubkey()),

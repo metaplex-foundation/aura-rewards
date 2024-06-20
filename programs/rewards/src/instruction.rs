@@ -115,8 +115,7 @@ pub enum RewardsInstruction {
     /// Distributes tokens among mining owners
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(1, name = "reward_mint", desc = "The address of the reward mint")]
-    #[account(2, writable, name = "vault", desc = "The address of the reward vault")]
-    #[account(3, signer, name = "distribute_authority", desc = "The address of Authority who is eligble for distributiong rewards for users")]
+    #[account(2, signer, name = "distribute_authority", desc = "The address of Authority who is eligble for distributiong rewards for users")]
     DistributeRewards,
 }
 
@@ -326,14 +325,10 @@ pub fn restake_deposit(
 pub fn distribute_rewards(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
-    reward_mint: &Pubkey,
-    reward_vault: &Pubkey,
     distribute_authority: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
-        AccountMeta::new_readonly(*reward_mint, false),
-        AccountMeta::new(*reward_vault, false),
         AccountMeta::new_readonly(*distribute_authority, true),
     ];
 

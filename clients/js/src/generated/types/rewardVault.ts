@@ -20,7 +20,7 @@ import { AccountType, AccountTypeArgs, getAccountTypeSerializer } from '.';
 
 export type RewardVault = {
   accountType: AccountType;
-  bump: number;
+  tokenAccountBump: number;
   rewardMint: PublicKey;
   indexWithPrecision: bigint;
   weightedStakeDiffs: Map<bigint, bigint>;
@@ -31,7 +31,7 @@ export type RewardVault = {
 
 export type RewardVaultArgs = {
   accountType: AccountTypeArgs;
-  bump: number;
+  tokenAccountBump: number;
   rewardMint: PublicKey;
   indexWithPrecision: number | bigint;
   weightedStakeDiffs: Map<number | bigint, number | bigint>;
@@ -47,7 +47,7 @@ export function getRewardVaultSerializer(): Serializer<
   return struct<RewardVault>(
     [
       ['accountType', getAccountTypeSerializer()],
-      ['bump', u8()],
+      ['tokenAccountBump', u8()],
       ['rewardMint', publicKeySerializer()],
       ['indexWithPrecision', u128()],
       ['weightedStakeDiffs', map(u64(), u64())],
