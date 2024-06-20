@@ -146,9 +146,10 @@ impl RewardIndex {
                 .checked_sub(*modifier_diff)
                 .ok_or(MplxRewardsError::MathOverflow)?;
         }
-        // TODO: split_off should be used instead of retain
-        self.weighted_stake_diffs
-            .retain(|date, _| date > &beginning_of_the_day);
+        // +1 because we don't need begining_of_the_day
+        self.weighted_stake_diffs = self
+            .weighted_stake_diffs
+            .split_off(&(beginning_of_the_day + 1));
 
         Ok(total_share)
     }
