@@ -1,8 +1,8 @@
 import { UmiPlugin } from '@metaplex-foundation/umi';
-import { createRewardsProgram } from './generated';
+import { createMplxRewardsProgram } from './generated';
 
 export const Rewards = (): UmiPlugin => ({
   install(umi) {
-    umi.programs.add(createRewardsProgram(), false);
+    umi.programs.add(createMplxRewardsProgram(), false);
   },
 });
