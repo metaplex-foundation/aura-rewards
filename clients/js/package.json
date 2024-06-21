@@ -1,5 +1,5 @@
 {
-  "name": "mplx-rewards-client",
+  "name": "@void_devourers/mpl-rewards-client",
   "version": "0.1.0",
   "description": "My project description",
   "main": "dist/src/index.js",
