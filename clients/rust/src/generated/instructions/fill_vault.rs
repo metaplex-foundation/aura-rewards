@@ -53,7 +53,7 @@ impl FillVault {
             self.fill_authority,
             true,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.source_token_account,
             false,
         ));
@@ -100,7 +100,7 @@ pub struct FillVaultInstructionArgs {
 ///   1. `[]` reward_mint
 ///   2. `[writable]` vault
 ///   3. `[signer]` fill_authority
-///   4. `[]` source_token_account
+///   4. `[writable]` source_token_account
 ///   5. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 #[derive(Default)]
 pub struct FillVaultBuilder {
@@ -316,7 +316,7 @@ impl<'a, 'b> FillVaultCpi<'a, 'b> {
             *self.fill_authority.key,
             true,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.source_token_account.key,
             false,
         ));
@@ -368,7 +368,7 @@ impl<'a, 'b> FillVaultCpi<'a, 'b> {
 ///   1. `[]` reward_mint
 ///   2. `[writable]` vault
 ///   3. `[signer]` fill_authority
-///   4. `[]` source_token_account
+///   4. `[writable]` source_token_account
 ///   5. `[]` token_program
 pub struct FillVaultCpiBuilder<'a, 'b> {
     instruction: Box<FillVaultCpiBuilderInstruction<'a, 'b>>,
