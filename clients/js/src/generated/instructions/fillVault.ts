@@ -114,7 +114,7 @@ export function fillVault(
     },
     sourceTokenAccount: {
       index: 4,
-      isWritable: false as boolean,
+      isWritable: true as boolean,
       value: input.sourceTokenAccount ?? null,
     },
     tokenProgram: {

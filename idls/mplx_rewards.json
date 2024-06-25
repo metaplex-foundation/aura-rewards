@@ -115,7 +115,7 @@
         },
         {
           "name": "sourceTokenAccount",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The address of the TA from which tokens will be spent"
