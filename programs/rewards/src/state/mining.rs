@@ -1,6 +1,6 @@
 use crate::{
     error::MplxRewardsError,
-    state::{RewardVault, PRECISION},
+    state::{RewardCalculator, PRECISION},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
@@ -59,7 +59,7 @@ impl Mining {
     }
 
     /// Refresh rewards
-    pub fn refresh_rewards(&mut self, vault: &RewardVault) -> ProgramResult {
+    pub fn refresh_rewards(&mut self, vault: &RewardCalculator) -> ProgramResult {
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
         let mut share = self.share;
@@ -127,7 +127,7 @@ impl RewardIndex {
         &mut self,
         beginning_of_the_day: u64,
         mut total_share: u64,
-        pool_vault: &RewardVault,
+        pool_vault: &RewardCalculator,
     ) -> Result<u64, ProgramError> {
         for (date, modifier_diff) in &self.weighted_stake_diffs {
             if date > &beginning_of_the_day {
@@ -156,7 +156,7 @@ impl RewardIndex {
 
     /// Updates index and distributes rewards
     pub fn update_index(
-        pool_vault: &RewardVault,
+        pool_vault: &RewardCalculator,
         date: u64,
         total_share: u64,
         unclaimed_rewards: &mut u64,

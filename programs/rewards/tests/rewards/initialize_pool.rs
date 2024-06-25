@@ -43,7 +43,7 @@ async fn success() {
         test_rewards.fill_authority.pubkey()
     );
     assert_eq!(
-        reward_pool.vault.reward_mint,
+        reward_pool.calculator.reward_mint,
         test_rewards.token_mint_pubkey
     );
 }

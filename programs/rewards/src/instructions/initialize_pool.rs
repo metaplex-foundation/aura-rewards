@@ -1,5 +1,5 @@
 use crate::asserts::{assert_account_key, assert_uninitialized};
-use crate::state::{RewardPool, RewardVault};
+use crate::state::{RewardCalculator, RewardPool};
 use crate::utils::{
     create_account, find_reward_pool_program_address, find_vault_program_address,
     initialize_account, AccountLoader,
@@ -96,7 +96,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             self.rent.clone(),
         )?;
 
-        let reward_vault = RewardVault {
+        let reward_vault = RewardCalculator {
             token_account_bump,
             reward_mint: *self.reward_mint.key,
             ..Default::default()
