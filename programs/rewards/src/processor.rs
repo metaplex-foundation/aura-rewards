@@ -85,7 +85,7 @@ pub fn process_instruction(
             )
         }
         RewardsInstruction::DistributeRewards => {
-            msg!("RewardsInstruction: FillVault");
+            msg!("RewardsInstruction: DistributeRewards");
             DistributeRewardsContext::new(program_id, accounts)?.process(program_id)
         }
     }
