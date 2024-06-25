@@ -10,3 +10,5 @@ dist
 .crates
 .bin
 clients/js/output.json
+clients/js/yarn.lock
+.idea
