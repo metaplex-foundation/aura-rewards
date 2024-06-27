@@ -30,7 +30,7 @@ pub struct RewardPool {
     /// When somebody deposits or withdraws, or thier stake is expired this value changes.
     pub total_share: u64,
     /// Vault which is responsible for calculating rewards.
-    pub vault: RewardVault,
+    pub calculator: RewardCalculator,
     /// This address is the authority from the staking contract.
     /// We want to be sure that some changes might only be done through the
     /// staking contract. It's PDA from staking that will sign transactions.
@@ -44,7 +44,7 @@ pub struct RewardPool {
 impl RewardPool {
     /// Init reward pool
     pub fn initialize(
-        vault: RewardVault,
+        calculator: RewardCalculator,
         bump: u8,
         deposit_authority: Pubkey,
         distribute_authority: Pubkey,
@@ -54,7 +54,7 @@ impl RewardPool {
             account_type: AccountType::RewardPool,
             bump,
             total_share: 0,
-            vault,
+            calculator,
             deposit_authority,
             distribute_authority,
             fill_authority,
@@ -71,19 +71,19 @@ impl RewardPool {
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
 
         self.total_share = self
-            .vault
+            .calculator
             .consume_old_modifiers(beginning_of_the_day, self.total_share)?;
         if self
-            .vault
+            .calculator
             .cumulative_index
             .contains_key(&beginning_of_the_day)
         {
             return Ok(());
         }
 
-        RewardVault::update_index(
-            &mut self.vault.cumulative_index,
-            &mut self.vault.index_with_precision,
+        RewardCalculator::update_index(
+            &mut self.calculator.cumulative_index,
+            &mut self.calculator.index_with_precision,
             rewards,
             self.total_share,
             beginning_of_the_day,
@@ -99,7 +99,7 @@ impl RewardPool {
         amount: u64,
         lockup_period: LockupPeriod,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.vault)?;
+        mining.refresh_rewards(&self.calculator)?;
 
         // regular weighted stake which will be used in rewards distribution
         let weighted_stake = amount
@@ -127,7 +127,7 @@ impl RewardPool {
             .ok_or(MplxRewardsError::MathOverflow)?;
 
         let modifier = self
-            .vault
+            .calculator
             .weighted_stake_diffs
             .entry(lockup_period.end_timestamp(get_curr_unix_ts())?)
             .or_default();
@@ -149,7 +149,7 @@ impl RewardPool {
 
     /// Process withdraw
     pub fn withdraw(&mut self, mining: &mut Mining, amount: u64) -> ProgramResult {
-        mining.refresh_rewards(&self.vault)?;
+        mining.refresh_rewards(&self.calculator)?;
 
         self.total_share = self
             .total_share
@@ -173,7 +173,7 @@ impl RewardPool {
         base_amount: u64,
         additional_amount: u64,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.vault)?;
+        mining.refresh_rewards(&self.calculator)?;
 
         let curr_ts = get_curr_unix_ts();
 
@@ -201,7 +201,7 @@ impl RewardPool {
                 .checked_sub(curr_part_of_weighted_stake_for_flex)
                 .ok_or(MplxRewardsError::MathOverflow)?;
 
-            self.vault
+            self.calculator
                 .weighted_stake_diffs
                 .entry(deposit_old_expiration_ts)
                 .and_modify(|modifier| *modifier -= weighted_stake_diff);
@@ -248,7 +248,7 @@ impl RewardPool {
 impl Sealed for RewardPool {}
 impl Pack for RewardPool {
     // RewardPool size
-    const LEN: usize = 1 + (32 + 1 + 32 + 8 + (4 + RewardVault::LEN) + 32);
+    const LEN: usize = 1 + (32 + 1 + 32 + 8 + (4 + RewardCalculator::LEN) + 32);
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
@@ -273,7 +273,7 @@ impl IsInitialized for RewardPool {
 
 /// Reward vault
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
-pub struct RewardVault {
+pub struct RewardCalculator {
     pub token_account_bump: u8,
     /// The address of the Reward Token mint account.
     pub reward_mint: Pubkey,
@@ -295,7 +295,7 @@ pub struct RewardVault {
     pub tokens_available_for_distribution: u64, // default: 0, increased on each fill, decreased on each user claim
 }
 
-impl RewardVault {
+impl RewardCalculator {
     /// Reward Vault size
     /// TODO: size isn't large enough
     pub const LEN: usize = 1 + 32 + 16 + 32 + (4 + (8 + 8) * 100) + (4 + (8 + 16) * 100);

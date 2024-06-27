@@ -33,12 +33,12 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
     /// Process instruction
     pub fn process(&self) -> ProgramResult {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-        let rewards_to_distribute = reward_pool.vault.rewards_to_distribute()?;
+        let rewards_to_distribute = reward_pool.calculator.rewards_to_distribute()?;
         assert_account_key(self.distribute_authority, &reward_pool.distribute_authority)?;
 
         reward_pool.fill(rewards_to_distribute)?;
-        reward_pool.vault.tokens_available_for_distribution = reward_pool
-            .vault
+        reward_pool.calculator.tokens_available_for_distribution = reward_pool
+            .calculator
             .tokens_available_for_distribution
             .checked_sub(rewards_to_distribute)
             .ok_or(MplxRewardsError::MathOverflow)?;

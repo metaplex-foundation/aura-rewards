@@ -86,14 +86,14 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
                 b"vault".as_ref(),
                 &self.reward_pool.key.to_bytes(),
                 &self.reward_mint.key.to_bytes(),
-                &[reward_pool.vault.token_account_bump],
+                &[reward_pool.calculator.token_account_bump],
             ];
             assert_account_key(
                 self.vault,
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
             )?;
         }
-        mining.refresh_rewards(&reward_pool.vault)?;
+        mining.refresh_rewards(&reward_pool.calculator)?;
         let amount = mining.index.unclaimed_rewards;
         mining.claim();
 
