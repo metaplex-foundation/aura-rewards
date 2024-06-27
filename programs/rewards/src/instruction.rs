@@ -33,7 +33,7 @@ pub enum RewardsInstruction {
     #[account(1, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(2, writable, name = "vault", desc = "The address of the reward vault")]
     #[account(3, signer, name = "fill_authority", desc = "The address of the wallet who is responsible for filling pool's vault with rewards")]
-    #[account(4, name = "source_token_account", desc = "The address of the TA from which tokens will be spent")]
+    #[account(4, writable, name = "source_token_account", desc = "The address of the TA from which tokens will be spent")]
     #[account(5, name = "token_program", desc = "The address of the Token program where rewards are minted")]
     FillVault {
         /// Amount to fill
