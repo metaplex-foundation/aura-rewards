@@ -778,3 +778,80 @@ async fn claim_after_withdraw_is_correct() {
     )
     .await;
 }
+
+#[tokio::test]
+async fn with_two_users_with_flex() {
+    let (mut context, test_rewards, rewarder) = setup().await;
+
+    let (user_a, user_rewards_a, user_mining_a) =
+        create_end_user(&mut context, &test_rewards).await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &user_mining_a,
+            100,
+            LockupPeriod::Flex,
+            &user_a.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    let (user_b, user_rewards_b, user_mining_b) =
+        create_end_user(&mut context, &test_rewards).await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &user_mining_b,
+            100,
+            LockupPeriod::Flex,
+            &user_b.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    // fill vault with tokens
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY;
+
+    test_rewards
+        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .await
+        .unwrap();
+
+    test_rewards.distribute_rewards(&mut context).await.unwrap();
+
+    test_rewards
+        .claim(
+            &mut context,
+            &user_a,
+            &user_mining_a,
+            &user_rewards_a.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    test_rewards
+        .claim(
+            &mut context,
+            &user_b,
+            &user_mining_b,
+            &user_rewards_b.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    let user_reward_account_a = get_account(&mut context, &user_rewards_a.pubkey()).await;
+    let user_rewards_a = Account::unpack(user_reward_account_a.data.borrow()).unwrap();
+
+    assert_eq!(user_rewards_a.amount, 50);
+
+    let user_reward_account_b = get_account(&mut context, &user_rewards_b.pubkey()).await;
+    let user_rewards_b = Account::unpack(user_reward_account_b.data.borrow()).unwrap();
+
+    assert_eq!(user_rewards_b.amount, 50);
+}

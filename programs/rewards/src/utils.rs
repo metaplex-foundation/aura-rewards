@@ -271,10 +271,11 @@ impl LockupPeriod {
         let beginning_of_the_day = start_ts - (start_ts % SECONDS_PER_DAY);
 
         match self {
-            LockupPeriod::None | LockupPeriod::Flex => Err(MplxRewardsError::InvalidLockupPeriod),
+            LockupPeriod::None => Err(MplxRewardsError::InvalidLockupPeriod),
             LockupPeriod::ThreeMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 90),
             LockupPeriod::SixMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 180),
             LockupPeriod::OneYear => Ok(beginning_of_the_day + SECONDS_PER_DAY * 365),
+            LockupPeriod::Flex => Ok(0)
         }
     }
 
