@@ -114,8 +114,7 @@ pub enum RewardsInstruction {
 
     /// Distributes tokens among mining owners
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
-    #[account(1, name = "reward_mint", desc = "The address of the reward mint")]
-    #[account(2, signer, name = "distribute_authority", desc = "The address of Authority who is eligble for distributiong rewards for users")]
+    #[account(1, signer, name = "distribute_authority", desc = "The address of Authority who is eligble for distributiong rewards for users")]
     DistributeRewards,
 }
 

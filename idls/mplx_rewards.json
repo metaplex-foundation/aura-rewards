@@ -446,14 +446,6 @@
           ]
         },
         {
-          "name": "rewardMint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The address of the reward mint"
-          ]
-        },
-        {
           "name": "distributeAuthority",
           "isMut": false,
           "isSigner": true,

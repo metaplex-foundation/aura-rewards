@@ -12,8 +12,6 @@ use borsh::BorshSerialize;
 pub struct DistributeRewards {
     /// The address of the reward pool
     pub reward_pool: solana_program::pubkey::Pubkey,
-    /// The address of the reward mint
-    pub reward_mint: solana_program::pubkey::Pubkey,
     /// The address of Authority who is eligble for distributiong rewards for users
     pub distribute_authority: solana_program::pubkey::Pubkey,
 }
@@ -27,13 +25,9 @@ impl DistributeRewards {
         &self,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.reward_pool,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.reward_mint,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -69,12 +63,10 @@ impl DistributeRewardsInstructionData {
 /// ### Accounts:
 ///
 ///   0. `[writable]` reward_pool
-///   1. `[]` reward_mint
-///   2. `[signer]` distribute_authority
+///   1. `[signer]` distribute_authority
 #[derive(Default)]
 pub struct DistributeRewardsBuilder {
     reward_pool: Option<solana_program::pubkey::Pubkey>,
-    reward_mint: Option<solana_program::pubkey::Pubkey>,
     distribute_authority: Option<solana_program::pubkey::Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -87,12 +79,6 @@ impl DistributeRewardsBuilder {
     #[inline(always)]
     pub fn reward_pool(&mut self, reward_pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.reward_pool = Some(reward_pool);
-        self
-    }
-    /// The address of the reward mint
-    #[inline(always)]
-    pub fn reward_mint(&mut self, reward_mint: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.reward_mint = Some(reward_mint);
         self
     }
     /// The address of Authority who is eligble for distributiong rewards for users
@@ -126,7 +112,6 @@ impl DistributeRewardsBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = DistributeRewards {
             reward_pool: self.reward_pool.expect("reward_pool is not set"),
-            reward_mint: self.reward_mint.expect("reward_mint is not set"),
             distribute_authority: self
                 .distribute_authority
                 .expect("distribute_authority is not set"),
@@ -140,8 +125,6 @@ impl DistributeRewardsBuilder {
 pub struct DistributeRewardsCpiAccounts<'a, 'b> {
     /// The address of the reward pool
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the reward mint
-    pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of Authority who is eligble for distributiong rewards for users
     pub distribute_authority: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -152,8 +135,6 @@ pub struct DistributeRewardsCpi<'a, 'b> {
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the reward pool
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the reward mint
-    pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of Authority who is eligble for distributiong rewards for users
     pub distribute_authority: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -166,7 +147,6 @@ impl<'a, 'b> DistributeRewardsCpi<'a, 'b> {
         Self {
             __program: program,
             reward_pool: accounts.reward_pool,
-            reward_mint: accounts.reward_mint,
             distribute_authority: accounts.distribute_authority,
         }
     }
@@ -203,13 +183,9 @@ impl<'a, 'b> DistributeRewardsCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.reward_pool.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.reward_mint.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -232,10 +208,9 @@ impl<'a, 'b> DistributeRewardsCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(2 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.reward_pool.clone());
-        account_infos.push(self.reward_mint.clone());
         account_infos.push(self.distribute_authority.clone());
         remaining_accounts
             .iter()
@@ -254,8 +229,7 @@ impl<'a, 'b> DistributeRewardsCpi<'a, 'b> {
 /// ### Accounts:
 ///
 ///   0. `[writable]` reward_pool
-///   1. `[]` reward_mint
-///   2. `[signer]` distribute_authority
+///   1. `[signer]` distribute_authority
 pub struct DistributeRewardsCpiBuilder<'a, 'b> {
     instruction: Box<DistributeRewardsCpiBuilderInstruction<'a, 'b>>,
 }
@@ -265,7 +239,6 @@ impl<'a, 'b> DistributeRewardsCpiBuilder<'a, 'b> {
         let instruction = Box::new(DistributeRewardsCpiBuilderInstruction {
             __program: program,
             reward_pool: None,
-            reward_mint: None,
             distribute_authority: None,
             __remaining_accounts: Vec::new(),
         });
@@ -278,15 +251,6 @@ impl<'a, 'b> DistributeRewardsCpiBuilder<'a, 'b> {
         reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.reward_pool = Some(reward_pool);
-        self
-    }
-    /// The address of the reward mint
-    #[inline(always)]
-    pub fn reward_mint(
-        &mut self,
-        reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.reward_mint = Some(reward_mint);
         self
     }
     /// The address of Authority who is eligble for distributiong rewards for users
@@ -347,11 +311,6 @@ impl<'a, 'b> DistributeRewardsCpiBuilder<'a, 'b> {
                 .reward_pool
                 .expect("reward_pool is not set"),
 
-            reward_mint: self
-                .instruction
-                .reward_mint
-                .expect("reward_mint is not set"),
-
             distribute_authority: self
                 .instruction
                 .distribute_authority
@@ -367,7 +326,6 @@ impl<'a, 'b> DistributeRewardsCpiBuilder<'a, 'b> {
 struct DistributeRewardsCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     reward_pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    reward_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     distribute_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

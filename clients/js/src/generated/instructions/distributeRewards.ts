@@ -30,8 +30,6 @@ import {
 export type DistributeRewardsInstructionAccounts = {
   /** The address of the reward pool */
   rewardPool: PublicKey | Pda;
-  /** The address of the reward mint */
-  rewardMint: PublicKey | Pda;
   /** The address of Authority who is eligble for distributiong rewards for users */
   distributeAuthority: Signer;
 };
@@ -78,13 +76,8 @@ export function distributeRewards(
       isWritable: true as boolean,
       value: input.rewardPool ?? null,
     },
-    rewardMint: {
-      index: 1,
-      isWritable: false as boolean,
-      value: input.rewardMint ?? null,
-    },
     distributeAuthority: {
-      index: 2,
+      index: 1,
       isWritable: false as boolean,
       value: input.distributeAuthority ?? null,
     },
