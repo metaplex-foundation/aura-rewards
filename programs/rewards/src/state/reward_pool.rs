@@ -316,7 +316,7 @@ impl RewardVault {
                 .ok_or(MplxRewardsError::MathOverflow)?;
         }
         // drop keys because they have been already consumed and no longer needed
-        // +1 because we don't need begining_of_the_day
+        // +1 because we don't need beginning_of_the_day
         self.weighted_stake_diffs = self
             .weighted_stake_diffs
             .split_off(&(beginning_of_the_day + 1));
