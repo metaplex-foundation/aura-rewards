@@ -55,3 +55,22 @@ async fn success() {
     let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
     assert_eq!(mining.share, 200);
 }
+
+#[tokio::test]
+async fn success_with_flex() {
+    let (mut context, test_rewards, user, mining) = setup().await;
+
+    test_rewards
+        .deposit_mining(&mut context, &mining, 100, LockupPeriod::Flex, &user)
+        .await
+        .unwrap();
+
+    let reward_pool_account = get_account(&mut context, &test_rewards.mining_reward_pool).await;
+    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+
+    assert_eq!(reward_pool.total_share, 100);
+
+    let mining_account = get_account(&mut context, &mining).await;
+    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    assert_eq!(mining.share, 100);
+}
