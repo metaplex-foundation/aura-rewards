@@ -454,14 +454,6 @@
           ]
         },
         {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The address of the reward vault"
-          ]
-        },
-        {
           "name": "distributeAuthority",
           "isMut": false,
           "isSigner": true,
@@ -483,6 +475,12 @@
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "accountType",
+            "type": {
+              "defined": "AccountType"
+            }
+          },
           {
             "name": "rewardPool",
             "type": "publicKey"
@@ -587,7 +585,13 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "bump",
+            "name": "accountType",
+            "type": {
+              "defined": "AccountType"
+            }
+          },
+          {
+            "name": "tokenAccountBump",
             "type": "u8"
           },
           {
@@ -637,6 +641,12 @@
           },
           {
             "name": "RewardPool"
+          },
+          {
+            "name": "Mining"
+          },
+          {
+            "name": "RewardVault"
           }
         ]
       }

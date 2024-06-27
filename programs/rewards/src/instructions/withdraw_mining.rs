@@ -1,5 +1,6 @@
+use crate::asserts::assert_account_key;
 use crate::state::{Mining, RewardPool};
-use crate::utils::{assert_account_key, AccountLoader};
+use crate::utils::AccountLoader;
 
 use solana_program::{
     account_info::AccountInfo,
@@ -73,7 +74,7 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
         let reward_pool_share = reward_pool
-            .vault
+            .calculator
             .consume_old_modifiers(beginning_of_the_day, reward_pool.total_share)?;
         reward_pool.total_share = reward_pool_share;
 

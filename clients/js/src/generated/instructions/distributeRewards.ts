@@ -32,8 +32,6 @@ export type DistributeRewardsInstructionAccounts = {
   rewardPool: PublicKey | Pda;
   /** The address of the reward mint */
   rewardMint: PublicKey | Pda;
-  /** The address of the reward vault */
-  vault: PublicKey | Pda;
   /** The address of Authority who is eligble for distributiong rewards for users */
   distributeAuthority: Signer;
 };
@@ -85,13 +83,8 @@ export function distributeRewards(
       isWritable: false as boolean,
       value: input.rewardMint ?? null,
     },
-    vault: {
-      index: 2,
-      isWritable: true as boolean,
-      value: input.vault ?? null,
-    },
     distributeAuthority: {
-      index: 3,
+      index: 2,
       isWritable: false as boolean,
       value: input.distributeAuthority ?? null,
     },

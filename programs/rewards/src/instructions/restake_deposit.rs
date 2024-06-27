@@ -1,5 +1,6 @@
+use crate::asserts::assert_account_key;
 use crate::state::{Mining, RewardPool};
-use crate::utils::{assert_account_key, AccountLoader, LockupPeriod};
+use crate::utils::{AccountLoader, LockupPeriod};
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult, msg,
     program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,

@@ -16,9 +16,11 @@ import {
   u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
+import { AccountType, AccountTypeArgs, getAccountTypeSerializer } from '.';
 
 export type RewardVault = {
-  bump: number;
+  accountType: AccountType;
+  tokenAccountBump: number;
   rewardMint: PublicKey;
   indexWithPrecision: bigint;
   weightedStakeDiffs: Map<bigint, bigint>;
@@ -28,7 +30,8 @@ export type RewardVault = {
 };
 
 export type RewardVaultArgs = {
-  bump: number;
+  accountType: AccountTypeArgs;
+  tokenAccountBump: number;
   rewardMint: PublicKey;
   indexWithPrecision: number | bigint;
   weightedStakeDiffs: Map<number | bigint, number | bigint>;
@@ -43,7 +46,8 @@ export function getRewardVaultSerializer(): Serializer<
 > {
   return struct<RewardVault>(
     [
-      ['bump', u8()],
+      ['accountType', getAccountTypeSerializer()],
+      ['tokenAccountBump', u8()],
       ['rewardMint', publicKeySerializer()],
       ['indexWithPrecision', u128()],
       ['weightedStakeDiffs', map(u64(), u64())],

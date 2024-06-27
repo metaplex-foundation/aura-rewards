@@ -11,6 +11,8 @@ import { Serializer, scalarEnum } from '@metaplex-foundation/umi/serializers';
 export enum AccountType {
   Uninitialized,
   RewardPool,
+  Mining,
+  RewardVault,
 }
 
 export type AccountTypeArgs = AccountType;

@@ -10,7 +10,7 @@ use solana_program::{
     msg,
     program::{invoke, invoke_signed},
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
+    program_pack::Pack,
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
@@ -60,89 +60,6 @@ pub fn find_reward_pool_program_address(
         &["reward_pool".as_bytes(), &authority_account.to_bytes()],
         program_id,
     )
-}
-
-/// Trait that verifies whether an acount is initialized
-pub trait Uninitialized {
-    /// Is uninitialized
-    fn is_uninitialized(&self) -> bool;
-}
-
-/// Assert signer.
-pub fn assert_signer(account: &AccountInfo) -> ProgramResult {
-    if account.is_signer {
-        return Ok(());
-    }
-
-    Err(ProgramError::MissingRequiredSignature)
-}
-
-/// Assert initilialized
-pub fn assert_initialized<T: IsInitialized>(account: &T) -> ProgramResult {
-    if account.is_initialized() {
-        Ok(())
-    } else {
-        Err(ProgramError::UninitializedAccount)
-    }
-}
-
-/// Assert unitilialized
-pub fn assert_uninitialized<T: Uninitialized>(account: &T) -> ProgramResult {
-    if account.is_uninitialized() {
-        Ok(())
-    } else {
-        Err(ProgramError::AccountAlreadyInitialized)
-    }
-}
-
-/// Assert owned by
-pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
-    if account.owner == owner {
-        Ok(())
-    } else {
-        msg!(
-            "Assert {} owner error. Got {} Expected {}",
-            *account.key,
-            *account.owner,
-            *owner
-        );
-        Err(MplxRewardsError::InvalidAccountOwner.into())
-    }
-}
-
-/// Assert account key
-pub fn assert_account_key(account_info: &AccountInfo, key: &Pubkey) -> ProgramResult {
-    if *account_info.key == *key {
-        Ok(())
-    } else {
-        msg!(
-            "Assert account error. Got {} Expected {}",
-            *account_info.key,
-            *key
-        );
-        Err(ProgramError::InvalidArgument)
-    }
-}
-
-/// Assert rent exempt
-pub fn assert_rent_exempt(account_info: &AccountInfo) -> ProgramResult {
-    let rent = Rent::get()?;
-
-    if rent.is_exempt(account_info.lamports(), account_info.data_len()) {
-        Ok(())
-    } else {
-        msg!(&rent.minimum_balance(account_info.data_len()).to_string());
-        Err(ProgramError::AccountNotRentExempt)
-    }
-}
-
-/// Assert a non-zero amount
-pub fn assert_non_zero_amount(amount: u64) -> ProgramResult {
-    if amount == 0 {
-        return Err(MplxRewardsError::ZeroAmount.into());
-    }
-
-    Ok(())
 }
 
 /// Create account

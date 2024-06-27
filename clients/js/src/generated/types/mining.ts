@@ -14,9 +14,17 @@ import {
   u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
-import { RewardIndex, RewardIndexArgs, getRewardIndexSerializer } from '.';
+import {
+  AccountType,
+  AccountTypeArgs,
+  RewardIndex,
+  RewardIndexArgs,
+  getAccountTypeSerializer,
+  getRewardIndexSerializer,
+} from '.';
 
 export type Mining = {
+  accountType: AccountType;
   rewardPool: PublicKey;
   bump: number;
   share: bigint;
@@ -26,6 +34,7 @@ export type Mining = {
 };
 
 export type MiningArgs = {
+  accountType: AccountTypeArgs;
   rewardPool: PublicKey;
   bump: number;
   share: number | bigint;
@@ -37,6 +46,7 @@ export type MiningArgs = {
 export function getMiningSerializer(): Serializer<MiningArgs, Mining> {
   return struct<Mining>(
     [
+      ['accountType', getAccountTypeSerializer()],
       ['rewardPool', publicKeySerializer()],
       ['bump', u8()],
       ['share', u64()],

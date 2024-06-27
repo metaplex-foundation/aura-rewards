@@ -1,6 +1,6 @@
 use crate::{
     error::MplxRewardsError,
-    state::{RewardVault, MAX_REWARDS, PRECISION},
+    state::{RewardCalculator, PRECISION},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
@@ -15,9 +15,14 @@ use solana_program::{
 use std::collections::BTreeMap;
 use std::ops::Bound::{Excluded, Included};
 
+use super::AccountType;
+
 /// Mining
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct Mining {
+    /// Account type - Mining. This discriminator should exist in order to prevent
+    /// shenanigans with customly modified accounts and their fields.
+    pub account_type: AccountType,
     /// The address of corresponding Reward pool.
     pub reward_pool: Pubkey,
     /// Saved bump for mining account
@@ -38,6 +43,7 @@ impl Mining {
     /// Initialize a Reward Pool
     pub fn initialize(reward_pool: Pubkey, bump: u8, owner: Pubkey) -> Mining {
         Mining {
+            account_type: AccountType::Mining,
             reward_pool,
             bump,
             share: 0,
@@ -53,7 +59,7 @@ impl Mining {
     }
 
     /// Refresh rewards
-    pub fn refresh_rewards(&mut self, vault: &RewardVault) -> ProgramResult {
+    pub fn refresh_rewards(&mut self, vault: &RewardCalculator) -> ProgramResult {
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
         let mut share = self.share;
@@ -76,7 +82,7 @@ impl Mining {
 
 impl Sealed for Mining {}
 impl Pack for Mining {
-    const LEN: usize = 8 + (32 + 1 + 8 + 32 + (4 + RewardIndex::LEN * MAX_REWARDS));
+    const LEN: usize = 1 + 32 + 1 + 8 + 32 + RewardIndex::LEN + 32;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
@@ -90,12 +96,6 @@ impl Pack for Mining {
             msg!("{}", err.to_string());
             ProgramError::InvalidAccountData
         })
-    }
-}
-
-impl IsInitialized for Mining {
-    fn is_initialized(&self) -> bool {
-        self.owner != Pubkey::default()
     }
 }
 
@@ -127,7 +127,7 @@ impl RewardIndex {
         &mut self,
         beginning_of_the_day: u64,
         mut total_share: u64,
-        pool_vault: &RewardVault,
+        pool_vault: &RewardCalculator,
     ) -> Result<u64, ProgramError> {
         for (date, modifier_diff) in &self.weighted_stake_diffs {
             if date > &beginning_of_the_day {
@@ -146,16 +146,17 @@ impl RewardIndex {
                 .checked_sub(*modifier_diff)
                 .ok_or(MplxRewardsError::MathOverflow)?;
         }
-        // TODO: split_off should be used instead of retain
-        self.weighted_stake_diffs
-            .retain(|date, _| date > &beginning_of_the_day);
+        // +1 because we don't need beginning_of_the_day
+        self.weighted_stake_diffs = self
+            .weighted_stake_diffs
+            .split_off(&(beginning_of_the_day + 1));
 
         Ok(total_share)
     }
 
     /// Updates index and distributes rewards
     pub fn update_index(
-        pool_vault: &RewardVault,
+        pool_vault: &RewardCalculator,
         date: u64,
         total_share: u64,
         unclaimed_rewards: &mut u64,
@@ -188,5 +189,11 @@ impl RewardIndex {
         *index_with_precision = *vault_index_for_date;
 
         Ok(())
+    }
+}
+
+impl IsInitialized for Mining {
+    fn is_initialized(&self) -> bool {
+        self.account_type == AccountType::Mining
     }
 }

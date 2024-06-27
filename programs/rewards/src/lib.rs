@@ -2,6 +2,7 @@
 
 //! Rewards contract
 
+pub mod asserts;
 pub mod entrypoint;
 pub mod error;
 pub mod instruction;
