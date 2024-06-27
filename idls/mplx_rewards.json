@@ -559,9 +559,9 @@
             "type": "u64"
           },
           {
-            "name": "vault",
+            "name": "calculator",
             "type": {
-              "defined": "RewardVault"
+              "defined": "RewardCalculator"
             }
           },
           {
@@ -580,16 +580,10 @@
       }
     },
     {
-      "name": "RewardVault",
+      "name": "RewardCalculator",
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "accountType",
-            "type": {
-              "defined": "AccountType"
-            }
-          },
           {
             "name": "tokenAccountBump",
             "type": "u8"
@@ -644,9 +638,6 @@
           },
           {
             "name": "Mining"
-          },
-          {
-            "name": "RewardVault"
           }
         ]
       }

@@ -9,6 +9,6 @@
 export * from './accountType';
 export * from './lockupPeriod';
 export * from './mining';
+export * from './rewardCalculator';
 export * from './rewardIndex';
 export * from './rewardPool';
-export * from './rewardVault';

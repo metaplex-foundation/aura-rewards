@@ -12,7 +12,6 @@ export enum AccountType {
   Uninitialized,
   RewardPool,
   Mining,
-  RewardVault,
 }
 
 export type AccountTypeArgs = AccountType;

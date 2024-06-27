@@ -16,10 +16,8 @@ import {
   u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
-import { AccountType, AccountTypeArgs, getAccountTypeSerializer } from '.';
 
-export type RewardVault = {
-  accountType: AccountType;
+export type RewardCalculator = {
   tokenAccountBump: number;
   rewardMint: PublicKey;
   indexWithPrecision: bigint;
@@ -29,8 +27,7 @@ export type RewardVault = {
   tokensAvailableForDistribution: bigint;
 };
 
-export type RewardVaultArgs = {
-  accountType: AccountTypeArgs;
+export type RewardCalculatorArgs = {
   tokenAccountBump: number;
   rewardMint: PublicKey;
   indexWithPrecision: number | bigint;
@@ -40,13 +37,12 @@ export type RewardVaultArgs = {
   tokensAvailableForDistribution: number | bigint;
 };
 
-export function getRewardVaultSerializer(): Serializer<
-  RewardVaultArgs,
-  RewardVault
+export function getRewardCalculatorSerializer(): Serializer<
+  RewardCalculatorArgs,
+  RewardCalculator
 > {
-  return struct<RewardVault>(
+  return struct<RewardCalculator>(
     [
-      ['accountType', getAccountTypeSerializer()],
       ['tokenAccountBump', u8()],
       ['rewardMint', publicKeySerializer()],
       ['indexWithPrecision', u128()],
@@ -55,6 +51,6 @@ export function getRewardVaultSerializer(): Serializer<
       ['distributionEndsAt', u64()],
       ['tokensAvailableForDistribution', u64()],
     ],
-    { description: 'RewardVault' }
-  ) as Serializer<RewardVaultArgs, RewardVault>;
+    { description: 'RewardCalculator' }
+  ) as Serializer<RewardCalculatorArgs, RewardCalculator>;
 }

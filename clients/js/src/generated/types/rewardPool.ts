@@ -17,17 +17,17 @@ import {
 import {
   AccountType,
   AccountTypeArgs,
-  RewardVault,
-  RewardVaultArgs,
+  RewardCalculator,
+  RewardCalculatorArgs,
   getAccountTypeSerializer,
-  getRewardVaultSerializer,
+  getRewardCalculatorSerializer,
 } from '.';
 
 export type RewardPool = {
   accountType: AccountType;
   bump: number;
   totalShare: bigint;
-  vault: RewardVault;
+  calculator: RewardCalculator;
   depositAuthority: PublicKey;
   distributeAuthority: PublicKey;
   fillAuthority: PublicKey;
@@ -37,7 +37,7 @@ export type RewardPoolArgs = {
   accountType: AccountTypeArgs;
   bump: number;
   totalShare: number | bigint;
-  vault: RewardVaultArgs;
+  calculator: RewardCalculatorArgs;
   depositAuthority: PublicKey;
   distributeAuthority: PublicKey;
   fillAuthority: PublicKey;
@@ -52,7 +52,7 @@ export function getRewardPoolSerializer(): Serializer<
       ['accountType', getAccountTypeSerializer()],
       ['bump', u8()],
       ['totalShare', u64()],
-      ['vault', getRewardVaultSerializer()],
+      ['calculator', getRewardCalculatorSerializer()],
       ['depositAuthority', publicKeySerializer()],
       ['distributeAuthority', publicKeySerializer()],
       ['fillAuthority', publicKeySerializer()],

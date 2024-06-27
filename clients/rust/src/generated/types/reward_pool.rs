@@ -6,7 +6,7 @@
 //!
 
 use crate::generated::types::AccountType;
-use crate::generated::types::RewardVault;
+use crate::generated::types::RewardCalculator;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
@@ -17,7 +17,7 @@ pub struct RewardPool {
     pub account_type: AccountType,
     pub bump: u8,
     pub total_share: u64,
-    pub vault: RewardVault,
+    pub calculator: RewardCalculator,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
