@@ -61,8 +61,8 @@ impl RewardPool {
         }
     }
 
-    /// Process fill
-    pub fn fill(&mut self, rewards: u64) -> ProgramResult {
+    /// Distributes rewards via calculating indexes and weighted stakes
+    pub fn distribute(&mut self, rewards: u64) -> ProgramResult {
         if self.total_share == 0 {
             return Err(MplxRewardsError::RewardsNoDeposits.into());
         }

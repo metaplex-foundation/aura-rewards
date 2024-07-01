@@ -36,7 +36,7 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
         let rewards_to_distribute = reward_pool.calculator.rewards_to_distribute()?;
         assert_account_key(self.distribute_authority, &reward_pool.distribute_authority)?;
 
-        reward_pool.fill(rewards_to_distribute)?;
+        reward_pool.distribute(rewards_to_distribute)?;
         reward_pool.calculator.tokens_available_for_distribution = reward_pool
             .calculator
             .tokens_available_for_distribution
