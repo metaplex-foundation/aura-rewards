@@ -17,11 +17,18 @@ pub fn assert_signer(account: &AccountInfo) -> ProgramResult {
 
 /// Assert unitilialized
 pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
-    if account.data_len() == 0 {
-        Ok(())
-    } else {
-        Err(ProgramError::AccountAlreadyInitialized)
+    let AccountInfo {
+        lamports,
+        data,
+        owner,
+        ..
+    } = account;
+
+    if **lamports.borrow() == 0 && data.borrow().is_empty() && *owner == &Pubkey::default() {
+        return Ok(());
     }
+
+    Err(ProgramError::AccountAlreadyInitialized)
 }
 
 /// Assert owned by
