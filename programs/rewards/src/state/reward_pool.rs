@@ -89,6 +89,12 @@ impl RewardPool {
             beginning_of_the_day,
         )?;
 
+        self.calculator.tokens_available_for_distribution = self
+            .calculator
+            .tokens_available_for_distribution
+            .checked_sub(rewards)
+            .ok_or(MplxRewardsError::MathOverflow)?;
+
         Ok(())
     }
 
