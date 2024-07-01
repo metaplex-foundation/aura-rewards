@@ -275,7 +275,7 @@ impl LockupPeriod {
             LockupPeriod::ThreeMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 90),
             LockupPeriod::SixMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 180),
             LockupPeriod::OneYear => Ok(beginning_of_the_day + SECONDS_PER_DAY * 365),
-            LockupPeriod::Flex => Ok(0)
+            LockupPeriod::Flex => Ok(beginning_of_the_day + SECONDS_PER_DAY * 5),
         }
     }
 
@@ -286,7 +286,7 @@ impl LockupPeriod {
             LockupPeriod::ThreeMonths => Ok(90),
             LockupPeriod::SixMonths => Ok(180),
             LockupPeriod::OneYear => Ok(365),
-            LockupPeriod::Flex => Ok(0),
+            LockupPeriod::Flex => Ok(5),
         }
     }
 }
