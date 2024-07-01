@@ -8,4 +8,4 @@ mod integration;
 mod utils;
 mod withdraw_mining;
 
-mod restake_deposit;
+mod extend_stake;

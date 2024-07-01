@@ -88,12 +88,12 @@ pub enum RewardsInstruction {
     #[account(7, name = "token_program", desc = "The address of the Token program where rewards are minted")]
     Claim,
 
-    /// Restakes deposit
+    /// Extends stake
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    RestakeDeposit {
+    ExtendStake {
         /// Lockup period before restaking. Actually it's only needed
         /// for Flex to AnyPeriod edge case
         old_lockup_period: LockupPeriod,
@@ -103,7 +103,7 @@ pub enum RewardsInstruction {
         deposit_start_ts: u64,
         /// Amount of tokens to be restaked, this
         /// number cannot be decreased. It reflects the number of staked tokens
-        /// before the restake function call
+        /// before the extend_stake function call
         base_amount: u64,
         /// In case user wants to increase it's staked number of tokens,
         /// the addition amount might be provided
@@ -285,9 +285,9 @@ pub fn claim(
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::Claim, accounts)
 }
 
-/// Creates 'RestakeDeposit" instruction.
+/// Creates 'ExtendStake" instruction.
 #[allow(clippy::too_many_arguments)]
-pub fn restake_deposit(
+pub fn extend_stake(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
@@ -307,7 +307,7 @@ pub fn restake_deposit(
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::RestakeDeposit {
+        &RewardsInstruction::ExtendStake {
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
@@ -319,7 +319,7 @@ pub fn restake_deposit(
     )
 }
 
-/// Creates 'RestakeDeposit" instruction.
+/// Creates 'Distribute Rewards" instruction.
 #[allow(clippy::too_many_arguments)]
 pub fn distribute_rewards(
     program_id: &Pubkey,

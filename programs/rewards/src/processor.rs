@@ -2,7 +2,7 @@
 use crate::instruction::RewardsInstruction;
 use crate::instructions::{
     ClaimContext, DepositMiningContext, DistributeRewardsContext, FillVaultContext,
-    InitializeMiningContext, InitializePoolContext, RestakeDepositContext, WithdrawMiningContext,
+    InitializeMiningContext, InitializePoolContext, ExtendStakeContext, WithdrawMiningContext,
 };
 use borsh::BorshDeserialize;
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey};
@@ -65,7 +65,7 @@ pub fn process_instruction(
             msg!("RewardsInstruction: Claim");
             ClaimContext::new(program_id, accounts)?.process(program_id)
         }
-        RewardsInstruction::RestakeDeposit {
+        RewardsInstruction::ExtendStake {
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
@@ -73,8 +73,8 @@ pub fn process_instruction(
             additional_amount,
             mining_owner,
         } => {
-            msg!("RewardsInstruction: RestakeDeposit");
-            RestakeDepositContext::new(program_id, accounts)?.process(
+            msg!("RewardsInstruction: ExtendStake");
+            ExtendStakeContext::new(program_id, accounts)?.process(
                 program_id,
                 old_lockup_period,
                 new_lockup_period,

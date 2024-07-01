@@ -63,7 +63,7 @@ async fn restake_before_its_expired() {
         advance_clock_by_ts(&mut context, (10 * SECONDS_PER_DAY).try_into().unwrap()).await;
 
     test_rewards
-        .restake_deposit(
+        .extend_stake(
             &mut context,
             &mining,
             old_lockup_period,
@@ -124,7 +124,7 @@ async fn restake_for_another_period_after_old_is_expired() {
     let new_lockup_period = LockupPeriod::OneYear;
 
     test_rewards
-        .restake_deposit(
+        .extend_stake(
             &mut context,
             &mining,
             old_lockup_period,
@@ -171,7 +171,7 @@ async fn just_prolong_without_adding_tokes() {
         advance_clock_by_ts(&mut context, (10 * SECONDS_PER_DAY).try_into().unwrap()).await;
 
     test_rewards
-        .restake_deposit(
+        .extend_stake(
             &mut context,
             &mining,
             old_lockup_period,
@@ -232,7 +232,7 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
     let new_lockup_period = LockupPeriod::ThreeMonths;
 
     test_rewards
-        .restake_deposit(
+        .extend_stake(
             &mut context,
             &mining,
             old_lockup_period,
@@ -287,7 +287,7 @@ async fn restake_in_expiration_day() {
     let new_lockup_period = LockupPeriod::ThreeMonths;
 
     test_rewards
-        .restake_deposit(
+        .extend_stake(
             &mut context,
             &mining,
             old_lockup_period,

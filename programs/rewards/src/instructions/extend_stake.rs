@@ -7,25 +7,25 @@ use solana_program::{
 };
 
 /// Instruction context
-pub struct RestakeDepositContext<'a, 'b> {
+pub struct ExtendStakeContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     mining: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
 }
 
-impl<'a, 'b> RestakeDepositContext<'a, 'b> {
+impl<'a, 'b> ExtendStakeContext<'a, 'b> {
     /// New instruction context
     pub fn new(
         program_id: &Pubkey,
         accounts: &'a [AccountInfo<'b>],
-    ) -> Result<RestakeDepositContext<'a, 'b>, ProgramError> {
+    ) -> Result<ExtendStakeContext<'a, 'b>, ProgramError> {
         let account_info_iter = &mut accounts.iter().enumerate();
 
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
 
-        Ok(RestakeDepositContext {
+        Ok(ExtendStakeContext {
             reward_pool,
             mining,
             deposit_authority,
@@ -71,7 +71,7 @@ impl<'a, 'b> RestakeDepositContext<'a, 'b> {
             }
         }
 
-        reward_pool.restake(
+        reward_pool.extend(
             &mut mining,
             old_lockup_period,
             new_lockup_period,

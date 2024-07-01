@@ -229,7 +229,7 @@ impl TestRewards {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn restake_deposit(
+    pub async fn extend_stake(
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
@@ -241,7 +241,7 @@ impl TestRewards {
         mining_owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::restake_deposit(
+            &[mplx_rewards::instruction::extend_stake(
                 &mplx_rewards::id(),
                 &self.mining_reward_pool,
                 mining_account,

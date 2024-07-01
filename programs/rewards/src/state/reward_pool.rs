@@ -163,8 +163,8 @@ impl RewardPool {
         Ok(())
     }
 
-    /// Process restake deposit
-    pub fn restake(
+    /// Process extend stake
+    pub fn extend(
         &mut self,
         mining: &mut Mining,
         old_lockup_period: LockupPeriod,
@@ -212,7 +212,7 @@ impl RewardPool {
                 .entry(deposit_old_expiration_ts)
                 .and_modify(|modifier| *modifier -= weighted_stake_diff);
 
-            // also, we need to reduce staking power because we want to restake from "scratch"
+            // also, we need to reduce staking power because we want to extend stake from "scratch"
             mining.share = mining
                 .share
                 .checked_sub(curr_part_of_weighted_stake)
