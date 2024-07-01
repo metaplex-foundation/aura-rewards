@@ -671,46 +671,21 @@
     },
     {
       "code": 2,
-      "name": "ZeroAmount",
-      "msg": "Zero amount"
-    },
-    {
-      "code": 3,
-      "name": "RewardsInvalidVault",
-      "msg": "Rewards: Invalid vault"
-    },
-    {
-      "code": 4,
       "name": "RewardsNoDeposits",
       "msg": "Rewards: No deposits"
     },
     {
-      "code": 5,
-      "name": "RebalanceLiquidityCheckFailed",
-      "msg": "Rebalancing: liquidity check failed"
-    },
-    {
-      "code": 6,
-      "name": "IndexMustExist",
-      "msg": "Rewards: index receiving failed"
-    },
-    {
-      "code": 7,
+      "code": 3,
       "name": "InvalidLockupPeriod",
       "msg": "Rewards: lockup period invalid"
     },
     {
-      "code": 8,
-      "name": "InvalidCpiCaller",
-      "msg": "Rewards: only Staking contract is allowed to do CPI calls"
-    },
-    {
-      "code": 9,
+      "code": 4,
       "name": "DistributionInThePast",
       "msg": "Rewards: distribution_ends_at date is lower than current date "
     },
     {
-      "code": 10,
+      "code": 5,
       "name": "InvalidPrimitiveTypesConversion",
       "msg": "Rewards: distribution_ends_at date is lower than current date "
     }

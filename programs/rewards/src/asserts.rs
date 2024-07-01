@@ -64,12 +64,3 @@ pub fn assert_rent_exempt(account_info: &AccountInfo) -> ProgramResult {
         Err(ProgramError::AccountNotRentExempt)
     }
 }
-
-/// Assert a non-zero amount
-pub fn assert_non_zero_amount(amount: u64) -> ProgramResult {
-    if amount == 0 {
-        return Err(MplxRewardsError::ZeroAmount.into());
-    }
-
-    Ok(())
-}

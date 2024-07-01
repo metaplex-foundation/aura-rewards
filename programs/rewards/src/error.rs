@@ -22,46 +22,21 @@ pub enum MplxRewardsError {
     MathOverflow,
 
     /// 2
-    /// Zero amount
-    #[error("Zero amount")]
-    ZeroAmount,
-
-    /// 3
-    /// Invalid vault
-    #[error("Rewards: Invalid vault")]
-    RewardsInvalidVault,
-
-    /// 4
     /// No deposits
     #[error("Rewards: No deposits")]
     RewardsNoDeposits,
 
-    /// 5
-    /// Check for liquidity amount in rebalance
-    #[error("Rebalancing: liquidity check failed")]
-    RebalanceLiquidityCheckFailed,
-
-    /// 6
-    /// Non existing reward's index
-    #[error("Rewards: index receiving failed")]
-    IndexMustExist,
-
-    /// 7
+    /// 3
     /// Invalid lockup period
     #[error("Rewards: lockup period invalid")]
     InvalidLockupPeriod,
 
-    /// 8
-    /// Invalid CPI caller
-    #[error("Rewards: only Staking contract is allowed to do CPI calls")]
-    InvalidCpiCaller,
-
-    /// 9
+    /// 4
     /// Invalid distribution_ends_at data
     #[error("Rewards: distribution_ends_at date is lower than current date ")]
     DistributionInThePast,
 
-    /// 10
+    /// 5
     /// Invalid math conversion between types
     #[error("Rewards: distribution_ends_at date is lower than current date ")]
     InvalidPrimitiveTypesConversion,
