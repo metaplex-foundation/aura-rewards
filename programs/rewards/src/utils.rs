@@ -197,30 +197,6 @@ impl AccountLoader {
         Err(ProgramError::MissingRequiredSignature)
     }
 
-    /// Checks if account is initialized and then checks it's owner
-    pub fn next_optional<'a, 'b, I: Iterator<Item = &'a AccountInfo<'b>>>(
-        iter: &mut Enumerate<I>,
-        owner: &Pubkey,
-    ) -> Result<I::Item, ProgramError> {
-        let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
-        if acc.owner.eq(&Pubkey::default()) {
-            return Ok(acc);
-        }
-
-        if acc.owner.eq(owner) {
-            return Ok(acc);
-        }
-
-        msg!(
-            "Account #{}:{} owner error. Got {} Expected unitialized or {}",
-            idx,
-            acc.key,
-            acc.owner,
-            owner
-        );
-        Err(MplxRewardsError::InvalidAccountOwner.into())
-    }
-
     /// Load the account without any checks
     pub fn next_unchecked<'a, 'b, I: Iterator<Item = &'a AccountInfo<'b>>>(
         iter: &mut Enumerate<I>,
@@ -276,17 +252,6 @@ impl LockupPeriod {
             LockupPeriod::SixMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 180),
             LockupPeriod::OneYear => Ok(beginning_of_the_day + SECONDS_PER_DAY * 365),
             LockupPeriod::Flex => Ok(0)
-        }
-    }
-
-    /// Return number of days plain numbers to make them appliable for the self.weighted_stake_diff
-    pub fn days(&self) -> Result<u64, MplxRewardsError> {
-        match self {
-            LockupPeriod::None => Err(MplxRewardsError::InvalidLockupPeriod),
-            LockupPeriod::ThreeMonths => Ok(90),
-            LockupPeriod::SixMonths => Ok(180),
-            LockupPeriod::OneYear => Ok(365),
-            LockupPeriod::Flex => Ok(0),
         }
     }
 }
