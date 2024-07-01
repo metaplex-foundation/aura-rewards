@@ -48,6 +48,10 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
         rewards: u64,
         distribution_ends_at: u64,
     ) -> ProgramResult {
+        if rewards == 0 {
+            return Ok(());
+        }
+
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
         assert_account_key(self.fill_authority, &reward_pool.fill_authority)?;
 
