@@ -166,6 +166,13 @@ impl RewardPool {
             .checked_sub(amount)
             .ok_or(MplxRewardsError::MathOverflow)?;
 
+        let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
+        let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
+        let reward_pool_share = self
+            .calculator
+            .consume_old_modifiers(beginning_of_the_day, self.total_share)?;
+        self.total_share = reward_pool_share;
+
         Ok(())
     }
 

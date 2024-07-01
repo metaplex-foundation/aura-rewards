@@ -3,14 +3,8 @@ use crate::state::{Mining, RewardPool};
 use crate::utils::AccountLoader;
 
 use solana_program::{
-    account_info::AccountInfo,
-    clock::{Clock, SECONDS_PER_DAY},
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
-    program_pack::Pack,
-    pubkey::Pubkey,
-    sysvar::Sysvar,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    program_pack::Pack, pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -70,13 +64,6 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
             return Err(ProgramError::InvalidArgument);
         }
         reward_pool.withdraw(&mut mining, amount)?;
-
-        let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
-        let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
-        let reward_pool_share = reward_pool
-            .calculator
-            .consume_old_modifiers(beginning_of_the_day, reward_pool.total_share)?;
-        reward_pool.total_share = reward_pool_share;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
         Mining::pack(mining, *self.mining.data.borrow_mut())?;
