@@ -11,7 +11,7 @@ use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
 /// Accounts.
-pub struct RestakeDeposit {
+pub struct ExtendStake {
     /// The address of the reward pool
     pub reward_pool: solana_program::pubkey::Pubkey,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
@@ -22,17 +22,17 @@ pub struct RestakeDeposit {
     pub deposit_authority: solana_program::pubkey::Pubkey,
 }
 
-impl RestakeDeposit {
+impl ExtendStake {
     pub fn instruction(
         &self,
-        args: RestakeDepositInstructionArgs,
+        args: ExtendStakeInstructionArgs,
     ) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: RestakeDepositInstructionArgs,
+        args: ExtendStakeInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
@@ -53,7 +53,7 @@ impl RestakeDeposit {
             true,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = RestakeDepositInstructionData::new().try_to_vec().unwrap();
+        let mut data = ExtendStakeInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
         data.append(&mut args);
 
@@ -66,11 +66,11 @@ impl RestakeDeposit {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct RestakeDepositInstructionData {
+pub struct ExtendStakeInstructionData {
     discriminator: u8,
 }
 
-impl RestakeDepositInstructionData {
+impl ExtendStakeInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 6 }
     }
@@ -78,7 +78,7 @@ impl RestakeDepositInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct RestakeDepositInstructionArgs {
+pub struct ExtendStakeInstructionArgs {
     pub old_lockup_period: LockupPeriod,
     pub new_lockup_period: LockupPeriod,
     pub deposit_start_ts: u64,
@@ -87,7 +87,7 @@ pub struct RestakeDepositInstructionArgs {
     pub mining_owner: Pubkey,
 }
 
-/// Instruction builder for `RestakeDeposit`.
+/// Instruction builder for `ExtendStake`.
 ///
 /// ### Accounts:
 ///
@@ -96,7 +96,7 @@ pub struct RestakeDepositInstructionArgs {
 ///   2. `[]` reward_mint
 ///   3. `[signer]` deposit_authority
 #[derive(Default)]
-pub struct RestakeDepositBuilder {
+pub struct ExtendStakeBuilder {
     reward_pool: Option<solana_program::pubkey::Pubkey>,
     mining: Option<solana_program::pubkey::Pubkey>,
     reward_mint: Option<solana_program::pubkey::Pubkey>,
@@ -110,7 +110,7 @@ pub struct RestakeDepositBuilder {
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl RestakeDepositBuilder {
+impl ExtendStakeBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -191,7 +191,7 @@ impl RestakeDepositBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = RestakeDeposit {
+        let accounts = ExtendStake {
             reward_pool: self.reward_pool.expect("reward_pool is not set"),
             mining: self.mining.expect("mining is not set"),
             reward_mint: self.reward_mint.expect("reward_mint is not set"),
@@ -199,7 +199,7 @@ impl RestakeDepositBuilder {
                 .deposit_authority
                 .expect("deposit_authority is not set"),
         };
-        let args = RestakeDepositInstructionArgs {
+        let args = ExtendStakeInstructionArgs {
             old_lockup_period: self
                 .old_lockup_period
                 .clone()
@@ -224,8 +224,8 @@ impl RestakeDepositBuilder {
     }
 }
 
-/// `restake_deposit` CPI accounts.
-pub struct RestakeDepositCpiAccounts<'a, 'b> {
+/// `extend_stake` CPI accounts.
+pub struct ExtendStakeCpiAccounts<'a, 'b> {
     /// The address of the reward pool
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
@@ -236,8 +236,8 @@ pub struct RestakeDepositCpiAccounts<'a, 'b> {
     pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `restake_deposit` CPI instruction.
-pub struct RestakeDepositCpi<'a, 'b> {
+/// `extend_stake` CPI instruction.
+pub struct ExtendStakeCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the reward pool
@@ -249,14 +249,14 @@ pub struct RestakeDepositCpi<'a, 'b> {
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: RestakeDepositInstructionArgs,
+    pub __args: ExtendStakeInstructionArgs,
 }
 
-impl<'a, 'b> RestakeDepositCpi<'a, 'b> {
+impl<'a, 'b> ExtendStakeCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: RestakeDepositCpiAccounts<'a, 'b>,
-        args: RestakeDepositInstructionArgs,
+        accounts: ExtendStakeCpiAccounts<'a, 'b>,
+        args: ExtendStakeInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
@@ -324,7 +324,7 @@ impl<'a, 'b> RestakeDepositCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = RestakeDepositInstructionData::new().try_to_vec().unwrap();
+        let mut data = ExtendStakeInstructionData::new().try_to_vec().unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
         data.append(&mut args);
 
@@ -351,7 +351,7 @@ impl<'a, 'b> RestakeDepositCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `RestakeDeposit` via CPI.
+/// Instruction builder for `ExtendStake` via CPI.
 ///
 /// ### Accounts:
 ///
@@ -359,13 +359,13 @@ impl<'a, 'b> RestakeDepositCpi<'a, 'b> {
 ///   1. `[writable]` mining
 ///   2. `[]` reward_mint
 ///   3. `[signer]` deposit_authority
-pub struct RestakeDepositCpiBuilder<'a, 'b> {
-    instruction: Box<RestakeDepositCpiBuilderInstruction<'a, 'b>>,
+pub struct ExtendStakeCpiBuilder<'a, 'b> {
+    instruction: Box<ExtendStakeCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> RestakeDepositCpiBuilder<'a, 'b> {
+impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(RestakeDepositCpiBuilderInstruction {
+        let instruction = Box::new(ExtendStakeCpiBuilderInstruction {
             __program: program,
             reward_pool: None,
             mining: None,
@@ -488,7 +488,7 @@ impl<'a, 'b> RestakeDepositCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = RestakeDepositInstructionArgs {
+        let args = ExtendStakeInstructionArgs {
             old_lockup_period: self
                 .instruction
                 .old_lockup_period
@@ -520,7 +520,7 @@ impl<'a, 'b> RestakeDepositCpiBuilder<'a, 'b> {
                 .clone()
                 .expect("mining_owner is not set"),
         };
-        let instruction = RestakeDepositCpi {
+        let instruction = ExtendStakeCpi {
             __program: self.instruction.__program,
 
             reward_pool: self
@@ -548,7 +548,7 @@ impl<'a, 'b> RestakeDepositCpiBuilder<'a, 'b> {
     }
 }
 
-struct RestakeDepositCpiBuilderInstruction<'a, 'b> {
+struct ExtendStakeCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     reward_pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,

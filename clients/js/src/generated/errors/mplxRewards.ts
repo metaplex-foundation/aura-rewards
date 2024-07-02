@@ -176,6 +176,19 @@ nameToErrorMap.set(
   InvalidPrimitiveTypesConversionError
 );
 
+/** RewardsMustBeClaimed: Rewards: unclaimed rewards must be claimed */
+export class RewardsMustBeClaimedError extends ProgramError {
+  override readonly name: string = 'RewardsMustBeClaimed';
+
+  readonly code: number = 0xb; // 11
+
+  constructor(program: Program, cause?: Error) {
+    super('Rewards: unclaimed rewards must be claimed', program, cause);
+  }
+}
+codeToErrorMap.set(0xb, RewardsMustBeClaimedError);
+nameToErrorMap.set('RewardsMustBeClaimed', RewardsMustBeClaimedError);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors
