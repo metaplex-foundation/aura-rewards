@@ -1,6 +1,8 @@
-use crate::asserts::assert_account_key;
-use crate::state::{Mining, RewardPool};
-use crate::utils::AccountLoader;
+use crate::{
+    asserts::assert_account_key,
+    state::{Mining, RewardPool},
+    utils::AccountLoader,
+};
 
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,

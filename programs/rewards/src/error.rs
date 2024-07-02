@@ -65,6 +65,11 @@ pub enum MplxRewardsError {
     /// Invalid math conversion between types
     #[error("Rewards: distribution_ends_at date is lower than current date ")]
     InvalidPrimitiveTypesConversion,
+
+    /// 11
+    /// Impossible to close accounts while it has unclaimed rewards
+    #[error("Rewards: unclaimed rewards must be claimed")]
+    RewardsMustBeClaimed,
 }
 
 impl PrintProgramError for MplxRewardsError {

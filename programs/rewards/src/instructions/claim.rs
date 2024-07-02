@@ -1,6 +1,8 @@
-use crate::asserts::assert_account_key;
-use crate::state::{Mining, RewardPool};
-use crate::utils::{spl_transfer, AccountLoader};
+use crate::{
+    asserts::assert_account_key,
+    state::{Mining, RewardPool},
+    utils::{spl_transfer, AccountLoader},
+};
 use borsh::BorshSerialize;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program::set_return_data,

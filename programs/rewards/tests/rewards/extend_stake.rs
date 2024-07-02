@@ -1,12 +1,8 @@
 use crate::utils::*;
-use mplx_rewards::state::Mining;
-use mplx_rewards::utils::LockupPeriod;
+use mplx_rewards::{state::Mining, utils::LockupPeriod};
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::clock::SECONDS_PER_DAY;
-use solana_sdk::program_pack::Pack;
-use solana_sdk::signature::Keypair;
-use solana_sdk::signer::Signer;
+use solana_sdk::{clock::SECONDS_PER_DAY, program_pack::Pack, signature::Keypair, signer::Signer};
 use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {

@@ -2,9 +2,11 @@
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use shank::{ShankContext, ShankInstruction};
-use solana_program::instruction::{AccountMeta, Instruction};
-use solana_program::pubkey::Pubkey;
-use solana_program::{system_program, sysvar};
+use solana_program::{
+    instruction::{AccountMeta, Instruction},
+    pubkey::Pubkey,
+    system_program, sysvar,
+};
 
 use crate::utils::LockupPeriod;
 
@@ -116,6 +118,14 @@ pub enum RewardsInstruction {
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(1, signer, name = "distribute_authority", desc = "The address of Authority who is eligble for distributiong rewards for users")]
     DistributeRewards,
+
+    /// Distributes tokens among mining owners
+    #[account(0, name = "mining", desc = "The address of the user's mining account")]
+    #[account(1, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
+    #[account(2, writable, name = "target_account", desc = "The address where lamports from account closing will be transferred")]
+    #[account(3, writable, signer, name = "deposit_authority")]
+    #[account(4, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    CloseMining,
 }
 
 /// Creates 'InitializePool' instruction.
@@ -336,4 +346,25 @@ pub fn distribute_rewards(
         &RewardsInstruction::DistributeRewards,
         accounts,
     )
+}
+
+/// Creates 'Distribute Rewards" instruction.
+#[allow(clippy::too_many_arguments)]
+pub fn close_mining(
+    program_id: &Pubkey,
+    mining: &Pubkey,
+    mining_owner: &Pubkey,
+    target_account: &Pubkey,
+    deposit_authority: &Pubkey,
+    reward_pool: &Pubkey,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(*mining, false),
+        AccountMeta::new_readonly(*mining_owner, true),
+        AccountMeta::new(*target_account, false),
+        AccountMeta::new(*deposit_authority, true),
+        AccountMeta::new_readonly(*reward_pool, false),
+    ];
+
+    Instruction::new_with_borsh(*program_id, &RewardsInstruction::CloseMining, accounts)
 }

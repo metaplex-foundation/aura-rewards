@@ -3,9 +3,7 @@ use mplx_rewards::utils::LockupPeriod;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::clock::SECONDS_PER_DAY;
-use solana_sdk::signature::Keypair;
-use solana_sdk::signer::Signer;
+use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
 use spl_token::state::Account;
 use std::borrow::Borrow;
 

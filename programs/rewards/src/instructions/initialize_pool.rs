@@ -1,8 +1,10 @@
-use crate::asserts::{assert_account_key, assert_uninitialized};
-use crate::state::{RewardCalculator, RewardPool};
-use crate::utils::{
-    create_account, find_reward_pool_program_address, find_vault_program_address,
-    initialize_account, AccountLoader,
+use crate::{
+    asserts::{assert_account_key, assert_uninitialized},
+    state::{RewardCalculator, RewardPool},
+    utils::{
+        create_account, find_reward_pool_program_address, find_vault_program_address,
+        initialize_account, AccountLoader,
+    },
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,

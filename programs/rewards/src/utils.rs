@@ -2,10 +2,9 @@
 use std::iter::Enumerate;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::clock::Clock;
-use solana_program::clock::SECONDS_PER_DAY;
 use solana_program::{
     account_info::AccountInfo,
+    clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
     msg,
     program::{invoke, invoke_signed},

@@ -1,8 +1,10 @@
 use std::collections::BTreeMap;
 
-use crate::error::MplxRewardsError;
-use crate::state::{AccountType, Mining};
-use crate::utils::{get_curr_unix_ts, LockupPeriod};
+use crate::{
+    error::MplxRewardsError,
+    state::{AccountType, Mining},
+    utils::{get_curr_unix_ts, LockupPeriod},
+};
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
     clock::{Clock, SECONDS_PER_DAY},

@@ -12,8 +12,10 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
-use std::collections::BTreeMap;
-use std::ops::Bound::{Excluded, Included};
+use std::{
+    collections::BTreeMap,
+    ops::Bound::{Excluded, Included},
+};
 
 use super::AccountType;
 

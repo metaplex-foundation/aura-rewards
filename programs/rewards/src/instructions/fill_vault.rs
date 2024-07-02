@@ -1,7 +1,9 @@
-use crate::asserts::assert_account_key;
-use crate::error::MplxRewardsError;
-use crate::state::RewardPool;
-use crate::utils::{get_curr_unix_ts, spl_transfer, AccountLoader};
+use crate::{
+    asserts::assert_account_key,
+    error::MplxRewardsError,
+    state::RewardPool,
+    utils::{get_curr_unix_ts, spl_transfer, AccountLoader},
+};
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
     program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,

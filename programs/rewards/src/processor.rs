@@ -1,8 +1,11 @@
 //! Program processor
-use crate::instruction::RewardsInstruction;
-use crate::instructions::{
-    ClaimContext, DepositMiningContext, DistributeRewardsContext, FillVaultContext,
-    InitializeMiningContext, InitializePoolContext, ExtendStakeContext, WithdrawMiningContext,
+use crate::{
+    instruction::RewardsInstruction,
+    instructions::{
+        ClaimContext, CloseMiningContext, DepositMiningContext, DistributeRewardsContext,
+        ExtendStakeContext, FillVaultContext, InitializeMiningContext, InitializePoolContext,
+        WithdrawMiningContext,
+    },
 };
 use borsh::BorshDeserialize;
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey};
@@ -87,6 +90,10 @@ pub fn process_instruction(
         RewardsInstruction::DistributeRewards => {
             msg!("RewardsInstruction: FillVault");
             DistributeRewardsContext::new(program_id, accounts)?.process()
+        }
+        RewardsInstruction::CloseMining => {
+            msg!("RewardsInstruction: CloseAccount");
+            CloseMiningContext::new(program_id, accounts)?.process()
         }
     }
 }

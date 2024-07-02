@@ -1,4 +1,5 @@
 mod claim;
+mod close_mining;
 mod deposit_mining;
 mod distribute_rewards;
 mod fill_vault;
