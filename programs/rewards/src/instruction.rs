@@ -123,7 +123,7 @@ pub enum RewardsInstruction {
     #[account(0, name = "mining", desc = "The address of the user's mining account")]
     #[account(1, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
     #[account(2, writable, name = "target_account", desc = "The address where lamports from account closing will be transferred")]
-    #[account(3, writable, signer, name = "deposit_authority")]
+    #[account(3, signer, name = "deposit_authority")]
     #[account(4, writable, name = "reward_pool", desc = "The address of the reward pool")]
     CloseMining,
 }
@@ -362,7 +362,7 @@ pub fn close_mining(
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*mining_owner, true),
         AccountMeta::new(*target_account, false),
-        AccountMeta::new(*deposit_authority, true),
+        AccountMeta::new_readonly(*deposit_authority, true),
         AccountMeta::new_readonly(*reward_pool, false),
     ];
 
