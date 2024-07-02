@@ -352,21 +352,12 @@ impl RewardCalculator {
             .checked_div(u128::from(total_share))
             .ok_or(MplxRewardsError::MathOverflow)?;
 
-        let cumulative_index_to_insert = {
-            if let Some((_, index)) = cumulative_index.last_key_value() {
-                *index
-            } else {
-                0
-            }
-            .checked_add(index)
-            .ok_or(MplxRewardsError::MathOverflow)?
-        };
-
-        cumulative_index.insert(date_to_process, cumulative_index_to_insert);
-
-        *index_with_precision = index_with_precision
+        let latest_index = index_with_precision
             .checked_add(index)
             .ok_or(MplxRewardsError::MathOverflow)?;
+
+        cumulative_index.insert(date_to_process, latest_index);
+        *index_with_precision = latest_index;
 
         Ok(())
     }
