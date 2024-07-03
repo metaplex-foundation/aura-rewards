@@ -3,10 +3,8 @@
 //! to add features, then rerun kinobi to update it.
 //!
 //! [https://github.com/metaplex-foundation/kinobi]
-//!
 
-use borsh::BorshDeserialize;
-use borsh::BorshSerialize;
+use borsh::{BorshDeserialize, BorshSerialize};
 
 /// Accounts.
 pub struct CloseMining {
@@ -379,8 +377,9 @@ impl<'a, 'b> CloseMiningCpiBuilder<'a, 'b> {
     }
     /// Add additional accounts to the instruction.
     ///
-    /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
-    /// and a `bool` indicating whether the account is a signer or not.
+    /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the
+    /// account is writable or not, and a `bool` indicating whether the account is a signer or
+    /// not.
     #[inline(always)]
     pub fn add_remaining_accounts(
         &mut self,

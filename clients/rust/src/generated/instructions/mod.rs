@@ -3,7 +3,6 @@
 //! to add features, then rerun kinobi to update it.
 //!
 //! [https://github.com/metaplex-foundation/kinobi]
-//!
 
 pub(crate) mod r#claim;
 pub(crate) mod r#close_mining;
@@ -15,12 +14,7 @@ pub(crate) mod r#initialize_mining;
 pub(crate) mod r#initialize_pool;
 pub(crate) mod r#withdraw_mining;
 
-pub use self::r#claim::*;
-pub use self::r#close_mining::*;
-pub use self::r#deposit_mining::*;
-pub use self::r#distribute_rewards::*;
-pub use self::r#extend_stake::*;
-pub use self::r#fill_vault::*;
-pub use self::r#initialize_mining::*;
-pub use self::r#initialize_pool::*;
-pub use self::r#withdraw_mining::*;
+pub use self::{
+    r#claim::*, r#close_mining::*, r#deposit_mining::*, r#distribute_rewards::*, r#extend_stake::*,
+    r#fill_vault::*, r#initialize_mining::*, r#initialize_pool::*, r#withdraw_mining::*,
+};

@@ -2,7 +2,7 @@ use crate::utils::*;
 use mplx_rewards::utils::LockupPeriod;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_sdk::{signature::Keypair, signer::Signer, system_transaction::transfer};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(
@@ -29,6 +29,13 @@ async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let user_mining = test_reward_pool
         .initialize_mining(&mut context, &mining_owner.pubkey())
         .await;
+    let tx = transfer(
+        &context.payer,
+        &mining_owner.pubkey(),
+        1000000,
+        context.last_blockhash,
+    );
+    context.banks_client.process_transaction(tx).await.unwrap();
 
     (context, test_reward_pool, mining_owner, user_mining)
 }
@@ -36,32 +43,18 @@ async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
 #[tokio::test]
 async fn success() {
     let (mut context, test_rewards, mining_owner, mining) = setup().await;
-    let mining_owner_before = context
-        .banks_client
-        .get_account(mining_owner.pubkey())
-        .await
-        .unwrap();
-    assert_eq!(None, mining_owner_before);
 
-    test_rewards
-        .deposit_mining(
-            &mut context,
-            &mining,
-            100,
-            LockupPeriod::ThreeMonths,
-            &mining_owner,
-        )
-        .await
-        .unwrap();
-
-    test_rewards
-        .close_mining(&mut context, &mining, &mining_owner, &mining_owner.pubkey())
-        .await
-        .unwrap();
-
-    let mining_account_after = context.banks_client.get_account(mining).await.unwrap();
-    assert_eq!(None, mining_account_after);
-
-    let mining_owner = get_account(&mut context, &mining_owner.pubkey()).await;
-    assert!(mining_owner.lamports > 0);
+    for _ in 0..300 {
+        test_rewards
+            .deposit_mining(
+                &mut context,
+                &mining,
+                1,
+                LockupPeriod::ThreeMonths,
+                &mining_owner,
+            )
+            .await
+            .unwrap();
+        advance_clock_by_ts(&mut context, 86_400).await;
+    }
 }

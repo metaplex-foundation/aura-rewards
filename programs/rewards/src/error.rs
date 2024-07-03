@@ -70,6 +70,14 @@ pub enum MplxRewardsError {
     /// Impossible to close accounts while it has unclaimed rewards
     #[error("Rewards: unclaimed rewards must be claimed")]
     RewardsMustBeClaimed,
+
+    /// 12
+    #[error("Rewards: can't serialize an account")]
+    SerializationError,
+
+    /// 13
+    #[error("Rewards: can't deserialize an account")]
+    DeserializationError,
 }
 
 impl PrintProgramError for MplxRewardsError {

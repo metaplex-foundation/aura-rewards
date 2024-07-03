@@ -1,11 +1,12 @@
 use crate::{
     asserts::assert_account_key,
-    state::{Mining, RewardPool},
-    utils::{AccountLoader, LockupPeriod},
+    state::{Mining, RewardCalculator, RewardPool},
+    traits::SolanaAccount,
+    utils::{resize_or_reallocate_account, AccountLoader, LockupPeriod},
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    program_pack::Pack, pubkey::Pubkey, system_program,
 };
 
 /// Instruction context
@@ -13,6 +14,8 @@ pub struct DepositMiningContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     mining: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
+    mining_owner: &'a AccountInfo<'b>,
+    system_program: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> DepositMiningContext<'a, 'b> {
@@ -26,11 +29,16 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+        let mining_owner = AccountLoader::next_signer(account_info_iter)?;
+        let system_program =
+            AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
 
         Ok(DepositMiningContext {
             reward_pool,
             mining,
             deposit_authority,
+            mining_owner,
+            system_program,
         })
     }
 
@@ -40,16 +48,15 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         program_id: &Pubkey,
         amount: u64,
         lockup_period: LockupPeriod,
-        mining_owner: &Pubkey,
     ) -> ProgramResult {
-        let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-        let mut mining = Mining::unpack(&self.mining.data.borrow())?;
+        let mut reward_pool = RewardPool::load(&self.reward_pool)?;
+        let mut mining = Mining::load(&self.mining)?;
 
         {
             let mining_pubkey = Pubkey::create_program_address(
                 &[
                     b"mining".as_ref(),
-                    mining_owner.as_ref(),
+                    self.mining_owner.key.as_ref(),
                     self.reward_pool.key.as_ref(),
                     &[mining.bump],
                 ],
@@ -58,20 +65,37 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             assert_account_key(self.mining, &mining_pubkey)?;
             assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
             assert_account_key(self.reward_pool, &mining.reward_pool)?;
-            if mining_owner != &mining.owner {
+            if self.mining_owner.key != &mining.owner {
                 msg!(
                     "Assert account error. Got {} Expected {}",
-                    *mining_owner,
+                    *self.mining_owner.key,
                     mining.owner
                 );
                 return Err(ProgramError::InvalidArgument);
             }
         }
 
+        if reward_pool.calculator.weighted_stake_diffs.len()
+            % RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
+            == 0
+            && !reward_pool.calculator.weighted_stake_diffs.is_empty()
+        {
+            let new_size = self.reward_pool.data_len()
+                + reward_pool.calculator.weighted_stake_diffs.len()
+                    / RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
+                + 1;
+            resize_or_reallocate_account(
+                self.reward_pool,
+                self.mining_owner,
+                self.system_program,
+                new_size,
+            )?;
+        }
+
         reward_pool.deposit(&mut mining, amount, lockup_period)?;
 
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
-        Mining::pack(mining, *self.mining.data.borrow_mut())?;
+        reward_pool.save(self.reward_pool);
+        mining.save(self.mining);
 
         Ok(())
     }

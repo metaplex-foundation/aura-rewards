@@ -2,11 +2,12 @@ use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
     state::{Mining, RewardPool},
+    traits::SolanaAccount,
     utils::AccountLoader,
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey, system_program,
+    pubkey::Pubkey, system_program,
 };
 
 /// Instruction context
@@ -44,10 +45,10 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self) -> ProgramResult {
-        let reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
+        let reward_pool = RewardPool::load(&self.reward_pool)?;
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
 
-        let mining = Mining::unpack(&self.mining.data.borrow())?;
+        let mining = Mining::load(&self.mining)?;
         assert_account_key(self.mining_owner, &mining.owner)?;
 
         if mining.index.unclaimed_rewards != 0 {

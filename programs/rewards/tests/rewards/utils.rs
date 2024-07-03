@@ -1,5 +1,6 @@
 use std::borrow::{Borrow, BorrowMut};
 
+use borsh::BorshDeserialize;
 use mplx_rewards::utils::LockupPeriod;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::{BanksClientError, ProgramTestContext};
@@ -116,7 +117,7 @@ impl TestRewards {
         mining_account: &Pubkey,
         amount: u64,
         lockup_period: LockupPeriod,
-        owner: &Pubkey,
+        mining_owner: &Keypair,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
@@ -124,12 +125,12 @@ impl TestRewards {
                 &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                &mining_owner.pubkey(),
                 amount,
                 lockup_period,
-                owner,
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority],
+            &[&context.payer, &self.deposit_authority, mining_owner],
             context.last_blockhash,
         );
 
@@ -280,7 +281,7 @@ impl TestRewards {
                 &self.reward_pool,
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority, &mining_owner],
+            &[&context.payer, &self.deposit_authority, mining_owner],
             context.last_blockhash,
         );
 
@@ -447,4 +448,9 @@ pub async fn claim_and_assert(
         .await
         .unwrap();
     assert_tokens(context, user_reward, amount).await;
+}
+
+pub fn deserialize_account<T: BorshDeserialize>(account: Account) -> T {
+    let mut bytes: &[u8] = &(*account.data).borrow()[..];
+    T::deserialize(&mut bytes).unwrap()
 }

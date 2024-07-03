@@ -9,6 +9,7 @@ pub mod instruction;
 pub mod instructions;
 pub mod processor;
 pub mod state;
+pub mod traits;
 pub mod utils;
 
 pub use solana_program;

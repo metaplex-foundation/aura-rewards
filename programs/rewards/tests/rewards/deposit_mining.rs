@@ -1,4 +1,5 @@
 use crate::utils::*;
+use borsh::BorshDeserialize;
 use mplx_rewards::{
     state::{Mining, RewardPool},
     utils::LockupPeriod,
@@ -6,9 +7,9 @@ use mplx_rewards::{
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
 use solana_sdk::{program_pack::Pack, signature::Keypair, signer::Signer};
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
 
-async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
+async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(
         "mplx_rewards",
         mplx_rewards::id(),
@@ -34,7 +35,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
         .initialize_mining(&mut context, &user.pubkey())
         .await;
 
-    (context, test_reward_pool, user.pubkey(), user_mining)
+    (context, test_reward_pool, user, user_mining)
 }
 
 #[tokio::test]
@@ -47,12 +48,12 @@ async fn success() {
         .unwrap();
 
     let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let reward_pool = deserialize_account::<RewardPool>(reward_pool_account);
 
     assert_eq!(reward_pool.total_share, 200);
 
     let mining_account = get_account(&mut context, &mining).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    let mining = deserialize_account::<Mining>(mining_account);
     assert_eq!(mining.share, 200);
 }
 
@@ -66,11 +67,11 @@ async fn success_with_flex() {
         .unwrap();
 
     let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let reward_pool = deserialize_account::<RewardPool>(reward_pool_account);
 
     assert_eq!(reward_pool.total_share, 100);
 
     let mining_account = get_account(&mut context, &mining).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    let mining = deserialize_account::<Mining>(mining_account);
     assert_eq!(mining.share, 100);
 }

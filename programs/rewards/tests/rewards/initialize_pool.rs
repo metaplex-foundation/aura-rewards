@@ -32,7 +32,7 @@ async fn success() {
     test_rewards.initialize_pool(&mut context).await.unwrap();
 
     let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let reward_pool = deserialize_account::<RewardPool>(reward_pool_account);
 
     assert_eq!(
         reward_pool.deposit_authority,

@@ -1,6 +1,7 @@
 use crate::{
     asserts::assert_account_key,
     state::{Mining, RewardPool},
+    traits::SolanaAccount,
     utils::{spl_transfer, AccountLoader},
 };
 use borsh::BorshSerialize;
@@ -52,8 +53,8 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
-        let reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-        let mut mining = Mining::unpack(&self.mining.data.borrow())?;
+        let reward_pool = RewardPool::load(&self.reward_pool)?;
+        let mut mining = Mining::load(&self.mining)?;
 
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
 
@@ -109,7 +110,7 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
             )?;
         }
 
-        Mining::pack(mining, *self.mining.data.borrow_mut())?;
+        mining.save(self.mining)?;
         let mut amount_writer = vec![];
         amount.serialize(&mut amount_writer)?;
         set_return_data(&amount_writer);
