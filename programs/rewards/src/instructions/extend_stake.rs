@@ -1,5 +1,3 @@
-use std::cmp::min;
-
 use crate::{
     asserts::assert_account_key,
     state::{Mining, RewardPool},
