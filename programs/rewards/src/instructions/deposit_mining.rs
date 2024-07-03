@@ -78,6 +78,23 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             }
         }
 
+        if reward_pool.calculator.weighted_stake_diffs.len()
+            % RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
+            == 0
+            && !reward_pool.calculator.weighted_stake_diffs.is_empty()
+        {
+            let new_size = self.reward_pool.data_len()
+                + reward_pool.calculator.weighted_stake_diffs.len()
+                    / RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
+                + 1;
+            resize_or_reallocate_account(
+                self.reward_pool,
+                self.mining_owner,
+                self.system_program,
+                new_size,
+            )?;
+        }
+
         reward_pool.deposit(&mut mining, amount, lockup_period)?;
 
         reward_pool.save(self.reward_pool)?;
