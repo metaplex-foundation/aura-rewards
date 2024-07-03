@@ -7,7 +7,7 @@ use crate::{
 };
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
-    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+    program_error::ProgramError, pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -55,7 +55,7 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             return Ok(());
         }
 
-        let mut reward_pool = RewardPool::load(&self.reward_pool)?;
+        let mut reward_pool = RewardPool::load(self.reward_pool)?;
         assert_account_key(self.fill_authority, &reward_pool.fill_authority)?;
 
         {
@@ -106,7 +106,7 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             &[],
         )?;
 
-        reward_pool.save(self.reward_pool);
+        reward_pool.save(self.reward_pool)?;
 
         Ok(())
     }

@@ -6,7 +6,7 @@ use crate::{
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey, system_program,
+    pubkey::Pubkey, system_program,
 };
 
 /// Instruction context
@@ -63,7 +63,7 @@ impl<'a, 'b> InitializeMiningContext<'a, 'b> {
         )?;
 
         let mining = Mining::initialize(*self.reward_pool.key, bump, *mining_owner);
-        mining.save(self.mining);
+        mining.save(self.mining)?;
 
         Ok(())
     }

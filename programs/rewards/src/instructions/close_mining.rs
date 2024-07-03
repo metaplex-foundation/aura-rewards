@@ -45,10 +45,10 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self) -> ProgramResult {
-        let reward_pool = RewardPool::load(&self.reward_pool)?;
+        let reward_pool = RewardPool::load(self.reward_pool)?;
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
 
-        let mining = Mining::load(&self.mining)?;
+        let mining = Mining::load(self.mining)?;
         assert_account_key(self.mining_owner, &mining.owner)?;
 
         if mining.index.unclaimed_rewards != 0 {

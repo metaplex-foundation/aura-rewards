@@ -1,5 +1,3 @@
-use std::cmp::min;
-
 use crate::{
     asserts::assert_account_key,
     state::{Mining, RewardPool},
@@ -8,7 +6,7 @@ use crate::{
 };
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult, msg,
-    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+    program_error::ProgramError, pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -49,8 +47,8 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
         additional_amount: u64,
         mining_owner: &Pubkey,
     ) -> ProgramResult {
-        let mut reward_pool = RewardPool::load(&self.reward_pool)?;
-        let mut mining = Mining::load(&self.mining)?;
+        let mut reward_pool = RewardPool::load(self.reward_pool)?;
+        let mut mining = Mining::load(self.mining)?;
         let deposit_start_ts = deposit_start_ts - (deposit_start_ts % SECONDS_PER_DAY);
 
         {
@@ -85,8 +83,8 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
             additional_amount,
         )?;
 
-        reward_pool.save(self.reward_pool);
-        mining.save(self.mining);
+        reward_pool.save(self.reward_pool)?;
+        mining.save(self.mining)?;
 
         Ok(())
     }

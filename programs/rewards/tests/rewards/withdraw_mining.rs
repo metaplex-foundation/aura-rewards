@@ -3,10 +3,9 @@ use mplx_rewards::{
     state::{Mining, RewardPool},
     utils::LockupPeriod,
 };
-use solana_program::{program_pack::Pack, pubkey::Pubkey};
+use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
 use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
-use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(

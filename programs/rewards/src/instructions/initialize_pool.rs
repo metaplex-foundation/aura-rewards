@@ -9,9 +9,8 @@ use crate::{
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey, rent::Rent, system_program, sysvar::SysvarId,
+    pubkey::Pubkey, rent::Rent, system_program, sysvar::SysvarId,
 };
-use spl_token::state::Account as SplTokenAccount;
 
 /// Instruction context
 pub struct InitializePoolContext<'a, 'b> {
@@ -112,7 +111,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             distribute_authority,
             fill_authority,
         );
-        reward_pool.save(self.reward_pool);
+        reward_pool.save(self.reward_pool)?;
 
         Ok(())
     }
