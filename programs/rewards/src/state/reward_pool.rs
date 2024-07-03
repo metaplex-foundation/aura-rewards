@@ -3,15 +3,15 @@ use std::collections::BTreeMap;
 use crate::{
     error::MplxRewardsError,
     state::{AccountType, Mining},
+    traits::{DataBlob, SolanaAccount},
     utils::{get_curr_unix_ts, LockupPeriod},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
-    msg,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack, Sealed},
+    program_pack::IsInitialized,
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
@@ -44,6 +44,8 @@ pub struct RewardPool {
 }
 
 impl RewardPool {
+    pub const DEFAULT_LEN: usize = 1 + 1 + 8 + RewardCalculator::DEFAULT_LEN + 32 + 32 + 32;
+
     /// Init reward pool
     pub fn initialize(
         calculator: RewardCalculator,
@@ -260,29 +262,35 @@ impl RewardPool {
     }
 }
 
-impl Sealed for RewardPool {}
-impl Pack for RewardPool {
-    // RewardPool size
-    const LEN: usize = 1 + (32 + 1 + 32 + 8 + (4 + RewardCalculator::LEN) + 32);
-
-    fn pack_into_slice(&self, dst: &mut [u8]) {
-        let mut slice = dst;
-        self.serialize(&mut slice).unwrap();
-    }
-
-    fn unpack_from_slice(src: &[u8]) -> Result<RewardPool, ProgramError> {
-        let mut src_mut = src;
-        Self::deserialize(&mut src_mut).map_err(|err| {
-            msg!("Failed to deserialize");
-            msg!("{}", err.to_string());
-            ProgramError::InvalidAccountData
-        })
+impl SolanaAccount for RewardPool {
+    fn account_type() -> AccountType {
+        AccountType::RewardPool
     }
 }
 
 impl IsInitialized for RewardPool {
     fn is_initialized(&self) -> bool {
         self.account_type == AccountType::RewardPool
+    }
+}
+
+impl DataBlob for RewardPool {
+    fn get_initial_size() -> usize {
+        RewardPool::DEFAULT_LEN
+    }
+
+    fn get_size(&self) -> usize {
+        let cumulative_index_elements = self.calculator.cumulative_index.len()
+            - RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER;
+        let weighted_stake_diff_elements = self.calculator.weighted_stake_diffs.len()
+            - RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER;
+
+        RewardPool::DEFAULT_LEN + self.calculator.weighted_stake_diffs.len()
+            - weighted_stake_diff_elements * (8 + 8)
+            + 4
+            + self.calculator.cumulative_index.len()
+            - cumulative_index_elements * (8 + 16)
+            + 4
     }
 }
 
@@ -312,8 +320,14 @@ pub struct RewardCalculator {
 
 impl RewardCalculator {
     /// Reward Vault size
-    /// TODO: size isn't large enough
-    pub const LEN: usize = 1 + 32 + 16 + 32 + (4 + (8 + 8) * 100) + (4 + (8 + 16) * 100);
+    pub const DEFAULT_LEN: usize = 1
+        + 32
+        + 16
+        + 32
+        + (4 + (8 + 8) * RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER)
+        + (4 + (8 + 16) * RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER);
+    pub const WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER: usize = 100;
+    pub const CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER: usize = 100;
 
     /// Consuming old total share modifiers in order to change the total share for the current date
     pub fn consume_old_modifiers(

@@ -3,10 +3,8 @@
 //! to add features, then rerun kinobi to update it.
 //!
 //! [https://github.com/metaplex-foundation/kinobi]
-//!
 
-use borsh::BorshDeserialize;
-use borsh::BorshSerialize;
+use borsh::{BorshDeserialize, BorshSerialize};
 
 /// Accounts.
 pub struct Claim {
@@ -16,11 +14,13 @@ pub struct Claim {
     pub reward_mint: solana_program::pubkey::Pubkey,
     /// The address of the reward vault
     pub vault: solana_program::pubkey::Pubkey,
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     pub mining: solana_program::pubkey::Pubkey,
     /// The end user the mining accounts belongs to
     pub mining_owner: solana_program::pubkey::Pubkey,
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing
+    /// CPIs
     pub deposit_authority: solana_program::pubkey::Pubkey,
     /// ATA where tokens will be claimed to
     pub mining_owner_reward_token_account: solana_program::pubkey::Pubkey,
@@ -138,7 +138,8 @@ impl ClaimBuilder {
         self.vault = Some(vault);
         self
     }
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     #[inline(always)]
     pub fn mining(&mut self, mining: solana_program::pubkey::Pubkey) -> &mut Self {
         self.mining = Some(mining);
@@ -150,7 +151,8 @@ impl ClaimBuilder {
         self.mining_owner = Some(mining_owner);
         self
     }
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing
+    /// CPIs
     #[inline(always)]
     pub fn deposit_authority(
         &mut self,
@@ -224,11 +226,13 @@ pub struct ClaimCpiAccounts<'a, 'b> {
     pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the reward vault
     pub vault: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
     /// The end user the mining accounts belongs to
     pub mining_owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing
+    /// CPIs
     pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     /// ATA where tokens will be claimed to
     pub mining_owner_reward_token_account: &'b solana_program::account_info::AccountInfo<'a>,
@@ -246,11 +250,13 @@ pub struct ClaimCpi<'a, 'b> {
     pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the reward vault
     pub vault: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
     /// The end user the mining accounts belongs to
     pub mining_owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing
+    /// CPIs
     pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     /// ATA where tokens will be claimed to
     pub mining_owner_reward_token_account: &'b solana_program::account_info::AccountInfo<'a>,
@@ -433,7 +439,8 @@ impl<'a, 'b> ClaimCpiBuilder<'a, 'b> {
         self.instruction.vault = Some(vault);
         self
     }
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     #[inline(always)]
     pub fn mining(
         &mut self,
@@ -451,7 +458,8 @@ impl<'a, 'b> ClaimCpiBuilder<'a, 'b> {
         self.instruction.mining_owner = Some(mining_owner);
         self
     }
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing
+    /// CPIs
     #[inline(always)]
     pub fn deposit_authority(
         &mut self,
@@ -494,8 +502,9 @@ impl<'a, 'b> ClaimCpiBuilder<'a, 'b> {
     }
     /// Add additional accounts to the instruction.
     ///
-    /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
-    /// and a `bool` indicating whether the account is a signer or not.
+    /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the
+    /// account is writable or not, and a `bool` indicating whether the account is a signer or
+    /// not.
     #[inline(always)]
     pub fn add_remaining_accounts(
         &mut self,

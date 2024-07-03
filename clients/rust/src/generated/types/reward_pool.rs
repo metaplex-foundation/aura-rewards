@@ -3,12 +3,9 @@
 //! to add features, then rerun kinobi to update it.
 //!
 //! [https://github.com/metaplex-foundation/kinobi]
-//!
 
-use crate::generated::types::AccountType;
-use crate::generated::types::RewardCalculator;
-use borsh::BorshDeserialize;
-use borsh::BorshSerialize;
+use crate::generated::types::{AccountType, RewardCalculator};
+use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]

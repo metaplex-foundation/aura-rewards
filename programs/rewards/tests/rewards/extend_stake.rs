@@ -5,7 +5,7 @@ use solana_program_test::*;
 use solana_sdk::{clock::SECONDS_PER_DAY, program_pack::Pack, signature::Keypair, signer::Signer};
 use std::borrow::Borrow;
 
-async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
+async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(
         "mplx_rewards",
         mplx_rewards::id(),
@@ -26,12 +26,12 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
         .await
         .unwrap();
 
-    let user = Keypair::new();
+    let mining_owner = Keypair::new();
     let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &user.pubkey())
+        .initialize_mining(&mut context, &mining_owner.pubkey())
         .await;
 
-    (context, test_reward_pool, user.pubkey(), user_mining)
+    (context, test_reward_pool, mining_owner, user_mining)
 }
 
 #[tokio::test]
@@ -67,7 +67,7 @@ async fn restake_before_its_expired() {
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
+            &mining_owner.pubkey(),
         )
         .await
         .unwrap();
@@ -128,7 +128,7 @@ async fn restake_for_another_period_after_old_is_expired() {
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
+            &mining_owner.pubkey(),
         )
         .await
         .unwrap();
@@ -175,7 +175,7 @@ async fn just_prolong_without_adding_tokes() {
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
+            &mining_owner.pubkey(),
         )
         .await
         .unwrap();
@@ -236,7 +236,7 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
+            &mining_owner.pubkey(),
         )
         .await
         .unwrap();
@@ -291,7 +291,7 @@ async fn restake_in_expiration_day() {
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
+            &mining_owner.pubkey(),
         )
         .await
         .unwrap();
@@ -312,7 +312,7 @@ pub async fn check_weighted_stake(
     expected_share: u64,
 ) {
     let mining_account = get_account(context, &mining_account).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    let mining = deserialize_account::<Mining>(mining_account);
     assert_eq!(mining.share, expected_share);
 }
 
@@ -323,7 +323,7 @@ pub async fn check_modifier_at_a_day(
     day_to_check: u64,
 ) {
     let mining_account = get_account(context, &mining_account).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    let mining = deserialize_account::<Mining>(mining_account);
 
     let expiration_modifier_for_day = mining
         .index

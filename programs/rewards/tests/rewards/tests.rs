@@ -9,4 +9,6 @@ mod integration;
 mod utils;
 mod withdraw_mining;
 
+mod reallocation;
+
 mod extend_stake;

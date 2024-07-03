@@ -58,13 +58,13 @@ pub enum RewardsInstruction {
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(4, writable, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
+    #[account(5, name = "system_program", desc = "The system program")]
     DepositMining {
         /// Amount to deposit
         amount: u64,
         /// Lockup Period
         lockup_period: LockupPeriod,
-        /// Specifies the owner of the Mining Account
-        owner: Pubkey,
     },
 
     /// Withdraws amount of supply to the mining account
@@ -222,14 +222,16 @@ pub fn deposit_mining(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     deposit_authority: &Pubkey,
+    mining_owner: &Pubkey,
     amount: u64,
     lockup_period: LockupPeriod,
-    owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new(*mining_owner, true),
+        AccountMeta::new_readonly(system_program::id(), false),
     ];
 
     Instruction::new_with_borsh(
@@ -237,7 +239,6 @@ pub fn deposit_mining(
         &RewardsInstruction::DepositMining {
             amount,
             lockup_period,
-            owner: *owner,
         },
         accounts,
     )

@@ -57,7 +57,7 @@ async fn with_two_users() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
+            &user_a,
         )
         .await
         .unwrap();
@@ -70,7 +70,7 @@ async fn with_two_users() {
             &user_mining_b,
             100,
             LockupPeriod::ThreeMonths,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -135,7 +135,7 @@ async fn flex_vs_three_months() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
+            &user_a,
         )
         .await
         .unwrap();
@@ -150,7 +150,7 @@ async fn flex_vs_three_months() {
             &user_mining_b,
             100,
             LockupPeriod::ThreeMonths,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -215,7 +215,7 @@ async fn multiple_consequantial_distributions_for_two_users() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
+            &user_a,
         )
         .await
         .unwrap();
@@ -228,7 +228,7 @@ async fn multiple_consequantial_distributions_for_two_users() {
             &user_mining_b,
             100,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -308,7 +308,7 @@ async fn rewards_after_distribution_are_unclaimable() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
+            &user_a,
         )
         .await
         .unwrap();
@@ -362,7 +362,7 @@ async fn rewards_after_distribution_are_unclaimable() {
             &user_mining_b,
             100,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -397,7 +397,7 @@ async fn switch_to_flex_is_correct() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
+            &user_a,
         )
         .await
         .unwrap();
@@ -410,7 +410,7 @@ async fn switch_to_flex_is_correct() {
             &user_mining_b,
             100,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -474,7 +474,7 @@ async fn two_deposits_vs_one() {
             &user_mining_a,
             100,
             LockupPeriod::OneYear,
-            &user_a.pubkey(),
+            &user_a,
         )
         .await
         .unwrap();
@@ -487,7 +487,7 @@ async fn two_deposits_vs_one() {
             &user_mining_b,
             50,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -500,7 +500,7 @@ async fn two_deposits_vs_one() {
             &user_mining_b,
             50,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -561,7 +561,7 @@ async fn claim_tokens_after_deposit_expiration() {
             &user_mining_a,
             100,
             LockupPeriod::OneYear,
-            &user_a.pubkey(),
+            &user_a,
         )
         .await
         .unwrap();
@@ -574,7 +574,7 @@ async fn claim_tokens_after_deposit_expiration() {
             &user_mining_b,
             300,
             LockupPeriod::ThreeMonths,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -638,7 +638,7 @@ async fn claim_after_withdraw_is_correct() {
             &user_mining_a,
             100,
             LockupPeriod::OneYear,
-            &user_a.pubkey(),
+            &user_a,
         )
         .await
         .unwrap();
@@ -650,7 +650,7 @@ async fn claim_after_withdraw_is_correct() {
             &user_mining_b,
             50,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -661,7 +661,7 @@ async fn claim_after_withdraw_is_correct() {
             &user_mining_b,
             150,
             LockupPeriod::ThreeMonths,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();
@@ -788,7 +788,7 @@ async fn with_two_users_with_flex() {
             &user_mining_a,
             100,
             LockupPeriod::Flex,
-            &user_a.pubkey(),
+            &user_a,
         )
         .await
         .unwrap();
@@ -801,7 +801,7 @@ async fn with_two_users_with_flex() {
             &user_mining_b,
             100,
             LockupPeriod::Flex,
-            &user_b.pubkey(),
+            &user_b,
         )
         .await
         .unwrap();

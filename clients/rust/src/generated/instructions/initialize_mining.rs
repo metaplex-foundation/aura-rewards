@@ -3,17 +3,16 @@
 //! to add features, then rerun kinobi to update it.
 //!
 //! [https://github.com/metaplex-foundation/kinobi]
-//!
 
-use borsh::BorshDeserialize;
-use borsh::BorshSerialize;
+use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
 /// Accounts.
 pub struct InitializeMining {
     /// The address of the reward pool
     pub reward_pool: solana_program::pubkey::Pubkey,
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     pub mining: solana_program::pubkey::Pubkey,
 
     pub payer: solana_program::pubkey::Pubkey,
@@ -108,7 +107,8 @@ impl InitializeMiningBuilder {
         self.reward_pool = Some(reward_pool);
         self
     }
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     #[inline(always)]
     pub fn mining(&mut self, mining: solana_program::pubkey::Pubkey) -> &mut Self {
         self.mining = Some(mining);
@@ -171,7 +171,8 @@ impl InitializeMiningBuilder {
 pub struct InitializeMiningCpiAccounts<'a, 'b> {
     /// The address of the reward pool
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
@@ -185,7 +186,8 @@ pub struct InitializeMiningCpi<'a, 'b> {
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the reward pool
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
@@ -328,7 +330,8 @@ impl<'a, 'b> InitializeMiningCpiBuilder<'a, 'b> {
         self.instruction.reward_pool = Some(reward_pool);
         self
     }
-    /// The address of the mining account which belongs to the user and stores info about user's rewards
+    /// The address of the mining account which belongs to the user and stores info about user's
+    /// rewards
     #[inline(always)]
     pub fn mining(
         &mut self,
@@ -371,8 +374,9 @@ impl<'a, 'b> InitializeMiningCpiBuilder<'a, 'b> {
     }
     /// Add additional accounts to the instruction.
     ///
-    /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the account is writable or not,
-    /// and a `bool` indicating whether the account is a signer or not.
+    /// Each account is represented by a tuple of the `AccountInfo`, a `bool` indicating whether the
+    /// account is writable or not, and a `bool` indicating whether the account is a signer or
+    /// not.
     #[inline(always)]
     pub fn add_remaining_accounts(
         &mut self,

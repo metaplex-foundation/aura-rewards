@@ -1,4 +1,6 @@
-use crate::{asserts::assert_account_key, state::RewardPool, utils::AccountLoader};
+use crate::{
+    asserts::assert_account_key, state::RewardPool, traits::SolanaAccount, utils::AccountLoader,
+};
 
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
@@ -30,14 +32,13 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self) -> ProgramResult {
-        let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
+        let mut reward_pool = RewardPool::load(&self.reward_pool)?;
         let rewards_to_distribute = reward_pool.calculator.rewards_to_distribute()?;
         assert_account_key(self.distribute_authority, &reward_pool.distribute_authority)?;
 
         reward_pool.distribute(rewards_to_distribute)?;
 
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
-
+        reward_pool.save(self.reward_pool);
         Ok(())
     }
 }

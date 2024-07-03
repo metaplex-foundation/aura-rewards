@@ -1,14 +1,14 @@
 use crate::{
     error::MplxRewardsError,
     state::{RewardCalculator, PRECISION},
+    traits::{DataBlob, SolanaAccount},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
-    msg,
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack, Sealed},
+    program_pack::IsInitialized,
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
@@ -42,6 +42,8 @@ pub struct Mining {
 }
 
 impl Mining {
+    pub const DEFAULT_LEN: usize = 1 + 32 + 1 + 6 + 32 + RewardIndex::DEFAULT_LEN + 32;
+
     /// Initialize a Reward Pool
     pub fn initialize(reward_pool: Pubkey, bump: u8, owner: Pubkey) -> Mining {
         Mining {
@@ -82,22 +84,24 @@ impl Mining {
     }
 }
 
-impl Sealed for Mining {}
-impl Pack for Mining {
-    const LEN: usize = 1 + 32 + 1 + 8 + 32 + RewardIndex::LEN + 32;
+impl SolanaAccount for Mining {
+    fn account_type() -> AccountType {
+        AccountType::Mining
+    }
+}
 
-    fn pack_into_slice(&self, dst: &mut [u8]) {
-        let mut slice = dst;
-        self.serialize(&mut slice).unwrap();
+impl DataBlob for Mining {
+    fn get_initial_size() -> usize {
+        Mining::DEFAULT_LEN
     }
 
-    fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
-        let mut src_mut = src;
-        Self::deserialize(&mut src_mut).map_err(|err| {
-            msg!("Failed to deserialize");
-            msg!("{}", err.to_string());
-            ProgramError::InvalidAccountData
-        })
+    fn get_size(&self) -> usize {
+        let weighted_stake_diff_elements = self.index.weighted_stake_diffs.len()
+            - RewardIndex::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER;
+
+        Mining::DEFAULT_LEN + self.index.weighted_stake_diffs.len()
+            - weighted_stake_diff_elements * (8 + 8)
+            + 4
     }
 }
 
@@ -121,8 +125,9 @@ pub struct RewardIndex {
 
 impl RewardIndex {
     /// Reward Index size
-    /// TODO: data isn't large enough
-    pub const LEN: usize = 32 + 16 + 8 + (4 + (8 + 8) * 100);
+    pub const DEFAULT_LEN: usize =
+        32 + 16 + 8 + (4 + (8 + 8) * RewardIndex::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER);
+    pub const WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER: usize = 100;
 
     /// Consume old modifiers
     pub fn consume_old_modifiers(

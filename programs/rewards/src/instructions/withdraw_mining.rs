@@ -1,12 +1,13 @@
 use crate::{
     asserts::assert_account_key,
     state::{Mining, RewardPool},
+    traits::SolanaAccount,
     utils::AccountLoader,
 };
 
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -42,8 +43,8 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         amount: u64,
         mining_owner: &Pubkey,
     ) -> ProgramResult {
-        let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-        let mut mining = Mining::unpack(&self.mining.data.borrow())?;
+        let mut reward_pool = RewardPool::load(&self.reward_pool)?;
+        let mut mining = Mining::load(&self.mining)?;
 
         let mining_pubkey = Pubkey::create_program_address(
             &[
@@ -67,8 +68,8 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         }
         reward_pool.withdraw(&mut mining, amount)?;
 
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
-        Mining::pack(mining, *self.mining.data.borrow_mut())?;
+        reward_pool.save(self.reward_pool);
+        mining.save(self.mining);
 
         Ok(())
     }

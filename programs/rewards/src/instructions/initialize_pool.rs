@@ -1,9 +1,10 @@
 use crate::{
     asserts::{assert_account_key, assert_uninitialized},
     state::{RewardCalculator, RewardPool},
+    traits::SolanaAccount,
     utils::{
-        create_account, find_reward_pool_program_address, find_vault_program_address,
-        initialize_account, AccountLoader,
+        create_account, create_token_account, find_reward_pool_program_address,
+        find_vault_program_address, initialize_account, AccountLoader,
     },
 };
 use solana_program::{
@@ -87,7 +88,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             &[reward_pool_seeds],
         )?;
 
-        create_account::<SplTokenAccount>(
+        create_token_account(
             &spl_token::id(),
             self.payer.clone(),
             self.reward_vault.clone(),
@@ -113,7 +114,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             distribute_authority,
             fill_authority,
         );
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
+        reward_pool.save(self.reward_pool);
 
         Ok(())
     }

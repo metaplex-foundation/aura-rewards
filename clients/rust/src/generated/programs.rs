@@ -3,7 +3,6 @@
 //! to add features, then rerun kinobi to update it.
 //!
 //! [https://github.com/metaplex-foundation/kinobi]
-//!
 
 use solana_program::{pubkey, pubkey::Pubkey};
 
