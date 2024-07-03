@@ -1,8 +1,8 @@
 use crate::{
     asserts::assert_account_key,
-    state::{Mining, RewardPool},
+    state::{Mining, RewardCalculator, RewardPool},
     traits::SolanaAccount,
-    utils::{AccountLoader, LockupPeriod},
+    utils::{resize_or_reallocate_account, AccountLoader, LockupPeriod},
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,

@@ -1,5 +1,4 @@
 use crate::utils::*;
-use borsh::BorshDeserialize;
 use mplx_rewards::{
     state::{Mining, RewardPool},
     utils::LockupPeriod,
