@@ -451,6 +451,6 @@ pub async fn claim_and_assert(
 }
 
 pub fn deserialize_account<T: BorshDeserialize>(account: Account) -> T {
-    let mut bytes: &[u8] = &(*account.data).borrow()[..];
+    let mut bytes: &[u8] = (*account.data).borrow();
     T::deserialize(&mut bytes).unwrap()
 }

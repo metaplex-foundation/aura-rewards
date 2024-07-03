@@ -1,9 +1,7 @@
 use crate::utils::*;
 use mplx_rewards::state::RewardPool;
-use solana_program::program_pack::Pack;
 use solana_program_test::*;
 use solana_sdk::{signature::Keypair, signer::Signer};
-use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards) {
     let test = ProgramTest::new(

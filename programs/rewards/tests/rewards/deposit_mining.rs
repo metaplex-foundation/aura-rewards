@@ -1,13 +1,11 @@
 use crate::utils::*;
-use borsh::BorshDeserialize;
 use mplx_rewards::{
     state::{Mining, RewardPool},
     utils::LockupPeriod,
 };
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{program_pack::Pack, signature::Keypair, signer::Signer};
-use std::borrow::{Borrow, BorrowMut};
+use solana_sdk::{signature::Keypair, signer::Signer};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(

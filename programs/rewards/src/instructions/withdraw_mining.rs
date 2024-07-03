@@ -43,8 +43,8 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         amount: u64,
         mining_owner: &Pubkey,
     ) -> ProgramResult {
-        let mut reward_pool = RewardPool::load(&self.reward_pool)?;
-        let mut mining = Mining::load(&self.mining)?;
+        let mut reward_pool = RewardPool::load(self.reward_pool)?;
+        let mut mining = Mining::load(self.mining)?;
 
         let mining_pubkey = Pubkey::create_program_address(
             &[
@@ -68,8 +68,8 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         }
         reward_pool.withdraw(&mut mining, amount)?;
 
-        reward_pool.save(self.reward_pool);
-        mining.save(self.mining);
+        reward_pool.save(self.reward_pool)?;
+        mining.save(self.mining)?;
 
         Ok(())
     }

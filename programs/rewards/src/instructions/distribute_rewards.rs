@@ -4,7 +4,7 @@ use crate::{
 
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -32,13 +32,13 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self) -> ProgramResult {
-        let mut reward_pool = RewardPool::load(&self.reward_pool)?;
+        let mut reward_pool = RewardPool::load(self.reward_pool)?;
         let rewards_to_distribute = reward_pool.calculator.rewards_to_distribute()?;
         assert_account_key(self.distribute_authority, &reward_pool.distribute_authority)?;
 
         reward_pool.distribute(rewards_to_distribute)?;
 
-        reward_pool.save(self.reward_pool);
+        reward_pool.save(self.reward_pool)?;
         Ok(())
     }
 }

@@ -53,8 +53,8 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
-        let reward_pool = RewardPool::load(&self.reward_pool)?;
-        let mut mining = Mining::load(&self.mining)?;
+        let reward_pool = RewardPool::load(self.reward_pool)?;
+        let mut mining = Mining::load(self.mining)?;
 
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
 

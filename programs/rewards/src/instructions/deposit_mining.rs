@@ -6,7 +6,7 @@ use crate::{
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey, system_program,
+    pubkey::Pubkey, system_program,
 };
 
 /// Instruction context
@@ -49,8 +49,8 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         amount: u64,
         lockup_period: LockupPeriod,
     ) -> ProgramResult {
-        let mut reward_pool = RewardPool::load(&self.reward_pool)?;
-        let mut mining = Mining::load(&self.mining)?;
+        let mut reward_pool = RewardPool::load(self.reward_pool)?;
+        let mut mining = Mining::load(self.mining)?;
 
         {
             let mining_pubkey = Pubkey::create_program_address(
@@ -94,8 +94,8 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
 
         reward_pool.deposit(&mut mining, amount, lockup_period)?;
 
-        reward_pool.save(self.reward_pool);
-        mining.save(self.mining);
+        reward_pool.save(self.reward_pool)?;
+        mining.save(self.mining)?;
 
         Ok(())
     }
