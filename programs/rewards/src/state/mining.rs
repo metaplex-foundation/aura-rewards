@@ -96,8 +96,11 @@ impl DataBlob for Mining {
     }
 
     fn get_size(&self) -> usize {
-        let weighted_stake_diff_elements = self.index.weighted_stake_diffs.len()
-            - RewardIndex::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER;
+        let weighted_stake_diff_elements = self
+            .index
+            .weighted_stake_diffs
+            .len()
+            .saturating_sub(RewardIndex::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER);
 
         Mining::DEFAULT_LEN + self.index.weighted_stake_diffs.len()
             - weighted_stake_diff_elements * (8 + 8)
