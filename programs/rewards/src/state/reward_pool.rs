@@ -280,10 +280,16 @@ impl DataBlob for RewardPool {
     }
 
     fn get_size(&self) -> usize {
-        let cumulative_index_elements = self.calculator.cumulative_index.len()
-            - RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER;
-        let weighted_stake_diff_elements = self.calculator.weighted_stake_diffs.len()
-            - RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER;
+        let cumulative_index_elements = self
+            .calculator
+            .cumulative_index
+            .len()
+            .saturating_sub(RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER);
+        let weighted_stake_diff_elements = self
+            .calculator
+            .weighted_stake_diffs
+            .len()
+            .saturating_sub(RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER);
 
         RewardPool::DEFAULT_LEN + self.calculator.weighted_stake_diffs.len()
             - weighted_stake_diff_elements * (8 + 8)

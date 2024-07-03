@@ -1,7 +1,7 @@
 use crate::{
     asserts::assert_account_key,
     state::{Mining, RewardCalculator, RewardPool},
-    traits::SolanaAccount,
+    traits::{DataBlob, SolanaAccount},
     utils::{resize_or_reallocate_account, AccountLoader, LockupPeriod},
 };
 use solana_program::{
@@ -80,10 +80,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             == 0
             && !reward_pool.calculator.weighted_stake_diffs.is_empty()
         {
-            let new_size = self.reward_pool.data_len()
-                + reward_pool.calculator.weighted_stake_diffs.len()
-                    / RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
-                + 1;
+            let new_size = reward_pool.get_size() + 365 * 16;
             resize_or_reallocate_account(
                 self.reward_pool,
                 self.mining_owner,

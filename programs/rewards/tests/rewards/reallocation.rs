@@ -32,7 +32,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let tx = transfer(
         &context.payer,
         &mining_owner.pubkey(),
-        1000000,
+        1000000000, // 1 SOL
         context.last_blockhash,
     );
     context.banks_client.process_transaction(tx).await.unwrap();
