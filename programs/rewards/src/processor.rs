@@ -70,7 +70,6 @@ pub fn process_instruction(
             deposit_start_ts,
             base_amount,
             additional_amount,
-            mining_owner,
         } => {
             msg!("RewardsInstruction: ExtendStake");
             ExtendStakeContext::new(program_id, accounts)?.process(
@@ -80,11 +79,10 @@ pub fn process_instruction(
                 deposit_start_ts,
                 base_amount,
                 additional_amount,
-                &mining_owner,
             )
         }
         RewardsInstruction::DistributeRewards => {
-            msg!("RewardsInstruction: FillVault");
+            msg!("RewardsInstruction: DistributeRewards");
             DistributeRewardsContext::new(program_id, accounts)?.process()
         }
         RewardsInstruction::CloseMining => {

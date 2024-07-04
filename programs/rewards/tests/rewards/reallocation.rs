@@ -36,12 +36,20 @@ async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
         context.last_blockhash,
     );
     context.banks_client.process_transaction(tx).await.unwrap();
+    let tx = transfer(
+        &context.payer,
+        &test_reward_pool.distribution_authority.pubkey(),
+        1000000000, // 1 SOL
+        context.last_blockhash,
+    );
+    context.banks_client.process_transaction(tx).await.unwrap();
 
     (context, test_reward_pool, mining_owner, user_mining)
 }
 
 #[tokio::test]
-async fn success() {
+async fn success_on_depositing() {
+    // TODO: this test is time-consuming. Feel free to enable it only before commiting.
     let (mut context, test_rewards, mining_owner, mining) = setup().await;
 
     for _ in 0..300 {
@@ -55,6 +63,52 @@ async fn success() {
             )
             .await
             .unwrap();
+        advance_clock_by_ts(&mut context, 86_400).await;
+    }
+}
+
+#[tokio::test]
+async fn success_on_distributing() {
+    // TODO: this test is time-consuming. Feel free to enable it only before commiting.
+    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+
+    // mint token for fill_authority aka wallet who will fill the vault with tokens
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        1000000,
+    )
+    .await
+    .unwrap();
+
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &mining,
+            1,
+            LockupPeriod::ThreeMonths,
+            &mining_owner,
+        )
+        .await
+        .unwrap();
+    test_rewards
+        .fill_vault(&mut context, &rewarder.pubkey(), 1000000, u64::MAX)
+        .await
+        .unwrap();
+
+    for _ in 0..300 {
+        test_rewards.distribute_rewards(&mut context).await.unwrap();
         advance_clock_by_ts(&mut context, 86_400).await;
     }
 }

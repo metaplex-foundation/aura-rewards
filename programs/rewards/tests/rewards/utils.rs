@@ -236,12 +236,12 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
+        mining_owner: &Keypair,
         old_lockup_period: LockupPeriod,
         new_lockup_period: LockupPeriod,
         deposit_start_ts: u64,
         base_amount: u64,
         additional_amount: u64,
-        mining_owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::extend_stake(
@@ -249,15 +249,15 @@ impl TestRewards {
                 &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                &mining_owner.pubkey(),
                 old_lockup_period,
                 new_lockup_period,
                 deposit_start_ts,
                 base_amount,
                 additional_amount,
-                mining_owner,
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority],
+            &[&context.payer, &self.deposit_authority, mining_owner],
             context.last_blockhash,
         );
 

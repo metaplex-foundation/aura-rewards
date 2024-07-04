@@ -94,6 +94,8 @@ pub enum RewardsInstruction {
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(4, writable, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
+    #[account(5, name = "system_program", desc = "The system program")]
     ExtendStake {
         /// Lockup period before restaking. Actually it's only needed
         /// for Flex to AnyPeriod edge case
@@ -109,13 +111,12 @@ pub enum RewardsInstruction {
         /// In case user wants to increase it's staked number of tokens,
         /// the addition amount might be provided
         additional_amount: u64,
-        /// The wallet who owns the mining account
-        mining_owner: Pubkey,
     },
 
     /// Distributes tokens among mining owners
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(1, signer, name = "distribute_authority", desc = "The address of Authority who is eligble for distributiong rewards for users")]
+    #[account(2, name = "system_program", desc = "The system program")]
     DistributeRewards,
 
     /// Distributes tokens among mining owners
@@ -302,17 +303,19 @@ pub fn extend_stake(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     deposit_authority: &Pubkey,
+    mining_owner: &Pubkey,
     old_lockup_period: LockupPeriod,
     new_lockup_period: LockupPeriod,
     deposit_start_ts: u64,
     base_amount: u64,
     additional_amount: u64,
-    mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new(*mining_owner, true),
+        AccountMeta::new_readonly(system_program::id(), false),
     ];
 
     Instruction::new_with_borsh(
@@ -323,7 +326,6 @@ pub fn extend_stake(
             deposit_start_ts,
             base_amount,
             additional_amount,
-            mining_owner: *mining_owner,
         },
         accounts,
     )
@@ -338,7 +340,8 @@ pub fn distribute_rewards(
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
-        AccountMeta::new_readonly(*distribute_authority, true),
+        AccountMeta::new(*distribute_authority, true),
+        AccountMeta::new_readonly(system_program::id(), false),
     ];
 
     Instruction::new_with_borsh(

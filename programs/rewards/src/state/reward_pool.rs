@@ -4,10 +4,11 @@ use crate::{
     error::MplxRewardsError,
     state::{AccountType, Mining},
     traits::{DataBlob, SolanaAccount},
-    utils::{get_curr_unix_ts, LockupPeriod},
+    utils::{get_curr_unix_ts, resize_or_reallocate_account, LockupPeriod, MAX_REALLOC_SIZE},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
+    account_info::AccountInfo,
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
     program_error::ProgramError,
@@ -258,6 +259,27 @@ impl RewardPool {
             .ok_or(MplxRewardsError::MathOverflow)?;
         self.deposit(mining, amount_to_restake, new_lockup_period)?;
 
+        Ok(())
+    }
+
+    pub fn resize_if_needed<'a>(
+        &self,
+        reward_pool_account: &AccountInfo<'a>,
+        payer: &AccountInfo<'a>,
+        system_program: &AccountInfo<'a>,
+    ) -> ProgramResult {
+        if (self.calculator.weighted_stake_diffs.len()
+            % RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
+            == 0
+            && !self.calculator.weighted_stake_diffs.is_empty())
+            || (self.calculator.cumulative_index.len()
+                % RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER
+                == 0
+                && !self.calculator.cumulative_index.is_empty())
+        {
+            let new_size = self.get_size() + MAX_REALLOC_SIZE;
+            resize_or_reallocate_account(reward_pool_account, payer, system_program, new_size)?;
+        }
         Ok(())
     }
 }

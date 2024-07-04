@@ -19,6 +19,8 @@ use spl_token::state::Account as SplTokenAccount;
 
 use crate::{error::MplxRewardsError, traits::DataBlob};
 
+pub const MAX_REALLOC_SIZE: usize = 10100;
+
 /// Generates mining address
 pub fn find_mining_program_address(
     program_id: &Pubkey,
