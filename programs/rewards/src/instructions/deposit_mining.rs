@@ -1,8 +1,8 @@
 use crate::{
     asserts::assert_account_key,
-    state::{Mining, RewardCalculator, RewardPool},
-    traits::{DataBlob, SolanaAccount},
-    utils::{resize_or_reallocate_account, AccountLoader, LockupPeriod},
+    state::{Mining, RewardPool},
+    traits::SolanaAccount,
+    utils::{AccountLoader, LockupPeriod},
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
@@ -52,6 +52,9 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         let mut reward_pool = RewardPool::load(self.reward_pool)?;
         let mut mining = Mining::load(self.mining)?;
 
+        reward_pool.resize_if_needed(self.reward_pool, self.mining_owner, self.system_program)?;
+        mining.resize_if_needed(self.mining, self.mining_owner, self.system_program)?;
+
         {
             let mining_pubkey = Pubkey::create_program_address(
                 &[
@@ -73,20 +76,6 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
                 );
                 return Err(ProgramError::InvalidArgument);
             }
-        }
-
-        if reward_pool.calculator.weighted_stake_diffs.len()
-            % RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
-            == 0
-            && !reward_pool.calculator.weighted_stake_diffs.is_empty()
-        {
-            let new_size = reward_pool.get_size() + 365 * 16;
-            resize_or_reallocate_account(
-                self.reward_pool,
-                self.mining_owner,
-                self.system_program,
-                new_size,
-            )?;
         }
 
         reward_pool.deposit(&mut mining, amount, lockup_period)?;

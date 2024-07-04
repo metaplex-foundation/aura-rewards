@@ -2,8 +2,10 @@ use crate::{
     error::MplxRewardsError,
     state::{RewardCalculator, PRECISION},
     traits::{DataBlob, SolanaAccount},
+    utils::{resize_or_reallocate_account, MAX_REALLOC_SIZE},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use solana_program::account_info::AccountInfo;
 use solana_program::{
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
@@ -80,6 +82,23 @@ impl Mining {
         )?;
         self.share = share;
 
+        Ok(())
+    }
+
+    pub fn resize_if_needed<'a>(
+        &self,
+        mining_account: &AccountInfo<'a>,
+        payer: &AccountInfo<'a>,
+        system_program: &AccountInfo<'a>,
+    ) -> ProgramResult {
+        if self.index.weighted_stake_diffs.len()
+            % RewardIndex::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
+            == 0
+            && !self.index.weighted_stake_diffs.is_empty()
+        {
+            let new_size = self.get_size() + MAX_REALLOC_SIZE;
+            resize_or_reallocate_account(mining_account, payer, system_program, new_size)?;
+        }
         Ok(())
     }
 }
