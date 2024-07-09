@@ -19,6 +19,7 @@ pub struct InitializePoolContext<'a, 'b> {
     reward_vault: &'a AccountInfo<'b>,
     payer: &'a AccountInfo<'b>,
     rent: &'a AccountInfo<'b>,
+    deposit_authority: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> InitializePoolContext<'a, 'b> {
@@ -33,10 +34,11 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let reward_vault = AccountLoader::next_uninitialized(account_info_iter)?;
         let payer = AccountLoader::next_signer(account_info_iter)?;
-        let rent = AccountLoader::next_with_key(account_info_iter, &Rent::id())?;
+        let deposit_authority =  AccountLoader::next_signer(account_info_iter)?;
         let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
         let _system_program =
             AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
+        let rent = AccountLoader::next_with_key(account_info_iter, &Rent::id())?;
 
         Ok(InitializePoolContext {
             reward_pool,
@@ -44,6 +46,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             reward_vault,
             payer,
             rent,
+            deposit_authority,
         })
     }
 
@@ -51,20 +54,20 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
     pub fn process(
         &self,
         program_id: &Pubkey,
-        deposit_authority: Pubkey,
         fill_authority: Pubkey,
         distribute_authority: Pubkey,
     ) -> ProgramResult {
+        let deposit_authority = self.deposit_authority;
         assert_uninitialized(self.reward_pool)?;
         assert_uninitialized(self.reward_vault)?;
 
         let (reward_pool_pubkey, pool_bump) =
-            find_reward_pool_program_address(program_id, &deposit_authority);
+            find_reward_pool_program_address(program_id, &deposit_authority.key);
         assert_account_key(self.reward_pool, &reward_pool_pubkey)?;
 
         let reward_pool_seeds = &[
             "reward_pool".as_bytes(),
-            &deposit_authority.to_bytes(),
+            &deposit_authority.key.to_bytes(),
             &[pool_bump],
         ];
 
@@ -107,7 +110,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         let reward_pool = RewardPool::initialize(
             reward_vault,
             pool_bump,
-            deposit_authority,
+            *deposit_authority.key,
             distribute_authority,
             fill_authority,
         );

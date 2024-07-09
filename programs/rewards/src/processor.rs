@@ -20,14 +20,12 @@ pub fn process_instruction(
 
     match instruction {
         RewardsInstruction::InitializePool {
-            deposit_authority,
             fill_authority,
             distribute_authority,
         } => {
             msg!("RewardsInstruction: InitializePool");
             InitializePoolContext::new(program_id, accounts)?.process(
                 program_id,
-                deposit_authority,
                 fill_authority,
                 distribute_authority,
             )
