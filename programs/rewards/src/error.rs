@@ -58,18 +58,23 @@ pub enum MplxRewardsError {
 
     /// 9
     /// Invalid distribution_ends_at data
-    #[error("Rewards: distribution_ends_at date is lower than current date ")]
+    #[error("Rewards: distribution_ends_at date is lower than current date")]
     DistributionInThePast,
 
     /// 10
     /// Invalid math conversion between types
-    #[error("Rewards: distribution_ends_at date is lower than current date ")]
+    #[error("Rewards: distribution_ends_at date is lower than current date")]
     InvalidPrimitiveTypesConversion,
 
     /// 11
     /// Impossible to close accounts while it has unclaimed rewards
     #[error("Rewards: unclaimed rewards must be claimed")]
     RewardsMustBeClaimed,
+
+    /// 12
+    /// No need to transfer zero amount of rewards.
+    #[error("Rewards: rewards amount must be positive")]
+    RewardsMustBeGreaterThanZero,
 }
 
 impl PrintProgramError for MplxRewardsError {
