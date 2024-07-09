@@ -72,7 +72,7 @@ impl TestRewards {
                 &self.distribution_authority.pubkey(),
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer],
+            &[&context.payer, &self.deposit_authority],
             context.last_blockhash,
         );
 

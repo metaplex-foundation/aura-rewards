@@ -19,12 +19,11 @@ pub enum RewardsInstruction {
     #[account(1, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(2, writable, name = "vault", desc = "The address of the reward vault")]
     #[account(3, writable, signer, name = "payer")]
-    #[account(4, name = "rent", desc = "The address of the Rent program")]
-    #[account(5, name = "token_program", desc = "The address of the Token program where rewards are minted")]
-    #[account(6, name = "system_program", desc = "The system program")]
+    #[account(4, signer, name = "deposit_authority", desc = "Account responsible for charging mining owners")]
+    #[account(5, name = "rent", desc = "The address of the Rent program")]
+    #[account(6, name = "token_program", desc = "The address of the Token program where rewards are minted")]
+    #[account(7, name = "system_program", desc = "The system program")]
     InitializePool {
-        /// Account responsible for charging mining owners
-        deposit_authority: Pubkey,
         /// Account can fill the reward vault
         fill_authority: Pubkey,
         /// Account can distribute rewards for stakers
@@ -146,6 +145,7 @@ pub fn initialize_pool(
         AccountMeta::new_readonly(*reward_mint, false),
         AccountMeta::new(*vault, false),
         AccountMeta::new(*payer, true),
+        AccountMeta::new_readonly(*deposit_authority, true),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
@@ -154,7 +154,6 @@ pub fn initialize_pool(
     Instruction::new_with_borsh(
         *program_id,
         &RewardsInstruction::InitializePool {
-            deposit_authority: *deposit_authority,
             fill_authority: *fill_authority,
             distribute_authority: *distribute_authority,
         },
