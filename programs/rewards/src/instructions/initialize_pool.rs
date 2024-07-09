@@ -34,11 +34,11 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let reward_vault = AccountLoader::next_uninitialized(account_info_iter)?;
         let payer = AccountLoader::next_signer(account_info_iter)?;
-        let deposit_authority =  AccountLoader::next_signer(account_info_iter)?;
+        let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+        let rent = AccountLoader::next_with_key(account_info_iter, &Rent::id())?;
         let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
         let _system_program =
             AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
-        let rent = AccountLoader::next_with_key(account_info_iter, &Rent::id())?;
 
         Ok(InitializePoolContext {
             reward_pool,
@@ -57,17 +57,16 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         fill_authority: Pubkey,
         distribute_authority: Pubkey,
     ) -> ProgramResult {
-        let deposit_authority = self.deposit_authority;
         assert_uninitialized(self.reward_pool)?;
         assert_uninitialized(self.reward_vault)?;
 
         let (reward_pool_pubkey, pool_bump) =
-            find_reward_pool_program_address(program_id, &deposit_authority.key);
+            find_reward_pool_program_address(program_id, &self.deposit_authority.key);
         assert_account_key(self.reward_pool, &reward_pool_pubkey)?;
 
         let reward_pool_seeds = &[
             "reward_pool".as_bytes(),
-            &deposit_authority.key.to_bytes(),
+            &self.deposit_authority.key.to_bytes(),
             &[pool_bump],
         ];
 
@@ -110,7 +109,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         let reward_pool = RewardPool::initialize(
             reward_vault,
             pool_bump,
-            *deposit_authority.key,
+            *self.deposit_authority.key,
             distribute_authority,
             fill_authority,
         );

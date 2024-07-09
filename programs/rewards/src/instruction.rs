@@ -20,9 +20,9 @@ pub enum RewardsInstruction {
     #[account(2, writable, name = "vault", desc = "The address of the reward vault")]
     #[account(3, writable, signer, name = "payer")]
     #[account(4, signer, name = "deposit_authority", desc = "Account responsible for charging mining owners")]
-    #[account(5, name = "token_program", desc = "The address of the Token program where rewards are minted")]
-    #[account(6, name = "system_program", desc = "The system program")]
-    #[account(7, name = "rent", desc = "The address of the Rent program")]
+    #[account(5, name = "rent", desc = "The address of the Rent program")]
+    #[account(6, name = "token_program", desc = "The address of the Token program where rewards are minted")]
+    #[account(7, name = "system_program", desc = "The system program")]
     InitializePool {
         /// Account can fill the reward vault
         fill_authority: Pubkey,
@@ -145,9 +145,9 @@ pub fn initialize_pool(
         AccountMeta::new(*vault, false),
         AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new_readonly(sysvar::rent::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
-        AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
 
     Instruction::new_with_borsh(
