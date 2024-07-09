@@ -51,7 +51,7 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
         distribution_ends_at: u64,
     ) -> ProgramResult {
         if rewards == 0 {
-            return Ok(());
+            return Err(MplxRewardsError::RewardsMustBeGreaterThanZero.into());
         }
 
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
