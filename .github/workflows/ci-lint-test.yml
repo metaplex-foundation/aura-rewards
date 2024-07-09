@@ -64,7 +64,9 @@ jobs:
           solana-keygen new -o "$HOME/.config/solana/id.json" --no-passphrase --silent
 
       - name: Switch toolchain
-        run: rustup override set ${{ env.RUST_TOOLCHAIN }} solana-install init ${{ env.SOLANA_VERSION }}
+        run:
+          rustup override set ${{ env.RUST_TOOLCHAIN }} 
+          solana-install init ${{ env.SOLANA_VERSION }}
 
       - name: Run bpf tests
         run: cargo test-bpf
