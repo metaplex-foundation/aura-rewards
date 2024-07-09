@@ -1,8 +1,8 @@
 use crate::utils::*;
-use mplx_rewards::utils::LockupPeriod;
-use solana_program::program_pack::Pack;
+use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
+use solana_program::{instruction::InstructionError, program_pack::Pack};
 use solana_program_test::*;
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_sdk::{signature::Keypair, signer::Signer, transaction::TransactionError};
 use spl_token::state::Account;
 use std::borrow::Borrow;
 
@@ -99,4 +99,51 @@ async fn success() {
 
     assert_eq!(vault.amount, 100);
     assert_eq!(rewarder.amount, 0);
+}
+
+#[tokio::test]
+async fn zero_amount_of_rewards() {
+    let (mut context, test_rewards) = setup().await;
+
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        100,
+    )
+    .await
+    .unwrap();
+
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + 86400 * 100;
+
+    let res = test_rewards
+        .fill_vault(&mut context, &rewarder.pubkey(), 0, distribution_ends_at)
+        .await;
+
+    match res {
+        Err(BanksClientError::TransactionError(TransactionError::InstructionError(
+            _,
+            InstructionError::Custom(code),
+        ))) => {
+            assert_eq!(code, MplxRewardsError::RewardsMustBeGreaterThanZero as u32);
+        }
+        _ => unreachable!(),
+    }
 }
