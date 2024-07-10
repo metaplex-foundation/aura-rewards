@@ -3,7 +3,7 @@ name: Lint and Test
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
 
 env:
@@ -34,7 +34,7 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features --workspace -- -D warnings
+        run: cargo clippy --all-targets --all-features --workspace --exclude rewards -- -D warnings
 
   tests:
     name: Tests

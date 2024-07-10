@@ -91,12 +91,6 @@ impl ClaimInstructionData {
     }
 }
 
-impl Default for ClaimInstructionData {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 /// Instruction builder for `Claim`.
 ///
 /// ### Accounts:
