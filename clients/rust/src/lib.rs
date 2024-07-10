@@ -1,4 +1,3 @@
-// #[allow(clippy::all)]
 mod generated;
 
 pub use generated::programs::MPLX_REWARDS_ID as ID;
