@@ -117,6 +117,7 @@ impl TestRewards {
         amount: u64,
         lockup_period: LockupPeriod,
         owner: &Pubkey,
+        delegate: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
@@ -124,6 +125,7 @@ impl TestRewards {
                 &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                delegate,
                 amount,
                 lockup_period,
                 owner,
@@ -235,6 +237,7 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
+        delegate: &Pubkey,
         old_lockup_period: LockupPeriod,
         new_lockup_period: LockupPeriod,
         deposit_start_ts: u64,
@@ -248,6 +251,7 @@ impl TestRewards {
                 &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                delegate,
                 old_lockup_period,
                 new_lockup_period,
                 deposit_start_ts,

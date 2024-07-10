@@ -58,12 +58,11 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
             self.deposit_authority,
         )?;
 
-        let mut delegate_mining = if mining.owner != *self.delegate.key {
+        let mut delegate_mining = if self.mining.key != self.delegate.key {
             let delegate_mining = Mining::unpack(&self.delegate.data.borrow())?;
             if delegate_mining
                 .share
-                .checked_sub(delegate_mining.stake_from_others)
-                .ok_or(MplxRewardsError::MathOverflow)?
+                .saturating_sub(delegate_mining.stake_from_others)
                 < DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE
             {
                 return Err(MplxRewardsError::InsufficientWeightedStake.into());

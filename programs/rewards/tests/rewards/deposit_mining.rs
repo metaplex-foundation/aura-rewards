@@ -42,7 +42,14 @@ async fn success() {
     let (mut context, test_rewards, user, mining) = setup().await;
 
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, LockupPeriod::ThreeMonths, &user)
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            LockupPeriod::ThreeMonths,
+            &user,
+            &mining,
+        )
         .await
         .unwrap();
 
@@ -61,7 +68,14 @@ async fn success_with_flex() {
     let (mut context, test_rewards, user, mining) = setup().await;
 
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, LockupPeriod::Flex, &user)
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            LockupPeriod::Flex,
+            &user,
+            &mining,
+        )
         .await
         .unwrap();
 

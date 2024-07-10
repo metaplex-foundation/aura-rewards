@@ -53,6 +53,7 @@ async fn success() {
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
+            &mining,
         )
         .await
         .unwrap();
