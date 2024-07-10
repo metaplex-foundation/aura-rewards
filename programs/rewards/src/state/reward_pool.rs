@@ -18,6 +18,7 @@ use solana_program::{
 
 /// Precision for index calculation
 pub const PRECISION: u128 = 10_000_000_000_000_000;
+pub const DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE: u64 = 15_000_000;
 
 /// Reward pool
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
@@ -106,6 +107,7 @@ impl RewardPool {
         mining: &mut Mining,
         amount: u64,
         lockup_period: LockupPeriod,
+        delegate_mining: Option<&mut Mining>,
     ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
@@ -152,6 +154,18 @@ impl RewardPool {
             .checked_add(weighted_stake_diff)
             .ok_or(MplxRewardsError::MathOverflow)?;
 
+        if let Some(delegate_mining) = delegate_mining {
+            delegate_mining
+                .stake_from_others
+                .checked_add(amount)
+                .ok_or(MplxRewardsError::MathOverflow)?; // delegate_mining.stake_from_others += amount;
+
+            self.total_share = self
+                .total_share
+                .checked_add(amount)
+                .ok_or(MplxRewardsError::MathOverflow)?;
+        }
+
         Ok(())
     }
 
@@ -187,6 +201,7 @@ impl RewardPool {
         deposit_start_ts: u64,
         base_amount: u64,
         additional_amount: u64,
+        delegate_mining: Option<&mut Mining>,
     ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
@@ -254,7 +269,12 @@ impl RewardPool {
         let amount_to_restake = base_amount
             .checked_add(additional_amount)
             .ok_or(MplxRewardsError::MathOverflow)?;
-        self.deposit(mining, amount_to_restake, new_lockup_period)?;
+        self.deposit(
+            mining,
+            amount_to_restake,
+            new_lockup_period,
+            delegate_mining,
+        )?;
 
         Ok(())
     }

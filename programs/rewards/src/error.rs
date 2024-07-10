@@ -75,6 +75,11 @@ pub enum MplxRewardsError {
     /// No need to transfer zero amount of rewards.
     #[error("Rewards: rewards amount must be positive")]
     RewardsMustBeGreaterThanZero,
+
+    /// 13
+    /// Delegate lack of tokens
+    #[error("Rewards: Delegate must have at least 15_000_000 of own weighted stake")]
+    InsufficientWeightedStake,
 }
 
 impl PrintProgramError for MplxRewardsError {
