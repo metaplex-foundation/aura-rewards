@@ -1,2 +1,8 @@
 [advisories]
-ignore = ["RUSTSEC-2024-0344", "RUSTSEC-2022-0093"]
+ignore = ["RUSTSEC-2024-0344", "RUSTSEC-2022-0093"] # ignore unfixable vulnerabilities
+
+[output]
+deny = [] # exit on error if unmaintained dependencies are found
+format = "terminal" # "terminal" (human-readable report) or "json"
+quiet = true # Only print information on error
+show_tree = false # Show inverse dependency trees along with advisories (default: true)
