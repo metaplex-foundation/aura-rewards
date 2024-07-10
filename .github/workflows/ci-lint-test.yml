@@ -17,7 +17,7 @@ defaults:
 
 jobs:
   lint:
-    name: Lint
+    name: Linter
     runs-on: ubuntu-latest
 
     steps:
@@ -37,7 +37,7 @@ jobs:
         run: cargo clippy --all-targets --all-features --workspace -- -D warnings
 
   tests:
-    name: Test
+    name: Tests
     runs-on: ubuntu-latest
 
     steps:
