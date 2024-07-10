@@ -61,7 +61,7 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         assert_uninitialized(self.reward_vault)?;
 
         let (reward_pool_pubkey, pool_bump) =
-            find_reward_pool_program_address(program_id, &self.deposit_authority.key);
+            find_reward_pool_program_address(program_id, self.deposit_authority.key);
         assert_account_key(self.reward_pool, &reward_pool_pubkey)?;
 
         let reward_pool_seeds = &[
