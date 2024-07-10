@@ -34,7 +34,7 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Run clippy
-        run: cargo clippy -- --deny=warnings --allow=clippy::style --allow=clippy::complexity
+        run: cargo clippy --all-targets --all-features --workspace -- -D warnings
 
   tests:
     name: Test
@@ -72,5 +72,5 @@ jobs:
           rustup override set ${{ env.RUST_TOOLCHAIN }}
           solana-install init ${{ env.SOLANA_VERSION }}
 
-      - name: Run bpf tests
+      - name: Run tests
         run: cargo test-bpf

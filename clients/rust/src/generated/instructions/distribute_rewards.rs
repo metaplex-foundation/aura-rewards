@@ -58,6 +58,12 @@ impl DistributeRewardsInstructionData {
     }
 }
 
+impl Default for DistributeRewardsInstructionData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Instruction builder for `DistributeRewards`.
 ///
 /// ### Accounts:

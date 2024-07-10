@@ -74,6 +74,12 @@ impl CloseMiningInstructionData {
     }
 }
 
+impl Default for CloseMiningInstructionData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Instruction builder for `CloseMining`.
 ///
 /// ### Accounts:

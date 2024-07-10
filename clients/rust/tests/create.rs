@@ -1,12 +1,7 @@
 #![cfg(feature = "test-sbf")]
 
-use borsh::BorshDeserialize;
 // use rewards::{accounts::MyAccount, instructions::CreateBuilder};
-use solana_program_test::{tokio, ProgramTest};
-use solana_sdk::{
-    signature::{Keypair, Signer},
-    transaction::Transaction,
-};
+use solana_program_test::tokio;
 
 #[tokio::test]
 async fn create() {
@@ -16,7 +11,7 @@ async fn create() {
 
     // Given a new keypair.
 
-    let address = Keypair::new();
+    // let address = Keypair::new();
 
     // let ix = CreateBuilder::new()
     //     .address(address.pubkey())

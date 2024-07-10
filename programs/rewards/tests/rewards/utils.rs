@@ -280,7 +280,7 @@ impl TestRewards {
                 &self.reward_pool,
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority, &mining_owner],
+            &[&context.payer, &self.deposit_authority, mining_owner],
             context.last_blockhash,
         );
 
