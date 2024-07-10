@@ -50,7 +50,14 @@ async fn restake_before_its_expired() {
     let new_lockup_period = LockupPeriod::ThreeMonths;
 
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, old_lockup_period, &mining_owner)
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            old_lockup_period,
+            &mining_owner,
+            &mining,
+        )
         .await
         .unwrap();
 
@@ -61,6 +68,7 @@ async fn restake_before_its_expired() {
     test_rewards
         .extend_stake(
             &mut context,
+            &mining,
             &mining,
             old_lockup_period,
             new_lockup_period,
@@ -108,6 +116,7 @@ async fn restake_for_another_period_after_old_is_expired() {
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner,
+            &mining,
         )
         .await
         .unwrap();
@@ -122,6 +131,7 @@ async fn restake_for_another_period_after_old_is_expired() {
     test_rewards
         .extend_stake(
             &mut context,
+            &mining,
             &mining,
             old_lockup_period,
             new_lockup_period,
@@ -158,7 +168,14 @@ async fn just_prolong_without_adding_tokes() {
     let new_lockup_period = LockupPeriod::ThreeMonths;
 
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, old_lockup_period, &mining_owner)
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            old_lockup_period,
+            &mining_owner,
+            &mining,
+        )
         .await
         .unwrap();
 
@@ -169,6 +186,7 @@ async fn just_prolong_without_adding_tokes() {
     test_rewards
         .extend_stake(
             &mut context,
+            &mining,
             &mining,
             old_lockup_period,
             new_lockup_period,
@@ -216,6 +234,7 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner,
+            &mining,
         )
         .await
         .unwrap();
@@ -230,6 +249,7 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
     test_rewards
         .extend_stake(
             &mut context,
+            &mining,
             &mining,
             old_lockup_period,
             new_lockup_period,
@@ -271,6 +291,7 @@ async fn restake_in_expiration_day() {
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner,
+            &mining,
         )
         .await
         .unwrap();
@@ -285,6 +306,7 @@ async fn restake_in_expiration_day() {
     test_rewards
         .extend_stake(
             &mut context,
+            &mining,
             &mining,
             old_lockup_period,
             new_lockup_period,
