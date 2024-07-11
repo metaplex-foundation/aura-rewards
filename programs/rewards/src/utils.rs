@@ -337,3 +337,57 @@ pub fn get_curr_unix_ts() -> u64 {
     // in unix means the date is earlier than 1970y
     Clock::get().unwrap().unix_timestamp as u64
 }
+
+pub(crate) trait SafeArithmeticOperations
+where
+    Self: std::marker::Sized,
+{
+    fn safe_sub(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+    fn safe_add(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+    fn safe_mul(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+    fn safe_div(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+}
+
+impl SafeArithmeticOperations for u64 {
+    fn safe_sub(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_sub(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_add(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_add(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_mul(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_mul(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_div(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_div(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+}
+
+impl SafeArithmeticOperations for u128 {
+    fn safe_sub(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_sub(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_add(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_add(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_mul(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_mul(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_div(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_div(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+}

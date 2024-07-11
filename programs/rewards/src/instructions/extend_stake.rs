@@ -13,7 +13,7 @@ pub struct ExtendStakeContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     mining: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
-    delegate: &'a AccountInfo<'b>,
+    delegate_mining: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> ExtendStakeContext<'a, 'b> {
@@ -27,13 +27,13 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
-        let delegate = AccountLoader::next_with_owner(account_info_iter, program_id)?;
+        let delegate_mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
 
         Ok(ExtendStakeContext {
             reward_pool,
             mining,
             deposit_authority,
-            delegate,
+            delegate_mining,
         })
     }
 
@@ -58,8 +58,8 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
             self.deposit_authority,
         )?;
 
-        let mut delegate_mining = if self.mining.key != self.delegate.key {
-            let delegate_mining = Mining::unpack(&self.delegate.data.borrow())?;
+        let mut delegate_mining = if self.mining.key != self.delegate_mining.key {
+            let delegate_mining = Mining::unpack(&self.delegate_mining.data.borrow())?;
             if delegate_mining
                 .share
                 .saturating_sub(delegate_mining.stake_from_others)
@@ -85,6 +85,10 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
         Mining::pack(mining, *self.mining.data.borrow_mut())?;
+
+        if let Some(delegate_mining) = delegate_mining {
+            Mining::pack(delegate_mining, *self.delegate_mining.data.borrow_mut())?;
+        }
 
         Ok(())
     }
