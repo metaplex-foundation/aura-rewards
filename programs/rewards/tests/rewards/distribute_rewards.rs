@@ -56,6 +56,7 @@ async fn happy_path() {
             LockupPeriod::ThreeMonths,
             &user.pubkey(),
             &user_mining_addr,
+            &user,
         )
         .await
         .unwrap();
@@ -103,6 +104,7 @@ async fn happy_path_with_flex() {
             LockupPeriod::Flex,
             &user.pubkey(),
             &user_mining_addr,
+            &user,
         )
         .await
         .unwrap();

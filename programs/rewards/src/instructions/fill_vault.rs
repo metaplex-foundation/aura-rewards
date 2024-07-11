@@ -2,11 +2,12 @@ use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
     state::RewardPool,
-    utils::{get_curr_unix_ts, spl_transfer, AccountLoader, SafeArithmeticOperations},
+    traits::SolanaAccount,
+    utils::{get_curr_unix_ts, spl_transfer, AccountLoader},
 };
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
-    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+    program_error::ProgramError, pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -54,7 +55,7 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             return Err(MplxRewardsError::RewardsMustBeGreaterThanZero.into());
         }
 
-        let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
+        let mut reward_pool = RewardPool::load(self.reward_pool)?;
         assert_account_key(self.fill_authority, &reward_pool.fill_authority)?;
 
         {
@@ -102,7 +103,7 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             &[],
         )?;
 
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
+        reward_pool.save(self.reward_pool)?;
 
         Ok(())
     }

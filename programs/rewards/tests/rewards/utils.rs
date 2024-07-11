@@ -1,7 +1,8 @@
 use std::borrow::{Borrow, BorrowMut};
 
-use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
-use solana_program::{instruction::InstructionError, pubkey::Pubkey};
+use borsh::BorshDeserialize;
+use mplx_rewards::utils::LockupPeriod;
+use solana_program::pubkey::Pubkey;
 use solana_program_test::{BanksClientError, ProgramTestContext};
 use solana_sdk::{
     account::Account,
@@ -146,6 +147,7 @@ impl TestRewards {
         lockup_period: LockupPeriod,
         owner: &Pubkey,
         delegate_mining: &Pubkey,
+        mining_owner: &Keypair,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
@@ -154,12 +156,12 @@ impl TestRewards {
                 mining_account,
                 &self.deposit_authority.pubkey(),
                 delegate_mining,
+                &mining_owner.pubkey(),
                 amount,
                 lockup_period,
-                owner,
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority],
+            &[&context.payer, &self.deposit_authority, mining_owner],
             context.last_blockhash,
         );
 
@@ -268,12 +270,12 @@ impl TestRewards {
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
         delegate_mining: &Pubkey,
+        mining_owner: &Keypair,
         old_lockup_period: LockupPeriod,
         new_lockup_period: LockupPeriod,
         deposit_start_ts: u64,
         base_amount: u64,
         additional_amount: u64,
-        mining_owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::extend_stake(
@@ -282,15 +284,15 @@ impl TestRewards {
                 mining_account,
                 &self.deposit_authority.pubkey(),
                 delegate_mining,
+                &mining_owner.pubkey(),
                 old_lockup_period,
                 new_lockup_period,
                 deposit_start_ts,
                 base_amount,
                 additional_amount,
-                mining_owner,
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority],
+            &[&context.payer, &self.deposit_authority, mining_owner],
             context.last_blockhash,
         );
 
@@ -505,4 +507,9 @@ pub mod assert_custom_on_chain_error {
             }
         }
     }
+}
+
+pub fn deserialize_account<T: BorshDeserialize>(account: Account) -> T {
+    let mut bytes: &[u8] = (*account.data).borrow();
+    T::deserialize(&mut bytes).unwrap()
 }

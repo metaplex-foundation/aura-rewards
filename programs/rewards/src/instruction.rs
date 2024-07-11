@@ -59,13 +59,13 @@ pub enum RewardsInstruction {
     #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
     #[account(4, name = "delegate_mining", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
+    #[account(5, writable, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
+    #[account(6, name = "system_program", desc = "The system program")]
     DepositMining {
         /// Amount to deposit
         amount: u64,
         /// Lockup Period
         lockup_period: LockupPeriod,
-        /// Specifies the owner of the Mining Account
-        owner: Pubkey,
     },
 
     /// Withdraws amount of supply to the mining account
@@ -97,6 +97,8 @@ pub enum RewardsInstruction {
     #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
     #[account(4, name = "delegate_mining", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
+    #[account(5, writable, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
+    #[account(6, name = "system_program", desc = "The system program")]
     ExtendStake {
         /// Lockup period before restaking. Actually it's only needed
         /// for Flex to AnyPeriod edge case
@@ -112,13 +114,12 @@ pub enum RewardsInstruction {
         /// In case user wants to increase it's staked number of tokens,
         /// the addition amount might be provided
         additional_amount: u64,
-        /// The wallet who owns the mining account
-        mining_owner: Pubkey,
     },
 
     /// Distributes tokens among mining owners
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(1, signer, name = "distribute_authority", desc = "The address of Authority who is eligble for distributiong rewards for users")]
+    #[account(2, name = "system_program", desc = "The system program")]
     DistributeRewards,
 
     /// Closes mining account and transfers all lamports to the target account
@@ -238,15 +239,17 @@ pub fn deposit_mining(
     mining: &Pubkey,
     deposit_authority: &Pubkey,
     delegate_mining: &Pubkey,
+    mining_owner: &Pubkey,
     amount: u64,
     lockup_period: LockupPeriod,
-    owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
         AccountMeta::new(*delegate_mining, false),
+        AccountMeta::new(*mining_owner, true),
+        AccountMeta::new_readonly(system_program::id(), false),
     ];
 
     Instruction::new_with_borsh(
@@ -254,7 +257,6 @@ pub fn deposit_mining(
         &RewardsInstruction::DepositMining {
             amount,
             lockup_period,
-            owner: *owner,
         },
         accounts,
     )
@@ -321,18 +323,20 @@ pub fn extend_stake(
     mining: &Pubkey,
     deposit_authority: &Pubkey,
     delegate_mining: &Pubkey,
+    mining_owner: &Pubkey,
     old_lockup_period: LockupPeriod,
     new_lockup_period: LockupPeriod,
     deposit_start_ts: u64,
     base_amount: u64,
     additional_amount: u64,
-    mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
         AccountMeta::new(*delegate_mining, false),
+        AccountMeta::new(*mining_owner, true),
+        AccountMeta::new_readonly(system_program::id(), false),
     ];
 
     Instruction::new_with_borsh(
@@ -343,7 +347,6 @@ pub fn extend_stake(
             deposit_start_ts,
             base_amount,
             additional_amount,
-            mining_owner: *mining_owner,
         },
         accounts,
     )
@@ -358,7 +361,8 @@ pub fn distribute_rewards(
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
-        AccountMeta::new_readonly(*distribute_authority, true),
+        AccountMeta::new(*distribute_authority, true),
+        AccountMeta::new_readonly(system_program::id(), false),
     ];
 
     Instruction::new_with_borsh(

@@ -3,7 +3,6 @@
 //! to add features, then rerun kinobi to update it.
 //!
 //! [https://github.com/metaplex-foundation/kinobi]
-//!
 
 pub(crate) mod r#account_type;
 pub(crate) mod r#lockup_period;
@@ -12,9 +11,7 @@ pub(crate) mod r#reward_calculator;
 pub(crate) mod r#reward_index;
 pub(crate) mod r#reward_pool;
 
-pub use self::r#account_type::*;
-pub use self::r#lockup_period::*;
-pub use self::r#mining::*;
-pub use self::r#reward_calculator::*;
-pub use self::r#reward_index::*;
-pub use self::r#reward_pool::*;
+pub use self::{
+    r#account_type::*, r#lockup_period::*, r#mining::*, r#reward_calculator::*, r#reward_index::*,
+    r#reward_pool::*,
+};

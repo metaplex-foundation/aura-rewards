@@ -94,7 +94,7 @@
 //             1000,
 //             LockupPeriod::OneYear,
 //             &mint.pubkey(),
-//             &user_a.pubkey(),
+//             &user_a,
 //         )
 //         .await
 //         .unwrap();
@@ -115,7 +115,7 @@
 //             2000,
 //             LockupPeriod::OneYear,
 //             &mint.pubkey(),
-//             &user_a.pubkey(),
+//             &user_a,
 //         )
 //         .await
 //         .unwrap();
@@ -135,7 +135,7 @@
 //             100_000,
 //             LockupPeriod::SixMonths,
 //             &mint.pubkey(),
-//             &user_b.pubkey(),
+//             &user_b,
 //         )
 //         .await
 //         .unwrap();
@@ -154,7 +154,7 @@
 //             100_000,
 //             LockupPeriod::SixMonths,
 //             &mint.pubkey(),
-//             &user_b.pubkey(),
+//             &user_b,
 //         )
 //         .await
 //         .unwrap();
@@ -200,7 +200,7 @@
 
 //     // User B unstakes and claims D3
 //     test_rewards_pool
-//         .withdraw_mining(&mut context, &user_mining_b, 100_000, &user_b.pubkey())
+//         .withdraw_mining(&mut context, &user_mining_b, 100_000, &user_b)
 //         .await
 //         .unwrap();
 
@@ -325,7 +325,7 @@
 
 //     // User A unstakes and claims D1 and D2
 //     test_rewards_pool
-//         .withdraw_mining(&mut context, &user_mining_a, 3000, &user_a.pubkey())
+//         .withdraw_mining(&mut context, &user_mining_a, 3000, &user_a)
 //         .await
 //         .unwrap();
 //     claim_and_assert(
@@ -339,7 +339,7 @@
 //     .await;
 //     // Usr B unstakes and claims D4
 //     test_rewards_pool
-//         .withdraw_mining(&mut context, &user_mining_b, 100_000, &user_b.pubkey())
+//         .withdraw_mining(&mut context, &user_mining_b, 100_000, &user_b)
 //         .await
 //         .unwrap();
 //     claim_and_assert(

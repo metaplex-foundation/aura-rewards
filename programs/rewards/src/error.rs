@@ -95,6 +95,16 @@ pub enum MplxRewardsError {
     /// To change a delegate, the new delegate must differ from the current one
     #[error("Passed delegates are the same")]
     DelegatesAreTheSame,
+
+    /// 17
+    /// Serialization failed
+    #[error("Rewards: can't serialize an account")]
+    SerializationError,
+
+    /// 18
+    /// Deserialization failed
+    #[error("Rewards: can't deserialize an account")]
+    DeserializationError,
 }
 
 impl PrintProgramError for MplxRewardsError {

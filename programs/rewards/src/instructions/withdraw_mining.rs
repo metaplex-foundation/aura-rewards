@@ -1,12 +1,13 @@
 use crate::{
     asserts::get_delegate_mining,
     state::{Mining, RewardPool},
-    utils::{assert_and_deserialize_pool_and_mining, AccountLoader},
+    traits::SolanaAccount,
+    utils::AccountLoader,
 };
 
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -57,8 +58,8 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
 
         reward_pool.withdraw(&mut mining, amount, delegate_mining.as_mut())?;
 
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
-        Mining::pack(mining, *self.mining.data.borrow_mut())?;
+        reward_pool.save(self.reward_pool)?;
+        mining.save(self.mining)?;
 
         if let Some(delegate_mining) = delegate_mining {
             Mining::pack(delegate_mining, *self.delegate_mining.data.borrow_mut())?;

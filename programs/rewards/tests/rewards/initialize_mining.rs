@@ -1,9 +1,7 @@
 use crate::utils::*;
 use mplx_rewards::state::Mining;
-use solana_program::program_pack::Pack;
 use solana_program_test::*;
 use solana_sdk::{signature::Keypair, signer::Signer};
-use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards) {
     let test = ProgramTest::new(
@@ -37,7 +35,7 @@ async fn success() {
         .await;
 
     let mining_account = get_account(&mut context, &user_mining).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    let mining = deserialize_account::<Mining>(mining_account);
 
     assert_eq!(mining.reward_pool, test_rewards.reward_pool);
     assert_eq!(mining.owner, user.pubkey());

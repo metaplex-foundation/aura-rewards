@@ -1,11 +1,12 @@
 use crate::{
     asserts::{assert_account_key, assert_uninitialized},
     state::Mining,
+    traits::SolanaAccount,
     utils::{create_account, find_mining_program_address, AccountLoader},
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey, system_program,
+    pubkey::Pubkey, system_program,
 };
 
 /// Instruction context
@@ -62,7 +63,7 @@ impl<'a, 'b> InitializeMiningContext<'a, 'b> {
         )?;
 
         let mining = Mining::initialize(*self.reward_pool.key, bump, *mining_owner);
-        Mining::pack(mining, *self.mining.data.borrow_mut())?;
+        mining.save(self.mining)?;
 
         Ok(())
     }

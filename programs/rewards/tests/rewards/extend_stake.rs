@@ -5,10 +5,9 @@ use mplx_rewards::{
 };
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{clock::SECONDS_PER_DAY, program_pack::Pack, signature::Keypair, signer::Signer};
-use std::borrow::Borrow;
+use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
 
-async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
+async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(
         "mplx_rewards",
         mplx_rewards::id(),
@@ -29,17 +28,17 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
         .await
         .unwrap();
 
-    let user = Keypair::new();
-    let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &user.pubkey())
+    let mining_owner = Keypair::new();
+    let mining_account = test_reward_pool
+        .initialize_mining(&mut context, &mining_owner.pubkey())
         .await;
 
-    (context, test_reward_pool, user.pubkey(), user_mining)
+    (context, test_reward_pool, mining_owner, mining_account)
 }
 
 #[tokio::test]
 async fn restake_before_its_expired() {
-    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+    let (mut context, test_rewards, mining_owner, mining_account) = setup().await;
 
     let deposit_start_ts = context
         .banks_client
@@ -60,6 +59,10 @@ async fn restake_before_its_expired() {
             old_lockup_period,
             &mining_owner,
             &mining,
+            &mining_account,
+            100,
+            old_lockup_period,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -73,12 +76,13 @@ async fn restake_before_its_expired() {
             &mut context,
             &mining,
             &mining,
+            &mining_account,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
         )
         .await
         .unwrap();
@@ -87,21 +91,33 @@ async fn restake_before_its_expired() {
     let beginning_of_the_old_expiration_day = LockupPeriod::ThreeMonths
         .end_timestamp(deposit_start_ts - (deposit_start_ts % SECONDS_PER_DAY))
         .unwrap();
-    check_modifier_at_a_day(&mut context, mining, 0, beginning_of_the_old_expiration_day).await;
+    check_modifier_at_a_day(
+        &mut context,
+        mining_account,
+        0,
+        beginning_of_the_old_expiration_day,
+    )
+    .await;
 
     // new expiration date modifier added
     let beginning_of_the_expiration_day = LockupPeriod::ThreeMonths
         .end_timestamp(curr_ts as u64)
         .unwrap();
-    check_modifier_at_a_day(&mut context, mining, 200, beginning_of_the_expiration_day).await;
+    check_modifier_at_a_day(
+        &mut context,
+        mining_account,
+        200,
+        beginning_of_the_expiration_day,
+    )
+    .await;
 
     // and power is multiplied twice
-    check_weighted_stake(&mut context, mining, 400).await;
+    check_weighted_stake(&mut context, mining_account, 400).await;
 }
 
 #[tokio::test]
 async fn restake_for_another_period_after_old_is_expired() {
-    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+    let (mut context, test_rewards, mining_owner, mining_account) = setup().await;
 
     let deposit_start_ts = context
         .banks_client
@@ -115,7 +131,7 @@ async fn restake_for_another_period_after_old_is_expired() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
+            &mining_account,
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner,
@@ -136,12 +152,13 @@ async fn restake_for_another_period_after_old_is_expired() {
             &mut context,
             &mining,
             &mining,
+            &mining_account,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
         )
         .await
         .unwrap();
@@ -149,15 +166,21 @@ async fn restake_for_another_period_after_old_is_expired() {
     // new expiration date modifier added
     let beginning_of_the_expiration_day =
         LockupPeriod::OneYear.end_timestamp(curr_ts as u64).unwrap();
-    check_modifier_at_a_day(&mut context, mining, 1000, beginning_of_the_expiration_day).await;
+    check_modifier_at_a_day(
+        &mut context,
+        mining_account,
+        1000,
+        beginning_of_the_expiration_day,
+    )
+    .await;
 
     // and power is multiplied twice
-    check_weighted_stake(&mut context, mining, 1200).await;
+    check_weighted_stake(&mut context, mining_account, 1200).await;
 }
 
 #[tokio::test]
 async fn just_prolong_without_adding_tokes() {
-    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+    let (mut context, test_rewards, mining_owner, mining_account) = setup().await;
 
     let deposit_start_ts = context
         .banks_client
@@ -178,6 +201,10 @@ async fn just_prolong_without_adding_tokes() {
             old_lockup_period,
             &mining_owner,
             &mining,
+            &mining_account,
+            100,
+            old_lockup_period,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -191,12 +218,13 @@ async fn just_prolong_without_adding_tokes() {
             &mut context,
             &mining,
             &mining,
+            &mining_account,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
         )
         .await
         .unwrap();
@@ -205,21 +233,33 @@ async fn just_prolong_without_adding_tokes() {
     let beginning_of_the_old_expiration_day = LockupPeriod::ThreeMonths
         .end_timestamp(deposit_start_ts - (deposit_start_ts % SECONDS_PER_DAY))
         .unwrap();
-    check_modifier_at_a_day(&mut context, mining, 0, beginning_of_the_old_expiration_day).await;
+    check_modifier_at_a_day(
+        &mut context,
+        mining_account,
+        0,
+        beginning_of_the_old_expiration_day,
+    )
+    .await;
 
     // new expiration date modifier added
     let beginning_of_the_expiration_day = LockupPeriod::ThreeMonths
         .end_timestamp(curr_ts as u64)
         .unwrap();
-    check_modifier_at_a_day(&mut context, mining, 100, beginning_of_the_expiration_day).await;
+    check_modifier_at_a_day(
+        &mut context,
+        mining_account,
+        100,
+        beginning_of_the_expiration_day,
+    )
+    .await;
 
     // and power is multiplied twice
-    check_weighted_stake(&mut context, mining, 200).await;
+    check_weighted_stake(&mut context, mining_account, 200).await;
 }
 
 #[tokio::test]
 async fn restake_after_its_expired_with_no_additional_tokens() {
-    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+    let (mut context, test_rewards, mining_owner, mining_account) = setup().await;
 
     let deposit_start_ts = context
         .banks_client
@@ -233,7 +273,7 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
+            &mining_account,
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner,
@@ -254,12 +294,13 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
             &mut context,
             &mining,
             &mining,
+            &mining_account,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
         )
         .await
         .unwrap();
@@ -268,15 +309,21 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
     let beginning_of_the_expiration_day = LockupPeriod::ThreeMonths
         .end_timestamp(curr_ts as u64)
         .unwrap();
-    check_modifier_at_a_day(&mut context, mining, 100, beginning_of_the_expiration_day).await;
+    check_modifier_at_a_day(
+        &mut context,
+        mining_account,
+        100,
+        beginning_of_the_expiration_day,
+    )
+    .await;
 
     // and power is multiplied twice
-    check_weighted_stake(&mut context, mining, 200).await;
+    check_weighted_stake(&mut context, mining_account, 200).await;
 }
 
 #[tokio::test]
 async fn restake_in_expiration_day() {
-    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+    let (mut context, test_rewards, mining_owner, mining_account) = setup().await;
 
     let deposit_start_ts = context
         .banks_client
@@ -290,7 +337,7 @@ async fn restake_in_expiration_day() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
+            &mining_account,
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner,
@@ -311,12 +358,13 @@ async fn restake_in_expiration_day() {
             &mut context,
             &mining,
             &mining,
+            &mining_account,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
         )
         .await
         .unwrap();
@@ -325,10 +373,16 @@ async fn restake_in_expiration_day() {
     let beginning_of_the_expiration_day = LockupPeriod::ThreeMonths
         .end_timestamp(curr_ts as u64)
         .unwrap();
-    check_modifier_at_a_day(&mut context, mining, 100, beginning_of_the_expiration_day).await;
+    check_modifier_at_a_day(
+        &mut context,
+        mining_account,
+        100,
+        beginning_of_the_expiration_day,
+    )
+    .await;
 
     // and power is multiplied twice
-    check_weighted_stake(&mut context, mining, 200).await;
+    check_weighted_stake(&mut context, mining_account, 200).await;
 }
 
 #[tokio::test]
@@ -432,8 +486,8 @@ pub async fn check_weighted_stake(
     expected_share: u64,
 ) {
     let mining_account = get_account(context, &mining_account).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining.share, expected_share);
+    let mining_account = deserialize_account::<Mining>(mining_account);
+    assert_eq!(mining_account.share, expected_share);
 }
 
 pub async fn check_modifier_at_a_day(
@@ -443,9 +497,9 @@ pub async fn check_modifier_at_a_day(
     day_to_check: u64,
 ) {
     let mining_account = get_account(context, &mining_account).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    let mining_account = deserialize_account::<Mining>(mining_account);
 
-    let expiration_modifier_for_day = mining
+    let expiration_modifier_for_day = mining_account
         .index
         .weighted_stake_diffs
         .get(&day_to_check)

@@ -25,9 +25,9 @@ async fn setup() -> (ProgramTestContext, TestRewards) {
         .await
         .unwrap();
 
-    let user = Keypair::new();
+    let mining_owner = Keypair::new();
     let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &user.pubkey())
+        .initialize_mining(&mut context, &mining_owner.pubkey())
         .await;
     test_reward_pool
         .deposit_mining(
@@ -37,6 +37,7 @@ async fn setup() -> (ProgramTestContext, TestRewards) {
             LockupPeriod::ThreeMonths,
             &user.pubkey(),
             &user_mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -46,7 +47,7 @@ async fn setup() -> (ProgramTestContext, TestRewards) {
         &mut context,
         &account,
         &test_reward_pool.token_mint_pubkey,
-        &user.pubkey(),
+        &mining_owner.pubkey(),
         0,
     )
     .await
