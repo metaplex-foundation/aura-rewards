@@ -328,6 +328,88 @@ async fn restake_in_expiration_day() {
     check_weighted_stake(&mut context, mining, 200).await;
 }
 
+#[tokio::test]
+async fn prolong_with_delegate() {
+    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+
+    let delegate = Keypair::new();
+    let delegate_mining = test_rewards
+        .initialize_mining(&mut context, &delegate.pubkey())
+        .await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &delegate_mining,
+            3_000_000, // 18_000_000 of weighted stake
+            LockupPeriod::OneYear,
+            &delegate.pubkey(),
+            &delegate_mining,
+        )
+        .await
+        .unwrap();
+    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    assert_eq!(d_mining.share, 18_000_000);
+    assert_eq!(d_mining.stake_from_others, 0);
+
+    let deposit_start_ts = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64;
+    let base_amount = 100;
+    let additional_amount = 0;
+    let old_lockup_period = LockupPeriod::ThreeMonths;
+    let new_lockup_period = LockupPeriod::ThreeMonths;
+
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            old_lockup_period,
+            &mining_owner,
+            &mining,
+        )
+        .await
+        .unwrap();
+
+    // advance for ten days
+    let curr_ts =
+        advance_clock_by_ts(&mut context, (10 * SECONDS_PER_DAY).try_into().unwrap()).await;
+
+    test_rewards
+        .extend_stake(
+            &mut context,
+            &mining,
+            &delegate_mining,
+            old_lockup_period,
+            new_lockup_period,
+            deposit_start_ts,
+            base_amount,
+            additional_amount,
+            &mining_owner,
+        )
+        .await
+        .unwrap();
+
+    // new expiration date modifier added
+    let beginning_of_the_old_expiration_day = LockupPeriod::ThreeMonths
+        .end_timestamp(deposit_start_ts - (deposit_start_ts % SECONDS_PER_DAY))
+        .unwrap();
+    check_modifier_at_a_day(&mut context, mining, 0, beginning_of_the_old_expiration_day).await;
+
+    // new expiration date modifier added
+    let beginning_of_the_expiration_day = LockupPeriod::ThreeMonths
+        .end_timestamp(curr_ts as u64)
+        .unwrap();
+    check_modifier_at_a_day(&mut context, mining, 100, beginning_of_the_expiration_day).await;
+
+    // and power is multiplied twice
+    check_weighted_stake(&mut context, mining, 200).await;
+}
+
 pub async fn check_weighted_stake(
     context: &mut ProgramTestContext,
     mining_account: Pubkey,
