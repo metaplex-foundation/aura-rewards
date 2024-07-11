@@ -1,7 +1,7 @@
 use crate::{
     asserts::assert_account_key,
     state::{Mining, RewardPool},
-    utils::AccountLoader,
+    utils::{find_mining_program_address, AccountLoader},
 };
 
 use solana_program::{
@@ -45,15 +45,8 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
         let mut mining = Mining::unpack(&self.mining.data.borrow())?;
 
-        let mining_pubkey = Pubkey::create_program_address(
-            &[
-                b"mining".as_ref(),
-                mining_owner.as_ref(),
-                self.reward_pool.key.as_ref(),
-                &[mining.bump],
-            ],
-            program_id,
-        )?;
+        let (mining_pubkey, _) =
+            find_mining_program_address(program_id, mining_owner, self.reward_pool.key);
         assert_account_key(self.mining, &mining_pubkey)?;
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
         assert_account_key(self.reward_pool, &mining.reward_pool)?;

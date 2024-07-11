@@ -2,7 +2,7 @@ use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
     state::RewardPool,
-    utils::{get_curr_unix_ts, spl_transfer, AccountLoader},
+    utils::{get_curr_unix_ts, spl_transfer, AccountLoader, SafeArithmeticOperations},
 };
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
@@ -81,20 +81,17 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             }
 
             let days_diff = distribution_ends_at_day_start
-                .checked_sub(reward_pool.calculator.distribution_ends_at)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+                .safe_sub(reward_pool.calculator.distribution_ends_at)?;
 
             reward_pool.calculator.distribution_ends_at = reward_pool
                 .calculator
                 .distribution_ends_at
-                .checked_add(days_diff)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+                .safe_add(days_diff)?;
 
             reward_pool.calculator.tokens_available_for_distribution = reward_pool
                 .calculator
                 .tokens_available_for_distribution
-                .checked_add(rewards)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+                .safe_add(rewards)?;
         }
 
         spl_transfer(
