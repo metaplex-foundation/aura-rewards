@@ -78,15 +78,11 @@ pub enum MplxRewardsError {
     /// 13
     #[error("Rewards: can't deserialize an account")]
     DeserializationError,
+
+    /// 14
     /// No need to transfer zero amount of rewards.
     #[error("Rewards: rewards amount must be positive")]
     RewardsMustBeGreaterThanZero,
-    #[error("Rewards: can't serialize an account")]
-    SerializationError,
-
-    /// 13
-    #[error("Rewards: can't deserialize an account")]
-    DeserializationError,
 }
 
 impl PrintProgramError for MplxRewardsError {
