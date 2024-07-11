@@ -2,7 +2,7 @@ use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
     state::{Mining, RewardPool},
-    utils::AccountLoader,
+    utils::{AccountLoader, SafeArithmeticOperations},
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
@@ -56,11 +56,9 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
 
         let dest_starting_lamports = self.target_account.lamports();
 
-        **self.target_account.lamports.borrow_mut() = dest_starting_lamports
-            .checked_add(self.mining.lamports())
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        **self.target_account.lamports.borrow_mut() =
+            dest_starting_lamports.safe_add(self.mining.lamports())?;
         **self.mining.lamports.borrow_mut() = 0;
-
         let mut source_data = self.mining.data.borrow_mut();
         source_data.fill(0);
 

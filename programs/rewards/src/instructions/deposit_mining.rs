@@ -2,7 +2,7 @@ use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
     state::{Mining, RewardPool, DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE},
-    utils::{AccountLoader, LockupPeriod},
+    utils::{find_mining_program_address, AccountLoader, LockupPeriod},
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
@@ -14,7 +14,7 @@ pub struct DepositMiningContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     mining: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
-    delegate: &'a AccountInfo<'b>,
+    delegate_mining: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> DepositMiningContext<'a, 'b> {
@@ -28,13 +28,13 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
-        let delegate = AccountLoader::next_with_owner(account_info_iter, program_id)?;
+        let delegate_mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
 
         Ok(DepositMiningContext {
             reward_pool,
             mining,
             deposit_authority,
-            delegate,
+            delegate_mining,
         })
     }
 
@@ -50,15 +50,8 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         let mut mining = Mining::unpack(&self.mining.data.borrow())?;
 
         {
-            let mining_pubkey = Pubkey::create_program_address(
-                &[
-                    b"mining".as_ref(),
-                    mining_owner.as_ref(),
-                    self.reward_pool.key.as_ref(),
-                    &[mining.bump],
-                ],
-                program_id,
-            )?;
+            let (mining_pubkey, _) =
+                find_mining_program_address(program_id, mining_owner, self.reward_pool.key);
             assert_account_key(self.mining, &mining_pubkey)?;
             assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
             assert_account_key(self.reward_pool, &mining.reward_pool)?;
@@ -72,8 +65,8 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             }
         }
 
-        let mut delegate_mining = if self.mining.key != self.delegate.key {
-            let delegate_mining = Mining::unpack(&self.delegate.data.borrow())?;
+        let mut delegate_mining = if self.mining.key != self.delegate_mining.key {
+            let delegate_mining = Mining::unpack(&self.delegate_mining.data.borrow())?;
             if delegate_mining
                 .share
                 .saturating_sub(delegate_mining.stake_from_others)
@@ -91,6 +84,10 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
         Mining::pack(mining, *self.mining.data.borrow_mut())?;
+
+        if let Some(delegate_mining) = delegate_mining {
+            Mining::pack(delegate_mining, *self.delegate_mining.data.borrow_mut())?;
+        }
 
         Ok(())
     }

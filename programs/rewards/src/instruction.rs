@@ -58,7 +58,7 @@ pub enum RewardsInstruction {
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(4, signer, name = "delegate", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
+    #[account(4, name = "delegate_mining", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
     DepositMining {
         /// Amount to deposit
         amount: u64,
@@ -95,7 +95,7 @@ pub enum RewardsInstruction {
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(4, signer, name = "delegate", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
+    #[account(4, name = "delegate_mining", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
     ExtendStake {
         /// Lockup period before restaking. Actually it's only needed
         /// for Flex to AnyPeriod edge case
@@ -224,7 +224,7 @@ pub fn deposit_mining(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     deposit_authority: &Pubkey,
-    delegate: &Pubkey,
+    delegate_mining: &Pubkey,
     amount: u64,
     lockup_period: LockupPeriod,
     owner: &Pubkey,
@@ -233,7 +233,7 @@ pub fn deposit_mining(
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new(*delegate, false),
+        AccountMeta::new(*delegate_mining, false),
     ];
 
     Instruction::new_with_borsh(
@@ -305,7 +305,7 @@ pub fn extend_stake(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     deposit_authority: &Pubkey,
-    delegate: &Pubkey,
+    delegate_mining: &Pubkey,
     old_lockup_period: LockupPeriod,
     new_lockup_period: LockupPeriod,
     deposit_start_ts: u64,
@@ -317,7 +317,7 @@ pub fn extend_stake(
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new(*delegate, false),
+        AccountMeta::new(*delegate_mining, false),
     ];
 
     Instruction::new_with_borsh(
