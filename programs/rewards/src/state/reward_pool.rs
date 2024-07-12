@@ -229,7 +229,6 @@ impl RewardPool {
         // do actions like it's a regular deposit
         let amount_to_restake = base_amount.safe_add(additional_amount)?;
 
-        // Refactored delegate_mining update
         let delegate_mining = match delegate_mining {
             Some(dm) => {
                 if dm.stake_from_others > 0 {
