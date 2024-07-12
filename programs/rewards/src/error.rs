@@ -80,6 +80,11 @@ pub enum MplxRewardsError {
     /// Delegate lack of tokens
     #[error("Rewards: Delegate must have at least 15_000_000 of own weighted stake")]
     InsufficientWeightedStake,
+
+    /// 14
+    /// Stake from others must be zero
+    #[error("Rewards: Stake from others must be zero")]
+    StakeFromOthersMustBeZero,
 }
 
 impl PrintProgramError for MplxRewardsError {

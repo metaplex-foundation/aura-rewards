@@ -1,9 +1,11 @@
+use std::borrow::Borrow;
+
 use crate::utils::*;
-use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
+use mplx_rewards::{error::MplxRewardsError, state::Mining, utils::LockupPeriod};
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
 use solana_sdk::{
-    clock::SECONDS_PER_DAY, instruction::InstructionError, signature::Keypair, signer::Signer,
+    instruction::InstructionError, program_pack::Pack, signature::Keypair, signer::Signer,
     transaction::TransactionError,
 };
 
@@ -71,8 +73,29 @@ async fn success() {
 }
 
 #[tokio::test]
-async fn success_after_not_interacting_for_a_long_time() {
+async fn forbing_closing_if_stake_from_others_is_not_zero() {
     let (mut context, test_rewards, mining_owner, mining) = setup().await;
+
+    let delegate = Keypair::new();
+    let delegate_mining = test_rewards
+        .initialize_mining(&mut context, &delegate.pubkey())
+        .await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &delegate_mining,
+            3_000_000, // 18_000_000 of weighted stake
+            LockupPeriod::OneYear,
+            &delegate.pubkey(),
+            &delegate_mining,
+        )
+        .await
+        .unwrap();
+    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    assert_eq!(d_mining.share, 18_000_000);
+    assert_eq!(d_mining.stake_from_others, 0);
+
     let mining_owner_before = context
         .banks_client
         .get_account(mining_owner.pubkey())
@@ -87,50 +110,18 @@ async fn success_after_not_interacting_for_a_long_time() {
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
+            &delegate_mining,
         )
         .await
         .unwrap();
 
-    // fill vault with tokens
-    let distribution_ends_at = context
-        .banks_client
-        .get_sysvar::<solana_program::clock::Clock>()
-        .await
-        .unwrap()
-        .unix_timestamp as u64
-        + SECONDS_PER_DAY * 100;
-
-    // mint token for fill_authority aka wallet who will fill the vault with tokens
-    let rewarder = Keypair::new();
-    create_token_account(
-        &mut context,
-        &rewarder,
-        &test_rewards.token_mint_pubkey,
-        &test_rewards.fill_authority.pubkey(),
-        0,
-    )
-    .await
-    .unwrap();
-    mint_tokens(
-        &mut context,
-        &test_rewards.token_mint_pubkey,
-        &rewarder.pubkey(),
-        100,
-    )
-    .await
-    .unwrap();
-
-    test_rewards
-        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
-        .await
-        .unwrap();
-    // distribute rewards to users
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
-
-    advance_clock_by_ts(&mut context, (SECONDS_PER_DAY * 100).try_into().unwrap()).await;
-
     let res = test_rewards
-        .close_mining(&mut context, &mining, &mining_owner, &mining_owner.pubkey())
+        .close_mining(
+            &mut context,
+            &delegate_mining,
+            &delegate,
+            &delegate.pubkey(),
+        )
         .await;
 
     match res {
@@ -138,7 +129,7 @@ async fn success_after_not_interacting_for_a_long_time() {
             _,
             InstructionError::Custom(code),
         ))) => {
-            assert_eq!(code, MplxRewardsError::RewardsMustBeClaimed as u32);
+            assert_eq!(code, MplxRewardsError::StakeFromOthersMustBeZero as u32);
         }
         _ => unreachable!(),
     }
