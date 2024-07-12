@@ -1,6 +1,11 @@
 //! Arbitrary auxilliary functions
 use std::iter::Enumerate;
 
+use crate::{
+    asserts::assert_account_key,
+    error::MplxRewardsError,
+    state::{Mining, RewardPool},
+};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::AccountInfo,
@@ -15,8 +20,6 @@ use solana_program::{
     system_instruction,
     sysvar::Sysvar,
 };
-
-use crate::error::MplxRewardsError;
 
 /// Generates mining address
 pub fn find_mining_program_address(
@@ -116,6 +119,43 @@ pub fn spl_transfer<'a>(
     )?;
 
     invoke_signed(&ix, &[source, destination, authority], signers_seeds)
+}
+
+pub fn assert_and_init_pool_with_mining<'a, 'b>(
+    program_id: &Pubkey,
+    mining_owner: &Pubkey,
+    this_reward_pool: &'a AccountInfo<'b>,
+    this_mining: &'a AccountInfo<'b>,
+    this_deposit_authority: &'a AccountInfo<'b>,
+) -> Result<(RewardPool, Mining), ProgramError> {
+    let reward_pool = RewardPool::unpack(&this_reward_pool.data.borrow())?;
+    let mining = Mining::unpack(&this_mining.data.borrow())?;
+
+    let mining_pubkey = Pubkey::create_program_address(
+        &[
+            b"mining".as_ref(),
+            mining_owner.as_ref(),
+            this_reward_pool.key.as_ref(),
+            &[mining.bump],
+        ],
+        program_id,
+    )?;
+
+    assert_account_key(this_mining, &mining_pubkey)?;
+    assert_account_key(this_deposit_authority, &reward_pool.deposit_authority)?;
+    assert_account_key(this_reward_pool, &mining.reward_pool)?;
+
+    if mining_owner != &mining.owner {
+        msg!(
+            "Assert account error. Got {} Expected {}",
+            *mining_owner,
+            mining.owner
+        );
+
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    Ok((reward_pool, mining))
 }
 
 /// Helper for parsing accounts with arbitrary input conditions
