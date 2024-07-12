@@ -1,6 +1,6 @@
 use crate::{
     state::{Mining, RewardPool},
-    utils::{assert_and_init_pool_with_mining, AccountLoader, LockupPeriod},
+    utils::{assert_and_deserialize_pool_and_mining, AccountLoader, LockupPeriod},
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
@@ -41,7 +41,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         lockup_period: LockupPeriod,
         mining_owner: &Pubkey,
     ) -> ProgramResult {
-        let (mut reward_pool, mut mining) = assert_and_init_pool_with_mining(
+        let (mut reward_pool, mut mining) = assert_and_deserialize_pool_and_mining(
             program_id,
             mining_owner,
             self.reward_pool,

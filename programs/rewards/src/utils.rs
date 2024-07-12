@@ -121,7 +121,7 @@ pub fn spl_transfer<'a>(
     invoke_signed(&ix, &[source, destination, authority], signers_seeds)
 }
 
-pub fn assert_and_init_pool_with_mining<'a, 'b>(
+pub fn assert_and_deserialize_pool_and_mining<'a, 'b>(
     program_id: &Pubkey,
     mining_owner: &Pubkey,
     this_reward_pool: &'a AccountInfo<'b>,

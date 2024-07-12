@@ -1,6 +1,6 @@
 use crate::{
     state::{Mining, RewardPool},
-    utils::{assert_and_init_pool_with_mining, AccountLoader},
+    utils::{assert_and_deserialize_pool_and_mining, AccountLoader},
 };
 
 use solana_program::{
@@ -41,7 +41,7 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         amount: u64,
         mining_owner: &Pubkey,
     ) -> ProgramResult {
-        let (mut reward_pool, mut mining) = assert_and_init_pool_with_mining(
+        let (mut reward_pool, mut mining) = assert_and_deserialize_pool_and_mining(
             program_id,
             mining_owner,
             self.reward_pool,

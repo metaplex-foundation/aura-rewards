@@ -1,6 +1,6 @@
 use crate::{
     state::{Mining, RewardPool},
-    utils::{assert_and_init_pool_with_mining, AccountLoader, LockupPeriod},
+    utils::{assert_and_deserialize_pool_and_mining, AccountLoader, LockupPeriod},
 };
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
@@ -46,7 +46,7 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
         mining_owner: &Pubkey,
     ) -> ProgramResult {
         let deposit_start_ts = deposit_start_ts - (deposit_start_ts % SECONDS_PER_DAY);
-        let (mut reward_pool, mut mining) = assert_and_init_pool_with_mining(
+        let (mut reward_pool, mut mining) = assert_and_deserialize_pool_and_mining(
             program_id,
             mining_owner,
             self.reward_pool,
