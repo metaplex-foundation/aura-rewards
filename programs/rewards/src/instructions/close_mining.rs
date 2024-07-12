@@ -50,6 +50,10 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
         let mining = Mining::unpack(&self.mining.data.borrow())?;
         assert_account_key(self.mining_owner, &mining.owner)?;
 
+        if mining.stake_from_others > 0 {
+            return Err(MplxRewardsError::StakeFromOthersMustBeZero.into());
+        }
+
         if mining.index.unclaimed_rewards != 0 {
             return Err(MplxRewardsError::RewardsMustBeClaimed.into());
         }
