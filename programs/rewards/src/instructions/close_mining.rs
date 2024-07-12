@@ -57,8 +57,9 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
             return Err(MplxRewardsError::RewardsMustBeClaimed.into());
         }
 
+        // Snippet from solana cookbook
+        // https://solanacookbook.com/references/accounts.html#how-to-close-accounts
         let dest_starting_lamports = self.target_account.lamports();
-
         **self.target_account.lamports.borrow_mut() = dest_starting_lamports
             .checked_add(self.mining.lamports())
             .ok_or(MplxRewardsError::MathOverflow)?;
