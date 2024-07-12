@@ -118,7 +118,7 @@ pub enum RewardsInstruction {
     #[account(1, signer, name = "distribute_authority", desc = "The address of Authority who is eligble for distributiong rewards for users")]
     DistributeRewards,
 
-    /// Distributes tokens among mining owners
+    /// Closes mining account and transfers all lamports to the target account
     #[account(0, name = "mining", desc = "The address of the user's mining account")]
     #[account(1, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
     #[account(2, writable, name = "target_account", desc = "The address where lamports from account closing will be transferred")]
