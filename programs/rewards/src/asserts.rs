@@ -103,11 +103,7 @@ pub fn verify_delegate_mining_requirements(
 ) -> Result<Option<Mining>, ProgramError> {
     if mining.key != delegate_mining.key {
         let delegate_mining = Mining::unpack(&delegate_mining.data.borrow())?;
-        if delegate_mining
-            .share
-            .saturating_sub(delegate_mining.stake_from_others)
-            < DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE
-        {
+        if delegate_mining.share < DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE {
             return Err(MplxRewardsError::InsufficientWeightedStake.into());
         }
 
