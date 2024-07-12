@@ -47,10 +47,13 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
         let reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
 
-        let mining = Mining::unpack(&self.mining.data.borrow())?;
+        let mut mining = Mining::unpack(&self.mining.data.borrow())?;
         assert_account_key(self.mining_owner, &mining.owner)?;
 
+        mining.refresh_rewards(&reward_pool.calculator)?;
+
         if mining.index.unclaimed_rewards != 0 {
+            Mining::pack(mining, *self.mining.data.borrow_mut())?;
             return Err(MplxRewardsError::RewardsMustBeClaimed.into());
         }
 

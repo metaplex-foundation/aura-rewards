@@ -1,8 +1,11 @@
 use crate::utils::*;
-use mplx_rewards::utils::LockupPeriod;
+use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_sdk::{
+    clock::SECONDS_PER_DAY, instruction::InstructionError, signature::Keypair, signer::Signer,
+    transaction::TransactionError,
+};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(
@@ -64,4 +67,78 @@ async fn success() {
 
     let mining_owner = get_account(&mut context, &mining_owner.pubkey()).await;
     assert!(mining_owner.lamports > 0);
+}
+
+#[tokio::test]
+async fn success_after_not_interacting_for_a_long_time() {
+    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+    let mining_owner_before = context
+        .banks_client
+        .get_account(mining_owner.pubkey())
+        .await
+        .unwrap();
+    assert_eq!(None, mining_owner_before);
+
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            LockupPeriod::ThreeMonths,
+            &mining_owner.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    // fill vault with tokens
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY * 100;
+
+    // mint token for fill_authority aka wallet who will fill the vault with tokens
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        100,
+    )
+    .await
+    .unwrap();
+
+    test_rewards
+        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
+        .await
+        .unwrap();
+    // distribute rewards to users
+    test_rewards.distribute_rewards(&mut context).await.unwrap();
+
+    advance_clock_by_ts(&mut context, (SECONDS_PER_DAY * 100).try_into().unwrap()).await;
+
+    let res = test_rewards
+        .close_mining(&mut context, &mining, &mining_owner, &mining_owner.pubkey())
+        .await;
+
+    match res {
+        Err(BanksClientError::TransactionError(TransactionError::InstructionError(
+            _,
+            InstructionError::Custom(code),
+        ))) => {
+            assert_eq!(code, MplxRewardsError::RewardsMustBeClaimed as u32);
+        }
+        _ => unreachable!(),
+    }
 }
