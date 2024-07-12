@@ -1,10 +1,13 @@
 //! Asserts for account verifications
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    pubkey::Pubkey, rent::Rent, sysvar::Sysvar,
+    program_pack::Pack, pubkey::Pubkey, rent::Rent, sysvar::Sysvar,
 };
 
-use crate::error::MplxRewardsError;
+use crate::{
+    error::MplxRewardsError,
+    state::{Mining, DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE},
+};
 
 /// Assert signer.
 pub fn assert_signer(account: &AccountInfo) -> ProgramResult {
@@ -79,4 +82,24 @@ pub fn assert_non_zero_amount(amount: u64) -> ProgramResult {
     }
 
     Ok(())
+}
+
+pub fn verify_delegate_mining_requirements(
+    delegate_mining: &AccountInfo,
+    mining: &AccountInfo,
+) -> Result<Option<Mining>, ProgramError> {
+    if mining.key != delegate_mining.key {
+        let delegate_mining = Mining::unpack(&delegate_mining.data.borrow())?;
+        if delegate_mining
+            .share
+            .saturating_sub(delegate_mining.stake_from_others)
+            < DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE
+        {
+            return Err(MplxRewardsError::InsufficientWeightedStake.into());
+        }
+
+        Ok(Some(delegate_mining))
+    } else {
+        Ok(None)
+    }
 }
