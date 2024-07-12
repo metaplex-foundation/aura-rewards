@@ -84,6 +84,19 @@ pub fn assert_non_zero_amount(amount: u64) -> ProgramResult {
     Ok(())
 }
 
+pub fn assert_pubkey_eq(given: &Pubkey, expected: &Pubkey) -> ProgramResult {
+    if given == expected {
+        Ok(())
+    } else {
+        msg!(
+            "Assert account error. Got {} Expected {}",
+            *given,
+            *expected
+        );
+        Err(ProgramError::InvalidArgument)
+    }
+}
+
 pub fn verify_delegate_mining_requirements(
     delegate_mining: &AccountInfo,
     mining: &AccountInfo,

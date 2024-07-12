@@ -1,11 +1,11 @@
 use crate::{
-    asserts::assert_account_key,
+    asserts::{assert_account_key, assert_pubkey_eq},
     state::{Mining, RewardPool},
     utils::{find_mining_program_address, AccountLoader},
 };
 
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
 };
 
@@ -50,14 +50,8 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         assert_account_key(self.mining, &mining_pubkey)?;
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
         assert_account_key(self.reward_pool, &mining.reward_pool)?;
-        if mining_owner != &mining.owner {
-            msg!(
-                "Assert account error. Got {} Expected {}",
-                *mining_owner,
-                mining.owner
-            );
-            return Err(ProgramError::InvalidArgument);
-        }
+        assert_pubkey_eq(&mining.owner, mining_owner)?;
+
         reward_pool.withdraw(&mut mining, amount)?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
