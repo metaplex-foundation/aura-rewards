@@ -1,7 +1,6 @@
 use crate::{
-    asserts::assert_account_key,
-    error::MplxRewardsError,
-    state::{Mining, RewardPool, DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE},
+    asserts::{assert_account_key, verify_delegate_mining_requirements},
+    state::{Mining, RewardPool},
     utils::{find_mining_program_address, AccountLoader, LockupPeriod},
 };
 use solana_program::{
@@ -65,21 +64,8 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             }
         }
 
-        let mut delegate_mining = if self.mining.key != self.delegate_mining.key {
-            let delegate_mining = Mining::unpack(&self.delegate_mining.data.borrow())?;
-            if delegate_mining
-                .share
-                .saturating_sub(delegate_mining.stake_from_others)
-                < DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE
-            {
-                return Err(MplxRewardsError::InsufficientWeightedStake.into());
-            }
-
-            Some(delegate_mining)
-        } else {
-            None
-        };
-
+        let mut delegate_mining =
+            verify_delegate_mining_requirements(self.delegate_mining, self.mining)?;
         reward_pool.deposit(&mut mining, amount, lockup_period, delegate_mining.as_mut())?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
