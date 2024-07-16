@@ -1,10 +1,9 @@
 use crate::{
-    asserts::assert_account_key,
     state::{Mining, RewardPool},
-    utils::{AccountLoader, LockupPeriod},
+    utils::{assert_and_deserialize_pool_and_mining, AccountLoader, LockupPeriod},
 };
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
 };
 
@@ -42,31 +41,13 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         lockup_period: LockupPeriod,
         mining_owner: &Pubkey,
     ) -> ProgramResult {
-        let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-        let mut mining = Mining::unpack(&self.mining.data.borrow())?;
-
-        {
-            let mining_pubkey = Pubkey::create_program_address(
-                &[
-                    b"mining".as_ref(),
-                    mining_owner.as_ref(),
-                    self.reward_pool.key.as_ref(),
-                    &[mining.bump],
-                ],
-                program_id,
-            )?;
-            assert_account_key(self.mining, &mining_pubkey)?;
-            assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
-            assert_account_key(self.reward_pool, &mining.reward_pool)?;
-            if mining_owner != &mining.owner {
-                msg!(
-                    "Assert account error. Got {} Expected {}",
-                    *mining_owner,
-                    mining.owner
-                );
-                return Err(ProgramError::InvalidArgument);
-            }
-        }
+        let (mut reward_pool, mut mining) = assert_and_deserialize_pool_and_mining(
+            program_id,
+            mining_owner,
+            self.reward_pool,
+            self.mining,
+            self.deposit_authority,
+        )?;
 
         reward_pool.deposit(&mut mining, amount, lockup_period)?;
 
