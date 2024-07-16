@@ -1,5 +1,5 @@
 use crate::{
-    asserts::{assert_account_key, assert_pubkey_eq, get_delegate_mining},
+    asserts::get_delegate_mining,
     state::{Mining, RewardPool},
     utils::{assert_and_deserialize_pool_and_mining, AccountLoader, LockupPeriod},
 };
