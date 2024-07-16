@@ -116,13 +116,12 @@ impl RewardPool {
 
         // shows how weighted stake will change at the end of the staking period
         // weighted_stake_diff = weighted_stake - (amount * flex_multiplier)
-        let weighted_stake_diff = weighted_stake
-            .checked_sub(
-                amount
-                    .checked_mul(LockupPeriod::Flex.multiplier())
-                    .ok_or(MplxRewardsError::MathOverflow)?,
-            )
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        let weighted_stake_diff = Self::calculate_weighted_stake_diff(
+            weighted_stake,
+            amount
+                .checked_mul(LockupPeriod::Flex.multiplier())
+                .ok_or(MplxRewardsError::MathOverflow)?,
+        )?;
 
         self.total_share = self
             .total_share
@@ -211,10 +210,10 @@ impl RewardPool {
                 .checked_mul(old_lockup_period.multiplier())
                 .ok_or(MplxRewardsError::MathOverflow)?;
 
-            // weighted_stake_modifier_to_remove = old_base_amount * lockup_period_multiplier - amount_times_flex
-            let weighted_stake_diff = curr_part_of_weighted_stake
-                .checked_sub(curr_part_of_weighted_stake_for_flex)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+            let weighted_stake_diff = Self::calculate_weighted_stake_diff(
+                curr_part_of_weighted_stake,
+                curr_part_of_weighted_stake_for_flex,
+            )?;
 
             self.calculator
                 .weighted_stake_diffs
@@ -257,6 +256,17 @@ impl RewardPool {
         self.deposit(mining, amount_to_restake, new_lockup_period)?;
 
         Ok(())
+    }
+
+    // shows how weighted stake will change at the end of the staking period
+    // weighted_stake_diff = weighted_stake - (amount * flex_multiplier)
+    fn calculate_weighted_stake_diff(
+        weighted_stake: u64,
+        amount_multiplied_by_flex: u64,
+    ) -> Result<u64, MplxRewardsError> {
+        weighted_stake
+            .checked_sub(amount_multiplied_by_flex)
+            .ok_or(MplxRewardsError::MathOverflow)
     }
 }
 
