@@ -12,21 +12,6 @@ use solana_sdk::{
 };
 use spl_token::state::Account as SplTokenAccount;
 
-// #[macro_export]
-// macro_rules! assert_custom_rpc_err {
-//     ($expected_err:expr, $actual_err:expr) => {
-//         match $actual_err {
-//             BanksClientError::TransactionError(TransactionError::InstructionError(
-//                 _,
-//                 InstructionError::Custom(code),
-//             )) => {
-//                 assert_eq!(code, $expected_err as u32);
-//             }
-//             _ => unreachable!("BanksClientError has no 'Custom' variant."),
-//         }
-//     };
-// }
-
 pub type BanksClientResult<T> = Result<T, BanksClientError>;
 
 #[derive(Debug)]
