@@ -4,10 +4,7 @@ use solana_program::{
     program_pack::Pack, pubkey::Pubkey, rent::Rent, sysvar::Sysvar,
 };
 
-use crate::{
-    error::MplxRewardsError,
-    state::{Mining, DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE},
-};
+use crate::{error::MplxRewardsError, state::Mining};
 
 /// Assert signer.
 pub fn assert_signer(account: &AccountInfo) -> ProgramResult {
@@ -97,18 +94,15 @@ pub fn assert_pubkey_eq(given: &Pubkey, expected: &Pubkey) -> ProgramResult {
     }
 }
 
-pub fn verify_delegate_mining_requirements(
+pub fn get_delegate_mining(
     delegate_mining: &AccountInfo,
     mining: &AccountInfo,
 ) -> Result<Option<Mining>, ProgramError> {
     if mining.key != delegate_mining.key {
         let delegate_mining = Mining::unpack(&delegate_mining.data.borrow())?;
-        if delegate_mining.share < DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE {
-            return Err(MplxRewardsError::InsufficientWeightedStake.into());
-        }
-
         Ok(Some(delegate_mining))
     } else {
+        // None means delegate_mining is the same as mining
         Ok(None)
     }
 }

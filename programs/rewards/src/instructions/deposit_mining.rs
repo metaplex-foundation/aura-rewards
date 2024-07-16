@@ -1,5 +1,5 @@
 use crate::{
-    asserts::{assert_account_key, assert_pubkey_eq, verify_delegate_mining_requirements},
+    asserts::{assert_account_key, assert_pubkey_eq, get_delegate_mining},
     state::{Mining, RewardPool},
     utils::{assert_and_deserialize_pool_and_mining, AccountLoader, LockupPeriod},
 };
@@ -53,8 +53,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
             self.deposit_authority,
         )?;
 
-        let mut delegate_mining =
-            verify_delegate_mining_requirements(self.delegate_mining, self.mining)?;
+        let mut delegate_mining = get_delegate_mining(self.delegate_mining, self.mining)?;
         reward_pool.deposit(&mut mining, amount, lockup_period, delegate_mining.as_mut())?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;

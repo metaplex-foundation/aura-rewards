@@ -1,5 +1,8 @@
 use crate::utils::*;
-use mplx_rewards::{state::Mining, utils::LockupPeriod};
+use mplx_rewards::{
+    state::{Mining, RewardPool},
+    utils::LockupPeriod,
+};
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
 use solana_sdk::{clock::SECONDS_PER_DAY, program_pack::Pack, signature::Keypair, signer::Signer};
@@ -367,13 +370,26 @@ async fn prolong_with_delegate() {
         .deposit_mining(
             &mut context,
             &mining,
-            100,
+            base_amount,
             old_lockup_period,
             &mining_owner,
-            &mining,
+            &delegate_mining,
         )
         .await
         .unwrap();
+    let mining_account = get_account(&mut context, &mining).await;
+    let mining_unpacked = Mining::unpack(mining_account.data.borrow()).unwrap();
+    assert_eq!(mining_unpacked.share, 200);
+    assert_eq!(mining_unpacked.stake_from_others, 0);
+
+    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    assert_eq!(d_mining.share, 18_000_000);
+    assert_eq!(d_mining.stake_from_others, 100);
+
+    let reward_pool_acc = get_account(&mut context, &test_rewards.reward_pool).await;
+    let reward_pool_unpacked = RewardPool::unpack(reward_pool_acc.data.borrow()).unwrap();
+    assert_eq!(reward_pool_unpacked.total_share, 18_000_300);
 
     // advance for ten days
     let curr_ts =

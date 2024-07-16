@@ -18,7 +18,6 @@ use solana_program::{
 
 /// Precision for index calculation
 pub const PRECISION: u128 = 10_000_000_000_000_000;
-pub const DELEGATE_MINIMAL_OWNED_WEIGHTED_STAKE: u64 = 15_000_000;
 
 /// Reward pool
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
@@ -147,7 +146,12 @@ impl RewardPool {
     }
 
     /// Process withdraw
-    pub fn withdraw(&mut self, mining: &mut Mining, amount: u64) -> ProgramResult {
+    pub fn withdraw(
+        &mut self,
+        mining: &mut Mining,
+        amount: u64,
+        delegate_mining: Option<&mut Mining>,
+    ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
         self.total_share = self.total_share.safe_sub(amount)?;
@@ -159,6 +163,13 @@ impl RewardPool {
             .calculator
             .consume_old_modifiers(beginning_of_the_day, self.total_share)?;
         self.total_share = reward_pool_share;
+
+        if let Some(delegate_mining) = delegate_mining {
+            delegate_mining.stake_from_others =
+                delegate_mining.stake_from_others.safe_sub(amount)?;
+
+            self.total_share = self.total_share.safe_sub(amount)?;
+        }
 
         Ok(())
     }
@@ -231,10 +242,9 @@ impl RewardPool {
 
         let delegate_mining = match delegate_mining {
             Some(dm) => {
-                if dm.stake_from_others > 0 {
-                    dm.stake_from_others = dm.stake_from_others.saturating_sub(base_amount);
-                    self.total_share = self.total_share.safe_sub(base_amount)?;
-                }
+                dm.stake_from_others = dm.stake_from_others.safe_sub(base_amount)?;
+                self.total_share = self.total_share.safe_sub(base_amount)?;
+
                 Some(dm)
             }
             None => None,
