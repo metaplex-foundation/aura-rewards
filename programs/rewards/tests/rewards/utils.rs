@@ -142,6 +142,7 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
+        delegate_mining: &Pubkey,
         amount: u64,
         owner: &Pubkey,
     ) -> BanksClientResult<()> {
@@ -151,6 +152,7 @@ impl TestRewards {
                 &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                delegate_mining,
                 amount,
                 owner,
             )],

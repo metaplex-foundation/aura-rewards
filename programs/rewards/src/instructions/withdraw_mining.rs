@@ -1,5 +1,5 @@
 use crate::{
-    asserts::{assert_account_key, assert_pubkey_eq},
+    asserts::{assert_account_key, assert_pubkey_eq, get_delegate_mining},
     state::{Mining, RewardPool},
     utils::{find_mining_program_address, AccountLoader},
 };
@@ -14,6 +14,7 @@ pub struct WithdrawMiningContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     mining: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
+    delegate_mining: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
@@ -27,11 +28,13 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+        let delegate_mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
 
         Ok(WithdrawMiningContext {
             reward_pool,
             mining,
             deposit_authority,
+            delegate_mining,
         })
     }
 
@@ -52,10 +55,16 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         assert_account_key(self.reward_pool, &mining.reward_pool)?;
         assert_pubkey_eq(&mining.owner, mining_owner)?;
 
-        reward_pool.withdraw(&mut mining, amount)?;
+        let mut delegate_mining = get_delegate_mining(self.delegate_mining, self.mining)?;
+
+        reward_pool.withdraw(&mut mining, amount, delegate_mining.as_mut())?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
         Mining::pack(mining, *self.mining.data.borrow_mut())?;
+
+        if let Some(delegate_mining) = delegate_mining {
+            Mining::pack(delegate_mining, *self.delegate_mining.data.borrow_mut())?;
+        }
 
         Ok(())
     }

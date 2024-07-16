@@ -72,6 +72,7 @@ pub enum RewardsInstruction {
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(3, name = "delegate_mining", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
     WithdrawMining {
         /// Amount to withdraw
         amount: u64,
@@ -253,6 +254,7 @@ pub fn withdraw_mining(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     deposit_authority: &Pubkey,
+    delegate_mining: &Pubkey,
     amount: u64,
     owner: &Pubkey,
 ) -> Instruction {
@@ -260,6 +262,7 @@ pub fn withdraw_mining(
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new(*delegate_mining, false),
     ];
 
     Instruction::new_with_borsh(
