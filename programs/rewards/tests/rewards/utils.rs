@@ -131,7 +131,7 @@ impl TestRewards {
                 amount,
             )],
             Some(&context.payer.pubkey()),
-            &[&self.deposit_authority, &mining_owner, &context.payer],
+            &[&self.deposit_authority, mining_owner, &context.payer],
             context.last_blockhash,
         );
 
