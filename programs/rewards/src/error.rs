@@ -78,8 +78,8 @@ pub enum MplxRewardsError {
 
     /// 13
     /// No need to transfer zero amount of rewards.
-    #[error("'weighted_stake_diffs' entry cannot be empty")]
-    WeightedStakeDiffEntryIsEmpty,
+    #[error("No changes at the date in weighted stake modifiers while they're expected")]
+    NoWeightedStakeModifiersAtADate,
 }
 
 impl PrintProgramError for MplxRewardsError {

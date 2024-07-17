@@ -266,7 +266,7 @@ impl RewardPool {
         weighted_stake_diff: u64,
     ) -> Result<(), MplxRewardsError> {
         match diffs.entry(timestamp) {
-            Entry::Vacant(_) => Err(MplxRewardsError::WeightedStakeDiffEntryIsEmpty),
+            Entry::Vacant(_) => Err(MplxRewardsError::NoWeightedStakeModifiersAtADate),
             Entry::Occupied(mut entry) => {
                 let modifier = entry.get_mut();
                 *modifier = modifier
