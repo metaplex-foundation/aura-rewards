@@ -36,7 +36,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey) {
         &mut context,
         &test_rewards.token_mint_pubkey,
         &rewarder.pubkey(),
-        10000,
+        1_000_000,
     )
     .await
     .unwrap();
