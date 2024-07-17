@@ -64,9 +64,9 @@ async fn change_delegate_to_the_same() {
         .change_delegate(
             &mut context,
             &user_mining_a,
-            &user_mining_a,
-            &user_mining_a,
             &user_a,
+            &user_mining_a,
+            &user_mining_a,
             6_000_000,
         )
         .await
