@@ -62,7 +62,7 @@ impl Mining {
     pub fn refresh_rewards(&mut self, vault: &RewardCalculator) -> ProgramResult {
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
-        let mut share = self.share;
+        let mut share = self.share.safe_add(self.stake_from_others)?;
 
         share = self
             .index
@@ -74,7 +74,7 @@ impl Mining {
             &mut self.index.unclaimed_rewards,
             &mut self.index.index_with_precision,
         )?;
-        self.share = share;
+        self.share = share.safe_sub(self.stake_from_others)?;
 
         Ok(())
     }
