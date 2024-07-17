@@ -269,7 +269,7 @@ impl RewardPool {
             .checked_sub(amount_multiplied_by_flex)
             .ok_or(MplxRewardsError::MathOverflow)
     }
-  
+
     fn modify_weighted_stake_diffs(
         diffs: &mut BTreeMap<u64, u64>,
         timestamp: u64,
