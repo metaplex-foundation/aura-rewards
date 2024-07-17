@@ -75,6 +75,11 @@ pub enum MplxRewardsError {
     /// No need to transfer zero amount of rewards.
     #[error("Rewards: rewards amount must be positive")]
     RewardsMustBeGreaterThanZero,
+
+    /// 13
+    /// No need to transfer zero amount of rewards.
+    #[error("No changes at the date in weighted stake modifiers while they're expected")]
+    NoWeightedStakeModifiersAtADate,
 }
 
 impl PrintProgramError for MplxRewardsError {

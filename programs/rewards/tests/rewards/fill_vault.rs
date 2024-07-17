@@ -1,8 +1,8 @@
-use crate::utils::*;
+use crate::utils::{assert_custom_on_chain_error::AssertCustomOnChainErr, *};
 use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
-use solana_program::{instruction::InstructionError, program_pack::Pack};
+use solana_program::program_pack::Pack;
 use solana_program_test::*;
-use solana_sdk::{signature::Keypair, signer::Signer, transaction::TransactionError};
+use solana_sdk::{signature::Keypair, signer::Signer};
 use spl_token::state::Account;
 use std::borrow::Borrow;
 
@@ -133,17 +133,8 @@ async fn zero_amount_of_rewards() {
         .unix_timestamp as u64
         + 86400 * 100;
 
-    let res = test_rewards
+    test_rewards
         .fill_vault(&mut context, &rewarder.pubkey(), 0, distribution_ends_at)
-        .await;
-
-    match res {
-        Err(BanksClientError::TransactionError(TransactionError::InstructionError(
-            _,
-            InstructionError::Custom(code),
-        ))) => {
-            assert_eq!(code, MplxRewardsError::RewardsMustBeGreaterThanZero as u32);
-        }
-        _ => unreachable!(),
-    }
+        .await
+        .assert_on_chain_err(MplxRewardsError::RewardsMustBeGreaterThanZero);
 }

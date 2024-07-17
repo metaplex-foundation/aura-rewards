@@ -1,11 +1,8 @@
-use crate::utils::*;
+use crate::utils::{assert_custom_on_chain_error::AssertCustomOnChainErr, *};
 use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{
-    clock::SECONDS_PER_DAY, instruction::InstructionError, signature::Keypair, signer::Signer,
-    transaction::TransactionError,
-};
+use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(
@@ -128,17 +125,8 @@ async fn success_after_not_interacting_for_a_long_time() {
 
     advance_clock_by_ts(&mut context, (SECONDS_PER_DAY * 100).try_into().unwrap()).await;
 
-    let res = test_rewards
+    test_rewards
         .close_mining(&mut context, &mining, &mining_owner, &mining_owner.pubkey())
-        .await;
-
-    match res {
-        Err(BanksClientError::TransactionError(TransactionError::InstructionError(
-            _,
-            InstructionError::Custom(code),
-        ))) => {
-            assert_eq!(code, MplxRewardsError::RewardsMustBeClaimed as u32);
-        }
-        _ => unreachable!(),
-    }
+        .await
+        .assert_on_chain_err(MplxRewardsError::RewardsMustBeClaimed);
 }
