@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{btree_map::Entry, BTreeMap};
 
 use crate::{
     error::MplxRewardsError,
@@ -211,16 +211,17 @@ impl RewardPool {
             let weighted_stake_diff =
                 curr_part_of_weighted_stake.safe_sub(curr_part_of_weighted_stake_for_flex)?;
 
-            self.calculator
-                .weighted_stake_diffs
-                .entry(deposit_old_expiration_ts)
-                .and_modify(|modifier| *modifier -= weighted_stake_diff);
+            Self::modify_weighted_stake_diffs(
+                &mut self.calculator.weighted_stake_diffs,
+                deposit_old_expiration_ts,
+                weighted_stake_diff,
+            )?;
 
-            mining
-                .index
-                .weighted_stake_diffs
-                .entry(deposit_old_expiration_ts)
-                .and_modify(|modifier| *modifier -= weighted_stake_diff);
+            Self::modify_weighted_stake_diffs(
+                &mut mining.index.weighted_stake_diffs,
+                deposit_old_expiration_ts,
+                weighted_stake_diff,
+            )?;
 
             // also, we need to reduce staking power because we want to extend stake from "scratch"
             mining.share = mining.share.safe_sub(curr_part_of_weighted_stake)?;
@@ -258,6 +259,23 @@ impl RewardPool {
         )?;
 
         Ok(())
+    }
+
+    fn modify_weighted_stake_diffs(
+        diffs: &mut BTreeMap<u64, u64>,
+        timestamp: u64,
+        weighted_stake_diff: u64,
+    ) -> Result<(), MplxRewardsError> {
+        match diffs.entry(timestamp) {
+            Entry::Vacant(_) => Err(MplxRewardsError::NoWeightedStakeModifiersAtADate),
+            Entry::Occupied(mut entry) => {
+                let modifier = entry.get_mut();
+                *modifier = modifier
+                    .checked_sub(weighted_stake_diff)
+                    .ok_or(MplxRewardsError::MathOverflow)?;
+                Ok(())
+            }
+        }
     }
 }
 

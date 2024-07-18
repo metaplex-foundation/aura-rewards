@@ -85,6 +85,11 @@ pub enum MplxRewardsError {
     /// Stake from others must be zero
     #[error("Rewards: Stake from others must be zero")]
     StakeFromOthersMustBeZero,
+
+    /// 15
+    /// No need to transfer zero amount of rewards.
+    #[error("No changes at the date in weighted stake modifiers while they're expected")]
+    NoWeightedStakeModifiersAtADate,
 }
 
 impl PrintProgramError for MplxRewardsError {

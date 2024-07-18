@@ -1,14 +1,14 @@
 use std::borrow::{Borrow, BorrowMut};
 
-use mplx_rewards::utils::LockupPeriod;
-use solana_program::pubkey::Pubkey;
+use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
+use solana_program::{instruction::InstructionError, pubkey::Pubkey};
 use solana_program_test::{BanksClientError, ProgramTestContext};
 use solana_sdk::{
     account::Account,
     program_pack::Pack,
     signature::{Keypair, Signer},
     system_instruction::{self},
-    transaction::Transaction,
+    transaction::{Transaction, TransactionError},
 };
 use spl_token::state::Account as SplTokenAccount;
 
@@ -453,4 +453,28 @@ pub async fn claim_and_assert(
         .await
         .unwrap();
     assert_tokens(context, user_reward, amount).await;
+}
+
+pub mod assert_custom_on_chain_error {
+    use super::*;
+    use std::fmt::Debug;
+
+    pub trait AssertCustomOnChainErr {
+        fn assert_on_chain_err(self, expected_err: MplxRewardsError);
+    }
+
+    impl<T: Debug> AssertCustomOnChainErr for Result<T, BanksClientError> {
+        fn assert_on_chain_err(self, expected_err: MplxRewardsError) {
+            assert!(self.is_err());
+            match self.unwrap_err() {
+                BanksClientError::TransactionError(TransactionError::InstructionError(
+                    _,
+                    InstructionError::Custom(code),
+                )) => {
+                    debug_assert_eq!(expected_err as u32, code);
+                }
+                _ => unreachable!("BanksClientError has no 'Custom' variant."),
+            }
+        }
+    }
 }

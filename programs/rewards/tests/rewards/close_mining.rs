@@ -1,13 +1,11 @@
 use std::borrow::Borrow;
 
 use crate::utils::*;
+use assert_custom_on_chain_error::AssertCustomOnChainErr;
 use mplx_rewards::{error::MplxRewardsError, state::Mining, utils::LockupPeriod};
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{
-    instruction::InstructionError, program_pack::Pack, signature::Keypair, signer::Signer,
-    transaction::TransactionError,
-};
+use solana_sdk::{clock::SECONDS_PER_DAY, program_pack::Pack, signature::Keypair, signer::Signer};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(
@@ -115,22 +113,46 @@ async fn forbing_closing_if_stake_from_others_is_not_zero() {
         .await
         .unwrap();
 
-    let res = test_rewards
-        .close_mining(
-            &mut context,
-            &delegate_mining,
-            &delegate,
-            &delegate.pubkey(),
-        )
-        .await;
+    // fill vault with tokens
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY * 100;
 
-    match res {
-        Err(BanksClientError::TransactionError(TransactionError::InstructionError(
-            _,
-            InstructionError::Custom(code),
-        ))) => {
-            assert_eq!(code, MplxRewardsError::StakeFromOthersMustBeZero as u32);
-        }
-        _ => unreachable!(),
-    }
+    // mint token for fill_authority aka wallet who will fill the vault with tokens
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        100,
+    )
+    .await
+    .unwrap();
+
+    test_rewards
+        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
+        .await
+        .unwrap();
+    // distribute rewards to users
+    test_rewards.distribute_rewards(&mut context).await.unwrap();
+
+    advance_clock_by_ts(&mut context, (SECONDS_PER_DAY * 100).try_into().unwrap()).await;
+
+    test_rewards
+        .close_mining(&mut context, &mining, &mining_owner, &mining_owner.pubkey())
+        .await
+        .assert_on_chain_err(MplxRewardsError::RewardsMustBeClaimed);
 }
