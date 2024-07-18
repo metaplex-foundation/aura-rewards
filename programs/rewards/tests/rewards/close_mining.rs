@@ -71,7 +71,7 @@ async fn success() {
 }
 
 #[tokio::test]
-async fn forbing_closing_if_stake_from_others_is_not_zero() {
+async fn close_when_has_stake_from_others() {
     let (mut context, test_rewards, mining_owner, mining) = setup().await;
 
     let delegate = Keypair::new();
@@ -109,6 +109,33 @@ async fn forbing_closing_if_stake_from_others_is_not_zero() {
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
             &delegate_mining,
+        )
+        .await
+        .unwrap();
+
+    test_rewards
+        .close_mining(
+            &mut context,
+            &delegate_mining,
+            &delegate,
+            &delegate.pubkey(),
+        )
+        .await
+        .assert_on_chain_err(MplxRewardsError::StakeFromOthersMustBeZero);
+}
+
+#[tokio::test]
+async fn close_when_has_unclaimed_rewards() {
+    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            LockupPeriod::ThreeMonths,
+            &mining_owner.pubkey(),
+            &mining,
         )
         .await
         .unwrap();
