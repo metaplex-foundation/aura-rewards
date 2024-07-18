@@ -51,13 +51,11 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
         assert_account_key(self.mining_owner, &mining.owner)?;
 
         mining.refresh_rewards(&reward_pool.calculator)?;
+
         if mining.stake_from_others > 0 {
-            Mining::pack(mining, *self.mining.data.borrow_mut())?;
             return Err(MplxRewardsError::StakeFromOthersMustBeZero.into());
         }
-
         if mining.index.unclaimed_rewards != 0 {
-            Mining::pack(mining, *self.mining.data.borrow_mut())?;
             return Err(MplxRewardsError::RewardsMustBeClaimed.into());
         }
 
