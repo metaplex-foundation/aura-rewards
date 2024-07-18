@@ -1,5 +1,6 @@
 use crate::{
     asserts::get_delegate_mining,
+    error::MplxRewardsError,
     state::{Mining, RewardPool},
     utils::{assert_and_deserialize_pool_and_mining, AccountLoader},
 };
@@ -46,6 +47,10 @@ impl<'a, 'b> ChangeDelegateContext<'a, 'b> {
     /// Process instruction
     #[allow(clippy::too_many_arguments)]
     pub fn process(&self, program_id: &Pubkey, staked_amount: u64) -> ProgramResult {
+        if self.new_delegate_mining.key == self.old_delegate_mining.key {
+            return Err(MplxRewardsError::DelegatesAreTheSame.into());
+        }
+
         let (mut reward_pool, mut mining) = assert_and_deserialize_pool_and_mining(
             program_id,
             self.mining_owner.key,

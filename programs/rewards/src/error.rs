@@ -90,6 +90,11 @@ pub enum MplxRewardsError {
     /// No need to transfer zero amount of rewards.
     #[error("No changes at the date in weighted stake modifiers while they're expected")]
     NoWeightedStakeModifiersAtADate,
+
+    /// 16
+    /// To change a delegate, the new delegate must differ from the current one
+    #[error("Passed delegates are the same")]
+    DelegatesAreTheSame,
 }
 
 impl PrintProgramError for MplxRewardsError {
