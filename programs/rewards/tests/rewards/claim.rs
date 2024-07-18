@@ -60,7 +60,6 @@ async fn with_two_users() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
             &user_mining_a,
             &user_a,
         )
@@ -75,7 +74,6 @@ async fn with_two_users() {
             &user_mining_b,
             100,
             LockupPeriod::ThreeMonths,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -142,7 +140,6 @@ async fn flex_vs_three_months() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
             &user_mining_a,
             &user_a,
         )
@@ -159,7 +156,6 @@ async fn flex_vs_three_months() {
             &user_mining_b,
             100,
             LockupPeriod::ThreeMonths,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -226,7 +222,6 @@ async fn multiple_consequantial_distributions_for_two_users() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
             &user_mining_a,
             &user_a,
         )
@@ -241,7 +236,6 @@ async fn multiple_consequantial_distributions_for_two_users() {
             &user_mining_b,
             100,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -323,7 +317,6 @@ async fn rewards_after_distribution_are_unclaimable() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
             &user_mining_a,
             &user_a,
         )
@@ -379,7 +372,6 @@ async fn rewards_after_distribution_are_unclaimable() {
             &user_mining_b,
             100,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -416,7 +408,6 @@ async fn switch_to_flex_is_correct() {
             &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
-            &user_a.pubkey(),
             &user_mining_a,
             &user_a,
         )
@@ -431,7 +422,6 @@ async fn switch_to_flex_is_correct() {
             &user_mining_b,
             100,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -497,7 +487,6 @@ async fn two_deposits_vs_one() {
             &user_mining_a,
             100,
             LockupPeriod::OneYear,
-            &user_a.pubkey(),
             &user_mining_a,
             &user_a,
         )
@@ -512,7 +501,6 @@ async fn two_deposits_vs_one() {
             &user_mining_b,
             50,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -527,7 +515,6 @@ async fn two_deposits_vs_one() {
             &user_mining_b,
             50,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -590,7 +577,6 @@ async fn claim_tokens_after_deposit_expiration() {
             &user_mining_a,
             100,
             LockupPeriod::OneYear,
-            &user_a.pubkey(),
             &user_mining_a,
             &user_a,
         )
@@ -605,7 +591,6 @@ async fn claim_tokens_after_deposit_expiration() {
             &user_mining_b,
             300,
             LockupPeriod::ThreeMonths,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -671,7 +656,6 @@ async fn claim_after_withdraw_is_correct() {
             &user_mining_a,
             100,
             LockupPeriod::OneYear,
-            &user_a.pubkey(),
             &user_mining_a,
             &user_a,
         )
@@ -685,7 +669,6 @@ async fn claim_after_withdraw_is_correct() {
             &user_mining_b,
             50,
             LockupPeriod::OneYear,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -698,7 +681,6 @@ async fn claim_after_withdraw_is_correct() {
             &user_mining_b,
             150,
             LockupPeriod::ThreeMonths,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -833,7 +815,6 @@ async fn with_two_users_with_flex() {
             &user_mining_a,
             100,
             LockupPeriod::Flex,
-            &user_a.pubkey(),
             &user_mining_a,
             &user_a,
         )
@@ -848,7 +829,6 @@ async fn with_two_users_with_flex() {
             &user_mining_b,
             100,
             LockupPeriod::Flex,
-            &user_b.pubkey(),
             &user_mining_b,
             &user_b,
         )
@@ -914,13 +894,13 @@ async fn claim_with_delegate() {
             &delegate_mining,
             3_000_000, // 18_000_000 of weighted stake
             LockupPeriod::OneYear,
-            &delegate.pubkey(),
             &delegate_mining,
+            &delegate,
         )
         .await
         .unwrap();
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    let d_mining = deserialize_account::<Mining>(&mut context, &delegate_mining).await;
+
     assert_eq!(d_mining.share, 18_000_000);
     assert_eq!(d_mining.stake_from_others, 0);
 
@@ -932,24 +912,22 @@ async fn claim_with_delegate() {
             &user_mining_a,
             1_000_000, //  6_000_000 of weighted stake
             LockupPeriod::OneYear,
-            &user_a.pubkey(),
             &delegate_mining,
+            &user_a,
         )
         .await
         .unwrap();
 
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    let d_mining = deserialize_account::<Mining>(&mut context, &delegate_mining).await;
     assert_eq!(d_mining.share, 18_000_000);
     assert_eq!(d_mining.stake_from_others, 1_000_000);
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let reward_pool =
+        deserialize_account::<RewardPool>(&mut context, &test_rewards.reward_pool).await;
 
     assert_eq!(reward_pool.total_share, 25_000_000);
 
-    let mining_account = get_account(&mut context, &user_mining_a).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    let mining = deserialize_account::<Mining>(&mut context, &user_mining_a).await;
     assert_eq!(mining.share, 6_000_000);
 
     // fill vault with tokens

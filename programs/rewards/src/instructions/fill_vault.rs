@@ -2,7 +2,7 @@ use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
     state::RewardPool,
-    traits::SolanaAccount,
+    traits::{SafeArithmeticOperations, SolanaAccount},
     utils::{get_curr_unix_ts, spl_transfer, AccountLoader},
 };
 use solana_program::{

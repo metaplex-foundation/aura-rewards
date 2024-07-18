@@ -35,7 +35,6 @@ async fn setup() -> (ProgramTestContext, TestRewards) {
             &user_mining,
             100,
             LockupPeriod::ThreeMonths,
-            &user.pubkey(),
             &user_mining,
             &mining_owner,
         )

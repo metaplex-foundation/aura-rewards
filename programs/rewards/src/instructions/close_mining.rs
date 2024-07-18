@@ -2,7 +2,7 @@ use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
     state::{Mining, RewardPool},
-    traits::SolanaAccount,
+    traits::{SafeArithmeticOperations, SolanaAccount},
     utils::AccountLoader,
 };
 use solana_program::{
@@ -48,17 +48,17 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
         let reward_pool = RewardPool::load(self.reward_pool)?;
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
 
-        let mining = Mining::load(self.mining)?;
+        let mut mining = Mining::load(self.mining)?;
         assert_account_key(self.mining_owner, &mining.owner)?;
 
         mining.refresh_rewards(&reward_pool.calculator)?;
         if mining.stake_from_others > 0 {
-            Mining::pack(mining, *self.mining.data.borrow_mut())?;
+            mining.save(self.mining)?;
             return Err(MplxRewardsError::StakeFromOthersMustBeZero.into());
         }
 
         if mining.index.unclaimed_rewards != 0 {
-            Mining::pack(mining, *self.mining.data.borrow_mut())?;
+            mining.save(self.mining)?;
             return Err(MplxRewardsError::RewardsMustBeClaimed.into());
         }
 

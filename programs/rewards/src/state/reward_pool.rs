@@ -3,10 +3,11 @@ use std::collections::{btree_map::Entry, BTreeMap};
 use crate::{
     error::MplxRewardsError,
     state::{AccountType, Mining},
-    traits::{DataBlob, SolanaAccount},
+    traits::{DataBlob, SafeArithmeticOperations, SolanaAccount},
     utils::{get_curr_unix_ts, resize_or_reallocate_account, LockupPeriod, MAX_REALLOC_SIZE},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use solana_program::msg;
 use solana_program::{
     account_info::AccountInfo,
     clock::{Clock, SECONDS_PER_DAY},

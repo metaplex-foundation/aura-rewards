@@ -34,8 +34,7 @@ async fn success() {
         .initialize_mining(&mut context, &user.pubkey())
         .await;
 
-    let mining_account = get_account(&mut context, &user_mining).await;
-    let mining = deserialize_account::<Mining>(mining_account);
+    let mining = deserialize_account::<Mining>(&mut context, &user_mining).await;
 
     assert_eq!(mining.reward_pool, test_rewards.reward_pool);
     assert_eq!(mining.owner, user.pubkey());

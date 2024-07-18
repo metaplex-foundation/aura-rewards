@@ -26,11 +26,9 @@ async fn setup() -> (ProgramTestContext, TestRewards) {
 #[tokio::test]
 async fn success() {
     let (mut context, test_rewards) = setup().await;
-
     test_rewards.initialize_pool(&mut context).await.unwrap();
-
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = deserialize_account::<RewardPool>(reward_pool_account);
+    let reward_pool =
+        deserialize_account::<RewardPool>(&mut context, &test_rewards.reward_pool).await;
 
     assert_eq!(
         reward_pool.deposit_authority,

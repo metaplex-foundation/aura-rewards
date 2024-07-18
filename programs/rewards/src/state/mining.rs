@@ -1,7 +1,7 @@
 use crate::{
     error::MplxRewardsError,
     state::{RewardCalculator, PRECISION},
-    traits::{DataBlob, SolanaAccount},
+    traits::{DataBlob, SafeArithmeticOperations, SolanaAccount},
     utils::{resize_or_reallocate_account, MAX_REALLOC_SIZE},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
@@ -217,4 +217,3 @@ impl IsInitialized for Mining {
         self.account_type == AccountType::Mining
     }
 }
-use crate::utils::SafeArithmeticOperations;

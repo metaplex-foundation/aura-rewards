@@ -22,7 +22,8 @@ use solana_program::{
 };
 use spl_token::state::Account as SplTokenAccount;
 
-use crate::{error::MplxRewardsError, traits::DataBlob};
+use crate::traits::DataBlob;
+use crate::traits::SolanaAccount;
 
 pub const MAX_REALLOC_SIZE: usize = 10100;
 
@@ -149,26 +150,26 @@ pub fn spl_transfer<'a>(
 pub fn assert_and_deserialize_pool_and_mining<'a, 'b>(
     program_id: &Pubkey,
     mining_owner: &Pubkey,
-    this_reward_pool: &'a AccountInfo<'b>,
-    this_mining: &'a AccountInfo<'b>,
-    this_deposit_authority: &'a AccountInfo<'b>,
+    reward_pool_info: &'a AccountInfo<'b>,
+    mining_info: &'a AccountInfo<'b>,
+    deposit_authority_info: &'a AccountInfo<'b>,
 ) -> Result<(RewardPool, Mining), ProgramError> {
-    let reward_pool = RewardPool::unpack(&this_reward_pool.data.borrow())?;
-    let mining = Mining::unpack(&this_mining.data.borrow())?;
+    let reward_pool = RewardPool::load(&reward_pool_info)?;
+    let mining = Mining::load(&mining_info)?;
 
     let mining_pubkey = Pubkey::create_program_address(
         &[
             b"mining".as_ref(),
             mining_owner.as_ref(),
-            this_reward_pool.key.as_ref(),
+            reward_pool_info.key.as_ref(),
             &[mining.bump],
         ],
         program_id,
     )?;
 
-    assert_account_key(this_mining, &mining_pubkey)?;
-    assert_account_key(this_deposit_authority, &reward_pool.deposit_authority)?;
-    assert_account_key(this_reward_pool, &mining.reward_pool)?;
+    assert_account_key(mining_info, &mining_pubkey)?;
+    assert_account_key(deposit_authority_info, &reward_pool.deposit_authority)?;
+    assert_account_key(reward_pool_info, &mining.reward_pool)?;
 
     if mining_owner != &mining.owner {
         msg!(
@@ -400,58 +401,4 @@ pub fn get_curr_unix_ts() -> u64 {
     // Conversion must be save because negative values
     // in unix means the date is earlier than 1970y
     Clock::get().unwrap().unix_timestamp as u64
-}
-
-pub(crate) trait SafeArithmeticOperations
-where
-    Self: std::marker::Sized,
-{
-    fn safe_sub(&self, amount: Self) -> Result<Self, MplxRewardsError>;
-    fn safe_add(&self, amount: Self) -> Result<Self, MplxRewardsError>;
-    fn safe_mul(&self, amount: Self) -> Result<Self, MplxRewardsError>;
-    fn safe_div(&self, amount: Self) -> Result<Self, MplxRewardsError>;
-}
-
-impl SafeArithmeticOperations for u64 {
-    fn safe_sub(&self, amount: u64) -> Result<u64, MplxRewardsError> {
-        self.checked_sub(amount)
-            .ok_or(MplxRewardsError::MathOverflow)
-    }
-
-    fn safe_add(&self, amount: u64) -> Result<u64, MplxRewardsError> {
-        self.checked_add(amount)
-            .ok_or(MplxRewardsError::MathOverflow)
-    }
-
-    fn safe_mul(&self, amount: u64) -> Result<u64, MplxRewardsError> {
-        self.checked_mul(amount)
-            .ok_or(MplxRewardsError::MathOverflow)
-    }
-
-    fn safe_div(&self, amount: u64) -> Result<u64, MplxRewardsError> {
-        self.checked_div(amount)
-            .ok_or(MplxRewardsError::MathOverflow)
-    }
-}
-
-impl SafeArithmeticOperations for u128 {
-    fn safe_sub(&self, amount: u128) -> Result<u128, MplxRewardsError> {
-        self.checked_sub(amount)
-            .ok_or(MplxRewardsError::MathOverflow)
-    }
-
-    fn safe_add(&self, amount: u128) -> Result<u128, MplxRewardsError> {
-        self.checked_add(amount)
-            .ok_or(MplxRewardsError::MathOverflow)
-    }
-
-    fn safe_mul(&self, amount: u128) -> Result<u128, MplxRewardsError> {
-        self.checked_mul(amount)
-            .ok_or(MplxRewardsError::MathOverflow)
-    }
-
-    fn safe_div(&self, amount: u128) -> Result<u128, MplxRewardsError> {
-        self.checked_div(amount)
-            .ok_or(MplxRewardsError::MathOverflow)
-    }
 }

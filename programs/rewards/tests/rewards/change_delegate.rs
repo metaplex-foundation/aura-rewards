@@ -9,7 +9,7 @@ use mplx_rewards::{
 use solana_program::{program_pack::Pack, pubkey::Pubkey};
 use solana_program_test::*;
 use solana_sdk::{signature::Keypair, signer::Signer};
-use spl_token::state::Account;
+use spl_token::state::Account as SplAccount;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey) {
     let test = ProgramTest::new(
@@ -61,8 +61,8 @@ async fn change_delegate_to_the_same() {
             &user_mining_a,
             6_000_000,
             LockupPeriod::OneYear,
-            &user_a.pubkey(),
             &user_mining_a,
+            &user_a,
         )
         .await
         .unwrap();
@@ -91,13 +91,12 @@ async fn change_delegate_then_claim() {
             &delegate_mining,
             3_000_000, // 18_000_000 of weighted stake
             LockupPeriod::OneYear,
-            &delegate.pubkey(),
             &delegate_mining,
+            &delegate,
         )
         .await
         .unwrap();
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    let d_mining = deserialize_account::<Mining>(&mut context, &delegate_mining).await;
     assert_eq!(d_mining.share, 18_000_000);
     assert_eq!(d_mining.stake_from_others, 0);
 
@@ -109,8 +108,8 @@ async fn change_delegate_then_claim() {
             &user_mining_a,
             1_000_000, //  6_000_000 of weighted stake
             LockupPeriod::OneYear,
-            &user_a.pubkey(),
             &user_mining_a,
+            &user_a,
         )
         .await
         .unwrap();
@@ -126,18 +125,15 @@ async fn change_delegate_then_claim() {
         .await
         .unwrap();
 
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    let d_mining = deserialize_account::<Mining>(&mut context, &delegate_mining).await;
     assert_eq!(d_mining.share, 18_000_000);
     assert_eq!(d_mining.stake_from_others, 1_000_000);
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
-
+    let reward_pool =
+        deserialize_account::<RewardPool>(&mut context, &test_rewards.reward_pool).await;
     assert_eq!(reward_pool.total_share, 25_000_000);
 
-    let mining_account = get_account(&mut context, &user_mining_a).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    let mining = deserialize_account::<Mining>(&mut context, &user_mining_a).await;
     assert_eq!(mining.share, 6_000_000);
 
     // fill vault with tokens
@@ -175,12 +171,12 @@ async fn change_delegate_then_claim() {
         .unwrap();
 
     let user_reward_account_a = get_account(&mut context, &user_rewards_a.pubkey()).await;
-    let user_rewards_a = Account::unpack(user_reward_account_a.data.borrow()).unwrap();
+    let user_rewards_a = SplAccount::unpack(user_reward_account_a.data.borrow()).unwrap();
 
     assert_eq!(user_rewards_a.amount, 240_000);
 
     let delegate_account = get_account(&mut context, &delegate_rewards.pubkey()).await;
-    let delegate_rewards = Account::unpack(delegate_account.data.borrow()).unwrap();
+    let delegate_rewards = SplAccount::unpack(delegate_account.data.borrow()).unwrap();
 
     assert_eq!(delegate_rewards.amount, 760_000);
 }

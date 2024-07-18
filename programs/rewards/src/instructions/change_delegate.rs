@@ -1,3 +1,4 @@
+use crate::traits::SolanaAccount;
 use crate::{
     asserts::get_delegate_mining,
     error::MplxRewardsError,
@@ -6,7 +7,7 @@ use crate::{
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -71,21 +72,15 @@ impl<'a, 'b> ChangeDelegateContext<'a, 'b> {
             staked_amount,
         )?;
 
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
-        Mining::pack(mining, *self.mining.data.borrow_mut())?;
+        reward_pool.save(self.reward_pool)?;
+        mining.save(self.mining)?;
 
         if let Some(new_delegate_mining) = new_delegate_mining {
-            Mining::pack(
-                new_delegate_mining,
-                *self.new_delegate_mining.data.borrow_mut(),
-            )?;
+            new_delegate_mining.save(self.new_delegate_mining)?;
         }
 
         if let Some(old_delegate_mining) = old_delegate_mining {
-            Mining::pack(
-                old_delegate_mining,
-                *self.old_delegate_mining.data.borrow_mut(),
-            )?;
+            old_delegate_mining.save(self.old_delegate_mining)?;
         }
 
         Ok(())

@@ -145,7 +145,6 @@ impl TestRewards {
         mining_account: &Pubkey,
         amount: u64,
         lockup_period: LockupPeriod,
-        owner: &Pubkey,
         delegate_mining: &Pubkey,
         mining_owner: &Keypair,
     ) -> BanksClientResult<()> {
@@ -486,6 +485,9 @@ pub async fn claim_and_assert(
 }
 
 pub mod assert_custom_on_chain_error {
+    use mplx_rewards::error::MplxRewardsError;
+    use solana_sdk::instruction::InstructionError;
+
     use super::*;
     use std::fmt::Debug;
 
@@ -509,7 +511,10 @@ pub mod assert_custom_on_chain_error {
     }
 }
 
-pub fn deserialize_account<T: BorshDeserialize>(account: Account) -> T {
-    let mut bytes: &[u8] = (*account.data).borrow();
-    T::deserialize(&mut bytes).unwrap()
+pub async fn deserialize_account<T: BorshDeserialize>(
+    context: &mut ProgramTestContext,
+    pubkey: &Pubkey,
+) -> T {
+    let delegate_mining_account = get_account(context, &pubkey).await;
+    T::deserialize(&mut &delegate_mining_account.data[..]).unwrap()
 }

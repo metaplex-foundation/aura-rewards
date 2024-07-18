@@ -1,15 +1,13 @@
 use crate::{
     asserts::assert_account_key,
-    state::{Mining, RewardPool},
     traits::SolanaAccount,
-    utils::{spl_transfer, AccountLoader},
+    utils::{assert_and_deserialize_pool_and_mining, spl_transfer, AccountLoader},
 };
 use borsh::BorshSerialize;
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program::set_return_data,
-    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint::ProgramResult, program::set_return_data,
+    program_error::ProgramError, pubkey::Pubkey,
 };
-use spl_token::state::Account;
 
 /// Instruction context
 pub struct ClaimContext<'a, 'b> {
@@ -53,23 +51,13 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
-        let reward_pool = RewardPool::load(self.reward_pool)?;
-        let mut mining = Mining::load(self.mining)?;
-
-        assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
-
-        {
-            let mining_user_rewards =
-                Account::unpack(&self.mining_owner_reward_token_account.data.borrow())?;
-            if mining_user_rewards.owner != *self.mining_owner.key {
-                msg!(
-                    "Rewards account is not owned by mining owner. Got {} Expected {}",
-                    mining_user_rewards.owner,
-                    self.mining_owner.key
-                );
-                return Err(ProgramError::InvalidArgument);
-            }
-        }
+        let (reward_pool, mut mining) = assert_and_deserialize_pool_and_mining(
+            program_id,
+            &self.mining_owner.key,
+            self.reward_pool,
+            self.mining,
+            self.deposit_authority,
+        )?;
 
         let reward_pool_seeds = &[
             b"reward_pool".as_ref(),
@@ -96,6 +84,7 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
             )?;
         }
+
         mining.refresh_rewards(&reward_pool.calculator)?;
         let amount = mining.index.unclaimed_rewards;
         mining.claim();

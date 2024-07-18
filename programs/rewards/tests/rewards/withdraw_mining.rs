@@ -40,22 +40,27 @@ async fn success() {
 
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, lockup_period, &user, &mining)
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            lockup_period,
+            &mining,
+            &mining_owner,
+        )
         .await
         .unwrap();
 
     test_rewards
-        .withdraw_mining(&mut context, &mining, &mining, 30, &user)
+        .withdraw_mining(&mut context, &mining, &mining, 30, &mining_owner.pubkey())
         .await
         .unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = deserialize_account::<RewardPool>(reward_pool_account);
-
+    let reward_pool =
+        deserialize_account::<RewardPool>(&mut context, &test_rewards.reward_pool).await;
     assert_eq!(reward_pool.total_share, 170);
 
-    let mining_account = get_account(&mut context, &mining).await;
-    let mining = deserialize_account::<Mining>(mining_account);
+    let mining = deserialize_account::<Mining>(&mut context, &mining).await;
     assert_eq!(mining.share, 170);
 }
 
@@ -70,7 +75,6 @@ async fn success_with_5kkk_after_expiring() {
             &mining,
             5000000000,
             lockup_period,
-            &user,
             &mining,
             &mining_owner,
         )
@@ -80,16 +84,20 @@ async fn success_with_5kkk_after_expiring() {
     advance_clock_by_ts(&mut context, (100 * SECONDS_PER_DAY).try_into().unwrap()).await;
 
     test_rewards
-        .withdraw_mining(&mut context, &mining, &mining, 5000000000, &user)
+        .withdraw_mining(
+            &mut context,
+            &mining,
+            &mining,
+            5000000000,
+            &mining_owner.pubkey(),
+        )
         .await
         .unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = deserialize_account::<RewardPool>(reward_pool_account);
-
+    let reward_pool =
+        deserialize_account::<RewardPool>(&mut context, &test_rewards.reward_pool).await;
     assert_eq!(reward_pool.total_share, 0);
 
-    let mining_account = get_account(&mut context, &mining).await;
-    let mining = deserialize_account::<Mining>(mining_account);
+    let mining = deserialize_account::<Mining>(&mut context, &mining).await;
     assert_eq!(mining.share, 0);
 }

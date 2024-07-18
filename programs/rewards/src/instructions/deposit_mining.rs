@@ -1,11 +1,10 @@
 use crate::{
     asserts::get_delegate_mining,
-    state::{Mining, RewardPool},
     traits::SolanaAccount,
-    utils::{AccountLoader, LockupPeriod},
+    utils::{assert_and_deserialize_pool_and_mining, AccountLoader, LockupPeriod},
 };
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
+    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
     pubkey::Pubkey, system_program,
 };
 
@@ -54,7 +53,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
     ) -> ProgramResult {
         let (mut reward_pool, mut mining) = assert_and_deserialize_pool_and_mining(
             program_id,
-            mining_owner,
+            &self.mining_owner.key,
             self.reward_pool,
             self.mining,
             self.deposit_authority,
@@ -67,7 +66,7 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         mining.save(self.mining)?;
 
         if let Some(delegate_mining) = delegate_mining {
-            Mining::pack(delegate_mining, *self.delegate_mining.data.borrow_mut())?;
+            delegate_mining.save(self.delegate_mining)?;
         }
 
         Ok(())

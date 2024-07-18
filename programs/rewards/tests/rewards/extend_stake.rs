@@ -54,14 +54,10 @@ async fn restake_before_its_expired() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
-            100,
-            old_lockup_period,
-            &mining_owner,
-            &mining,
             &mining_account,
             100,
             old_lockup_period,
+            &mining_account,
             &mining_owner,
         )
         .await
@@ -74,8 +70,7 @@ async fn restake_before_its_expired() {
     test_rewards
         .extend_stake(
             &mut context,
-            &mining,
-            &mining,
+            &mining_account,
             &mining_account,
             &mining_owner,
             old_lockup_period,
@@ -134,8 +129,8 @@ async fn restake_for_another_period_after_old_is_expired() {
             &mining_account,
             100,
             LockupPeriod::ThreeMonths,
+            &mining_account,
             &mining_owner,
-            &mining,
         )
         .await
         .unwrap();
@@ -150,8 +145,7 @@ async fn restake_for_another_period_after_old_is_expired() {
     test_rewards
         .extend_stake(
             &mut context,
-            &mining,
-            &mining,
+            &mining_account,
             &mining_account,
             &mining_owner,
             old_lockup_period,
@@ -196,14 +190,10 @@ async fn just_prolong_without_adding_tokes() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
-            100,
-            old_lockup_period,
-            &mining_owner,
-            &mining,
             &mining_account,
             100,
             old_lockup_period,
+            &mining_account,
             &mining_owner,
         )
         .await
@@ -216,8 +206,7 @@ async fn just_prolong_without_adding_tokes() {
     test_rewards
         .extend_stake(
             &mut context,
-            &mining,
-            &mining,
+            &mining_account,
             &mining_account,
             &mining_owner,
             old_lockup_period,
@@ -276,8 +265,8 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
             &mining_account,
             100,
             LockupPeriod::ThreeMonths,
+            &mining_account,
             &mining_owner,
-            &mining,
         )
         .await
         .unwrap();
@@ -292,8 +281,7 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
     test_rewards
         .extend_stake(
             &mut context,
-            &mining,
-            &mining,
+            &mining_account,
             &mining_account,
             &mining_owner,
             old_lockup_period,
@@ -340,8 +328,8 @@ async fn restake_in_expiration_day() {
             &mining_account,
             100,
             LockupPeriod::ThreeMonths,
+            &mining_account,
             &mining_owner,
-            &mining,
         )
         .await
         .unwrap();
@@ -356,8 +344,7 @@ async fn restake_in_expiration_day() {
     test_rewards
         .extend_stake(
             &mut context,
-            &mining,
-            &mining,
+            &mining_account,
             &mining_account,
             &mining_owner,
             old_lockup_period,
@@ -399,13 +386,13 @@ async fn prolong_with_delegate() {
             &delegate_mining,
             3_000_000, // 18_000_000 of weighted stake
             LockupPeriod::OneYear,
-            &delegate.pubkey(),
             &delegate_mining,
+            &delegate,
         )
         .await
         .unwrap();
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+
+    let d_mining = deserialize_account::<Mining>(&mut context, &delegate_mining).await;
     assert_eq!(d_mining.share, 18_000_000);
     assert_eq!(d_mining.stake_from_others, 0);
 
@@ -426,23 +413,22 @@ async fn prolong_with_delegate() {
             &mining,
             base_amount,
             old_lockup_period,
-            &mining_owner,
             &delegate_mining,
+            &mining_owner,
         )
         .await
         .unwrap();
-    let mining_account = get_account(&mut context, &mining).await;
-    let mining_unpacked = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining_unpacked.share, 200);
-    assert_eq!(mining_unpacked.stake_from_others, 0);
 
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    let mining_account = deserialize_account::<Mining>(&mut context, &mining).await;
+    assert_eq!(mining_account.share, 200);
+    assert_eq!(mining_account.stake_from_others, 0);
+
+    let d_mining = deserialize_account::<Mining>(&mut context, &delegate_mining).await;
     assert_eq!(d_mining.share, 18_000_000);
     assert_eq!(d_mining.stake_from_others, 100);
 
-    let reward_pool_acc = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool_unpacked = RewardPool::unpack(reward_pool_acc.data.borrow()).unwrap();
+    let reward_pool_unpacked =
+        deserialize_account::<RewardPool>(&mut context, &test_rewards.reward_pool).await;
     assert_eq!(reward_pool_unpacked.total_share, 18_000_300);
 
     // advance for ten days
@@ -454,12 +440,12 @@ async fn prolong_with_delegate() {
             &mut context,
             &mining,
             &delegate_mining,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
             base_amount,
             additional_amount,
-            &mining_owner,
         )
         .await
         .unwrap();
@@ -485,8 +471,7 @@ pub async fn check_weighted_stake(
     mining_account: Pubkey,
     expected_share: u64,
 ) {
-    let mining_account = get_account(context, &mining_account).await;
-    let mining_account = deserialize_account::<Mining>(mining_account);
+    let mining_account = deserialize_account::<Mining>(context, &mining_account).await;
     assert_eq!(mining_account.share, expected_share);
 }
 
@@ -496,8 +481,7 @@ pub async fn check_modifier_at_a_day(
     expected_modifier: u64,
     day_to_check: u64,
 ) {
-    let mining_account = get_account(context, &mining_account).await;
-    let mining_account = deserialize_account::<Mining>(mining_account);
+    let mining_account = deserialize_account::<Mining>(context, &mining_account).await;
 
     let expiration_modifier_for_day = mining_account
         .index

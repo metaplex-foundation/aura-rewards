@@ -1,12 +1,11 @@
 use crate::{
     asserts::get_delegate_mining,
-    state::{Mining, RewardPool},
     traits::SolanaAccount,
-    utils::{AccountLoader, LockupPeriod},
+    utils::{assert_and_deserialize_pool_and_mining, AccountLoader, LockupPeriod},
 };
 use solana_program::system_program;
 use solana_program::{
-    account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult, msg,
+    account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
     program_error::ProgramError, pubkey::Pubkey,
 };
 
@@ -15,6 +14,7 @@ pub struct ExtendStakeContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     mining: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
+    delegate_mining: &'a AccountInfo<'b>,
     mining_owner: &'a AccountInfo<'b>,
     system_program: &'a AccountInfo<'b>,
 }
@@ -56,12 +56,10 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
         base_amount: u64,
         additional_amount: u64,
     ) -> ProgramResult {
-        let mut reward_pool = RewardPool::load(self.reward_pool)?;
-        let mut mining = Mining::load(self.mining)?;
         let deposit_start_ts = deposit_start_ts - (deposit_start_ts % SECONDS_PER_DAY);
         let (mut reward_pool, mut mining) = assert_and_deserialize_pool_and_mining(
             program_id,
-            mining_owner,
+            self.mining_owner.key,
             self.reward_pool,
             self.mining,
             self.deposit_authority,
@@ -83,7 +81,7 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
         mining.save(self.mining)?;
 
         if let Some(delegate_mining) = delegate_mining {
-            Mining::pack(delegate_mining, *self.delegate_mining.data.borrow_mut())?;
+            delegate_mining.save(self.delegate_mining)?;
         }
 
         Ok(())
