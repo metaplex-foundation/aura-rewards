@@ -7,11 +7,11 @@ use crate::{
     utils::{get_curr_unix_ts, resize_or_reallocate_account, LockupPeriod, MAX_REALLOC_SIZE},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-use solana_program::msg;
 use solana_program::{
     account_info::AccountInfo,
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
+    msg,
     program_error::ProgramError,
     program_pack::IsInitialized,
     pubkey::Pubkey,

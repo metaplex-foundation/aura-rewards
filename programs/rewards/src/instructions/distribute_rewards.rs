@@ -2,10 +2,9 @@ use crate::{
     asserts::assert_account_key, state::RewardPool, traits::SolanaAccount, utils::AccountLoader,
 };
 
-use solana_program::system_program;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    pubkey::Pubkey,
+    pubkey::Pubkey, system_program,
 };
 
 /// Instruction context

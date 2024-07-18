@@ -5,8 +5,8 @@ use crate::{
     utils::{resize_or_reallocate_account, MAX_REALLOC_SIZE},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-use solana_program::account_info::AccountInfo;
 use solana_program::{
+    account_info::AccountInfo,
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
     program_error::ProgramError,

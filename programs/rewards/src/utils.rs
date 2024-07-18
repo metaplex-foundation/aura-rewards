@@ -22,8 +22,7 @@ use solana_program::{
 };
 use spl_token::state::Account as SplTokenAccount;
 
-use crate::traits::DataBlob;
-use crate::traits::SolanaAccount;
+use crate::traits::{DataBlob, SolanaAccount};
 
 pub const MAX_REALLOC_SIZE: usize = 10100;
 

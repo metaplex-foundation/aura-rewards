@@ -3,10 +3,9 @@ use crate::{
     traits::SolanaAccount,
     utils::{assert_and_deserialize_pool_and_mining, AccountLoader, LockupPeriod},
 };
-use solana_program::system_program;
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
-    program_error::ProgramError, pubkey::Pubkey,
+    program_error::ProgramError, pubkey::Pubkey, system_program,
 };
 
 /// Instruction context

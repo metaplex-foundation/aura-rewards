@@ -1,8 +1,8 @@
-use crate::traits::SolanaAccount;
 use crate::{
     asserts::get_delegate_mining,
     error::MplxRewardsError,
     state::{Mining, RewardPool},
+    traits::SolanaAccount,
     utils::{assert_and_deserialize_pool_and_mining, AccountLoader},
 };
 use solana_program::{
