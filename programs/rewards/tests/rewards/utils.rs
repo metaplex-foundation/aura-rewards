@@ -431,9 +431,7 @@ pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) -> i
         .unwrap();
 
     let initial_slot = context.banks_client.get_root_slot().await.unwrap();
-    context
-        .warp_to_slot(initial_slot + (ts / 2) as u64)
-        .unwrap();
+    context.warp_to_slot(initial_slot + 1 as u64).unwrap();
 
     let mut new_clock = old_clock.clone();
     new_clock.unix_timestamp += ts;

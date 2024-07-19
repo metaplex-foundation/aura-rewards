@@ -2,11 +2,9 @@ use crate::{
     error::MplxRewardsError,
     state::{RewardCalculator, PRECISION},
     traits::{DataBlob, SafeArithmeticOperations, SolanaAccount},
-    utils::{resize_or_reallocate_account, MAX_REALLOC_SIZE},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
-    account_info::AccountInfo,
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
     program_error::ProgramError,
@@ -14,12 +12,9 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
-use std::{
-    collections::BTreeMap,
-    ops::Bound::{Excluded, Included},
-};
+use std::ops::Bound::{Excluded, Included};
 
-use super::AccountType;
+use super::{AccountType, BTreeMapWithCapacity};
 
 /// Mining
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
@@ -44,7 +39,7 @@ pub struct Mining {
 }
 
 impl Mining {
-    pub const DEFAULT_LEN: usize = 1 + 32 + 1 + 6 + 32 + RewardIndex::DEFAULT_LEN + 32;
+    pub const DEFAULT_LEN: usize = 1 + 32 + 1 + 8 + 32 + RewardIndex::DEFAULT_LEN + 8;
 
     /// Initialize a Reward Pool
     pub fn initialize(reward_pool: Pubkey, bump: u8, owner: Pubkey) -> Mining {
@@ -53,6 +48,12 @@ impl Mining {
             reward_pool,
             bump,
             owner,
+            index: RewardIndex {
+                weighted_stake_diffs: BTreeMapWithCapacity::new(
+                    RewardIndex::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER,
+                ),
+                ..Default::default()
+            },
             ..Default::default()
         }
     }
@@ -82,23 +83,6 @@ impl Mining {
 
         Ok(())
     }
-
-    pub fn resize_if_needed<'a>(
-        &self,
-        mining_account: &AccountInfo<'a>,
-        payer: &AccountInfo<'a>,
-        system_program: &AccountInfo<'a>,
-    ) -> ProgramResult {
-        if self.index.weighted_stake_diffs.len()
-            % RewardIndex::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
-            == 0
-            && !self.index.weighted_stake_diffs.is_empty()
-        {
-            let new_size = self.get_size() + MAX_REALLOC_SIZE;
-            resize_or_reallocate_account(mining_account, payer, system_program, new_size)?;
-        }
-        Ok(())
-    }
 }
 
 impl SolanaAccount for Mining {
@@ -113,15 +97,13 @@ impl DataBlob for Mining {
     }
 
     fn get_size(&self) -> usize {
-        let weighted_stake_diff_elements = self
+        let weighted_stake_diff_capacity = self
             .index
             .weighted_stake_diffs
-            .len()
+            .capacity()
             .saturating_sub(RewardIndex::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER);
 
-        Mining::DEFAULT_LEN + self.index.weighted_stake_diffs.len()
-            - weighted_stake_diff_elements * (8 + 8)
-            + 4
+        Mining::DEFAULT_LEN + weighted_stake_diff_capacity * (8 + 8)
     }
 }
 
@@ -140,7 +122,7 @@ pub struct RewardIndex {
     /// This structures stores the weighted stake modifiers on the date,
     /// where staking ends. This modifier will be applied on the specified date to the global stake,
     /// so that rewards distribution will change. BTreeMap<unix_timestamp, modifier diff>
-    pub weighted_stake_diffs: BTreeMap<u64, u64>,
+    pub weighted_stake_diffs: BTreeMapWithCapacity<u64, u64>,
 }
 
 impl RewardIndex {
@@ -156,7 +138,7 @@ impl RewardIndex {
         mut total_share: u64,
         pool_vault: &RewardCalculator,
     ) -> Result<u64, ProgramError> {
-        for (date, modifier_diff) in &self.weighted_stake_diffs {
+        for (date, modifier_diff) in self.weighted_stake_diffs.iter() {
             if date > &beginning_of_the_day {
                 break;
             }
@@ -172,7 +154,7 @@ impl RewardIndex {
             total_share = total_share.safe_sub(*modifier_diff)?;
         }
         // +1 because we don't need beginning_of_the_day
-        self.weighted_stake_diffs = self
+        *self.weighted_stake_diffs = self
             .weighted_stake_diffs
             .split_off(&(beginning_of_the_day + 1));
 

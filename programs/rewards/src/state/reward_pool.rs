@@ -4,19 +4,23 @@ use crate::{
     error::MplxRewardsError,
     state::{AccountType, Mining},
     traits::{DataBlob, SafeArithmeticOperations, SolanaAccount},
-    utils::{get_curr_unix_ts, resize_or_reallocate_account, LockupPeriod, MAX_REALLOC_SIZE},
+    utils::{get_curr_unix_ts, resize_or_reallocate_account, LockupPeriod},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use num_traits::CheckedSub;
+use solana_program::entrypoint::MAX_PERMITTED_DATA_INCREASE;
+use solana_program::msg;
 use solana_program::{
     account_info::AccountInfo,
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
-    msg,
     program_error::ProgramError,
     program_pack::IsInitialized,
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
+
+use super::BTreeMapWithCapacity;
 
 /// Precision for index calculation
 pub const PRECISION: u128 = 10_000_000_000_000_000;
@@ -136,7 +140,6 @@ impl RewardPool {
             .weighted_stake_diffs
             .entry(lockup_period.end_timestamp(get_curr_unix_ts())?)
             .or_default();
-
         *modifier = (*modifier).safe_add(weighted_stake_diff)?;
 
         if let Some(delegate_mining) = delegate_mining {
@@ -265,17 +268,17 @@ impl RewardPool {
         Ok(())
     }
 
-    fn modify_weighted_stake_diffs(
-        diffs: &mut BTreeMap<u64, u64>,
-        timestamp: u64,
-        weighted_stake_diff: u64,
+    fn modify_weighted_stake_diffs<T: Ord, U: CheckedSub>(
+        diffs: &mut BTreeMap<T, U>,
+        timestamp: T,
+        weighted_stake_diff: U,
     ) -> Result<(), MplxRewardsError> {
         match diffs.entry(timestamp) {
             Entry::Vacant(_) => Err(MplxRewardsError::NoWeightedStakeModifiersAtADate),
             Entry::Occupied(mut entry) => {
                 let modifier = entry.get_mut();
                 *modifier = modifier
-                    .checked_sub(weighted_stake_diff)
+                    .checked_sub(&weighted_stake_diff)
                     .ok_or(MplxRewardsError::MathOverflow)?;
                 Ok(())
             }
@@ -309,23 +312,74 @@ impl RewardPool {
     }
 
     pub fn resize_if_needed<'a>(
-        &self,
-        reward_pool_account: &AccountInfo<'a>,
-        payer: &AccountInfo<'a>,
+        &mut self,
+        target_account: &AccountInfo<'a>,
+        funding_account: &AccountInfo<'a>,
         system_program: &AccountInfo<'a>,
     ) -> ProgramResult {
-        if (self.calculator.weighted_stake_diffs.len()
-            % RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER
-            == 0
-            && !self.calculator.weighted_stake_diffs.is_empty())
-            || (self.calculator.cumulative_index.len()
-                % RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER
-                == 0
-                && !self.calculator.cumulative_index.is_empty())
+        let mut realloc_divider = 0;
+        let mut index_needs_realloc = false;
+        let mut weighted_stake_diffs_needs_realloc = false;
+        let mut new_size = self.get_size();
+
+        // TODO: remove that block
         {
-            let new_size = self.get_size() + MAX_REALLOC_SIZE;
-            resize_or_reallocate_account(reward_pool_account, payer, system_program, new_size)?;
+            msg!("TARGET SIZE BEFORE {};", target_account.data_len());
+            assert_eq!(target_account.data_len(), self.get_size());
         }
+
+        if self.calculator.cumulative_index.len() == self.calculator.cumulative_index.capacity() {
+            realloc_divider += 1;
+            index_needs_realloc = true;
+        }
+
+        if self.calculator.weighted_stake_diffs.len()
+            == self.calculator.weighted_stake_diffs.capacity()
+        {
+            realloc_divider += 1;
+            weighted_stake_diffs_needs_realloc = true;
+        }
+
+        if index_needs_realloc {
+            let capacity_addition = MAX_PERMITTED_DATA_INCREASE / realloc_divider / (8 + 16);
+            new_size += capacity_addition * (8 + 16);
+
+            self.calculator
+                .cumulative_index
+                .increase_capacity(capacity_addition)
+        }
+
+        if weighted_stake_diffs_needs_realloc {
+            let capacity_addition = MAX_PERMITTED_DATA_INCREASE / realloc_divider / (8 + 8);
+            new_size += capacity_addition * (8 + 8);
+
+            self.calculator
+                .weighted_stake_diffs
+                .increase_capacity(capacity_addition)
+        }
+
+        // TODO: remove debug
+        msg!(
+            "IDX REALLOC REQ {}; SIZE {}; CAP {}",
+            index_needs_realloc,
+            self.calculator.cumulative_index.len(),
+            self.calculator.cumulative_index.capacity()
+        );
+        msg!(
+            "WSTAKE REALLOC REQ {}; SIZE {}; CAP {}",
+            index_needs_realloc,
+            self.calculator.weighted_stake_diffs.len(),
+            self.calculator.weighted_stake_diffs.capacity()
+        );
+        if weighted_stake_diffs_needs_realloc || index_needs_realloc {
+            resize_or_reallocate_account(
+                target_account,
+                funding_account,
+                system_program,
+                new_size,
+            )?;
+        }
+
         Ok(())
     }
 }
@@ -348,23 +402,20 @@ impl DataBlob for RewardPool {
     }
 
     fn get_size(&self) -> usize {
-        let cumulative_index_elements = self
+        let cumulative_index_capacity = self
             .calculator
             .cumulative_index
-            .len()
+            .capacity()
             .saturating_sub(RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER);
-        let weighted_stake_diff_elements = self
+        let weighted_stake_diff_capacity = self
             .calculator
             .weighted_stake_diffs
-            .len()
+            .capacity()
             .saturating_sub(RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER);
 
-        RewardPool::DEFAULT_LEN + self.calculator.weighted_stake_diffs.len()
-            - weighted_stake_diff_elements * (8 + 8)
-            + 4
-            + self.calculator.cumulative_index.len()
-            - cumulative_index_elements * (8 + 16)
-            + 4
+        RewardPool::DEFAULT_LEN
+            + cumulative_index_capacity * (8 + 16)
+            + weighted_stake_diff_capacity * (8 + 8)
     }
 }
 
@@ -381,10 +432,10 @@ pub struct RewardCalculator {
     /// Weighted stake diffs data structure is used to represent in time
     /// when total_share (which represents sum of all stakers' weighted stake) must change
     /// accordingly to the changes in the staking contract.
-    pub weighted_stake_diffs: BTreeMap<u64, u64>,
+    pub weighted_stake_diffs: BTreeMapWithCapacity<u64, u64>,
     /// This cumulative "index" increases on each distribution. It represents both the last time when
     /// the distribution happened and the number which is used in distribution calculations. <Date, index>
-    pub cumulative_index: BTreeMap<u64, u128>,
+    pub cumulative_index: BTreeMapWithCapacity<u64, u128>,
     /// The time where the last distribution made by distribution_authority is allowed. When the date expires,
     /// the only one distribution may be made, distribution all available tokens at once.
     pub distribution_ends_at: u64,
@@ -397,9 +448,10 @@ impl RewardCalculator {
     pub const DEFAULT_LEN: usize = 1
         + 32
         + 16
-        + 32
         + (4 + (8 + 8) * RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER)
-        + (4 + (8 + 16) * RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER);
+        + (4 + (8 + 16) * RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER)
+        + 8
+        + 8;
     pub const WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER: usize = 100;
     pub const CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER: usize = 100;
 
@@ -409,7 +461,7 @@ impl RewardCalculator {
         beginning_of_the_day: u64,
         mut total_share: u64,
     ) -> Result<u64, ProgramError> {
-        for (date_to_process, modifier) in &self.weighted_stake_diffs {
+        for (date_to_process, modifier) in self.weighted_stake_diffs.iter() {
             if date_to_process > &beginning_of_the_day {
                 break;
             }
@@ -418,7 +470,7 @@ impl RewardCalculator {
         }
         // drop keys because they have been already consumed and no longer needed
         // +1 because we don't need beginning_of_the_day
-        self.weighted_stake_diffs = self
+        *self.weighted_stake_diffs = self
             .weighted_stake_diffs
             .split_off(&(beginning_of_the_day + 1));
         Ok(total_share)

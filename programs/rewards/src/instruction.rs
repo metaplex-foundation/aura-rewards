@@ -98,7 +98,6 @@ pub enum RewardsInstruction {
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
     #[account(4, name = "delegate_mining", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
     #[account(5, writable, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
-    #[account(6, name = "system_program", desc = "The system program")]
     ExtendStake {
         /// Lockup period before restaking. Actually it's only needed
         /// for Flex to AnyPeriod edge case

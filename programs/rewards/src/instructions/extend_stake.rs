@@ -5,7 +5,7 @@ use crate::{
 };
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
-    program_error::ProgramError, pubkey::Pubkey, system_program,
+    program_error::ProgramError, pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -15,7 +15,6 @@ pub struct ExtendStakeContext<'a, 'b> {
     deposit_authority: &'a AccountInfo<'b>,
     delegate_mining: &'a AccountInfo<'b>,
     mining_owner: &'a AccountInfo<'b>,
-    system_program: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> ExtendStakeContext<'a, 'b> {
@@ -31,8 +30,6 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
         let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
         let delegate_mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let mining_owner = AccountLoader::next_signer(account_info_iter)?;
-        let system_program =
-            AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
 
         Ok(ExtendStakeContext {
             reward_pool,
@@ -40,7 +37,6 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
             deposit_authority,
             delegate_mining,
             mining_owner,
-            system_program,
         })
     }
 

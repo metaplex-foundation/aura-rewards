@@ -60,6 +60,9 @@ impl<'a, 'b> DepositMiningContext<'a, 'b> {
         )?;
 
         let mut delegate_mining = get_delegate_mining(self.delegate_mining, self.mining)?;
+
+        reward_pool.resize_if_needed(self.reward_pool, self.mining_owner, self.system_program)?;
+
         reward_pool.deposit(&mut mining, amount, lockup_period, delegate_mining.as_mut())?;
 
         reward_pool.save(self.reward_pool)?;

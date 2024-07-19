@@ -1,6 +1,6 @@
 use crate::{
     asserts::{assert_account_key, assert_uninitialized},
-    state::{RewardCalculator, RewardPool},
+    state::{BTreeMapWithCapacity, RewardCalculator, RewardPool},
     traits::SolanaAccount,
     utils::{
         create_account, create_token_account, find_reward_pool_program_address,
@@ -103,6 +103,12 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
         let reward_vault = RewardCalculator {
             token_account_bump,
             reward_mint: *self.reward_mint.key,
+            weighted_stake_diffs: BTreeMapWithCapacity::new(
+                RewardCalculator::WEIGHTED_STAKE_DIFFS_DEFAULT_ELEMENTS_NUMBER,
+            ),
+            cumulative_index: BTreeMapWithCapacity::new(
+                RewardCalculator::CUMULATIVE_INDEX_DEFAULT_ELEMENTS_NUMBER,
+            ),
             ..Default::default()
         };
 
