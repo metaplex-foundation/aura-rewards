@@ -277,6 +277,32 @@ impl RewardPool {
             }
         }
     }
+
+    pub fn change_delegate(
+        &mut self,
+        mining: &mut Mining,
+        new_delegate_mining: Option<&mut Mining>,
+        old_delegate_mining: Option<&mut Mining>,
+        staked_amount: u64,
+    ) -> ProgramResult {
+        mining.refresh_rewards(&self.calculator)?;
+
+        if let Some(old_delegate_mining) = old_delegate_mining {
+            old_delegate_mining.stake_from_others = old_delegate_mining
+                .stake_from_others
+                .safe_sub(staked_amount)?;
+            self.total_share = self.total_share.safe_sub(staked_amount)?;
+        }
+
+        if let Some(new_delegate_mining) = new_delegate_mining {
+            new_delegate_mining.stake_from_others = new_delegate_mining
+                .stake_from_others
+                .safe_add(staked_amount)?;
+            self.total_share = self.total_share.safe_add(staked_amount)?;
+        }
+
+        Ok(())
+    }
 }
 
 impl Sealed for RewardPool {}

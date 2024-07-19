@@ -2,9 +2,9 @@
 use crate::{
     instruction::RewardsInstruction,
     instructions::{
-        ClaimContext, CloseMiningContext, DepositMiningContext, DistributeRewardsContext,
-        ExtendStakeContext, FillVaultContext, InitializeMiningContext, InitializePoolContext,
-        WithdrawMiningContext,
+        ChangeDelegateContext, ClaimContext, CloseMiningContext, DepositMiningContext,
+        DistributeRewardsContext, ExtendStakeContext, FillVaultContext, InitializeMiningContext,
+        InitializePoolContext, WithdrawMiningContext,
     },
 };
 use borsh::BorshDeserialize;
@@ -92,6 +92,10 @@ pub fn process_instruction(
         RewardsInstruction::CloseMining => {
             msg!("RewardsInstruction: CloseAccount");
             CloseMiningContext::new(program_id, accounts)?.process()
+        }
+        RewardsInstruction::ChangeDelegate { staked_amount } => {
+            msg!("RewardsInstruction: ChangeDelegate");
+            ChangeDelegateContext::new(program_id, accounts)?.process(program_id, staked_amount)
         }
     }
 }

@@ -1,3 +1,4 @@
+mod change_delegate;
 mod claim;
 mod close_mining;
 mod deposit_mining;

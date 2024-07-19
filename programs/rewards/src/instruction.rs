@@ -128,6 +128,18 @@ pub enum RewardsInstruction {
     #[account(3, signer, name = "deposit_authority")]
     #[account(4, writable, name = "reward_pool", desc = "The address of the reward pool")]
     CloseMining,
+
+    /// Changes delegate mining account
+    #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    #[account(2, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(3, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
+    #[account(4, writable, name = "old_delegate_mining", desc = "The address of the old delegate mining account")]
+    #[account(5, writable, name = "new_delegate_mining", desc = "The address of the new delegate mining account")]
+    ChangeDelegate {
+        /// Amount of staked tokens
+        staked_amount: u64,
+    },
 }
 
 /// Creates 'InitializePool' instruction.
@@ -375,4 +387,32 @@ pub fn close_mining(
     ];
 
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::CloseMining, accounts)
+}
+
+/// Creates 'Distribute Rewards" instruction.
+#[allow(clippy::too_many_arguments)]
+pub fn change_delegate(
+    program_id: &Pubkey,
+    reward_pool: &Pubkey,
+    mining: &Pubkey,
+    deposit_authority: &Pubkey,
+    mining_owner: &Pubkey,
+    old_delegate_mining: &Pubkey,
+    new_delegate_mining: &Pubkey,
+    staked_amount: u64,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(*reward_pool, false),
+        AccountMeta::new(*mining, false),
+        AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new_readonly(*mining_owner, true),
+        AccountMeta::new(*old_delegate_mining, false),
+        AccountMeta::new(*new_delegate_mining, false),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::ChangeDelegate { staked_amount },
+        accounts,
+    )
 }
