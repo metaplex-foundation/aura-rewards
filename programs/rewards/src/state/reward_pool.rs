@@ -140,6 +140,7 @@ impl RewardPool {
                 delegate_mining.stake_from_others.safe_add(amount)?;
 
             self.total_share = self.total_share.safe_add(amount)?;
+            delegate_mining.refresh_rewards(&self.calculator)?;
         }
 
         Ok(())
@@ -169,6 +170,7 @@ impl RewardPool {
                 delegate_mining.stake_from_others.safe_sub(amount)?;
 
             self.total_share = self.total_share.safe_sub(amount)?;
+            delegate_mining.refresh_rewards(&self.calculator)?;
         }
 
         Ok(())
@@ -245,6 +247,7 @@ impl RewardPool {
             Some(dm) => {
                 dm.stake_from_others = dm.stake_from_others.safe_sub(base_amount)?;
                 self.total_share = self.total_share.safe_sub(base_amount)?;
+                dm.refresh_rewards(&self.calculator)?;
 
                 Some(dm)
             }
@@ -292,6 +295,7 @@ impl RewardPool {
                 .stake_from_others
                 .safe_sub(staked_amount)?;
             self.total_share = self.total_share.safe_sub(staked_amount)?;
+            old_delegate_mining.refresh_rewards(&self.calculator)?;
         }
 
         if let Some(new_delegate_mining) = new_delegate_mining {
@@ -299,6 +303,7 @@ impl RewardPool {
                 .stake_from_others
                 .safe_add(staked_amount)?;
             self.total_share = self.total_share.safe_add(staked_amount)?;
+            new_delegate_mining.refresh_rewards(&self.calculator)?;
         }
 
         Ok(())

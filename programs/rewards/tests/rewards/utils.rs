@@ -110,6 +110,34 @@ impl TestRewards {
         mining_account
     }
 
+    pub async fn change_delegate(
+        &self,
+        context: &mut ProgramTestContext,
+        mining: &Pubkey,
+        mining_owner: &Keypair,
+        new_delegate_mining: &Pubkey,
+        old_delegate_mining: &Pubkey,
+        amount: u64,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::change_delegate(
+                &mplx_rewards::id(),
+                &self.reward_pool,
+                mining,
+                &self.deposit_authority.pubkey(),
+                &mining_owner.pubkey(),
+                old_delegate_mining,
+                new_delegate_mining,
+                amount,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&self.deposit_authority, mining_owner, &context.payer],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
     pub async fn deposit_mining(
         &self,
         context: &mut ProgramTestContext,
@@ -132,34 +160,6 @@ impl TestRewards {
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
-            context.last_blockhash,
-        );
-
-        context.banks_client.process_transaction(tx).await
-    }
-
-    pub async fn change_delegate(
-        &self,
-        context: &mut ProgramTestContext,
-        mining_account: &Pubkey,
-        old_delegate_mining: &Pubkey,
-        new_delegate_mining: &Pubkey,
-        mining_owner: &Keypair,
-        base_amount: u64,
-    ) -> BanksClientResult<()> {
-        let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::change_delegate(
-                &mplx_rewards::id(),
-                &self.reward_pool,
-                mining_account,
-                &self.deposit_authority.pubkey(),
-                &mining_owner.pubkey(),
-                old_delegate_mining,
-                new_delegate_mining,
-                base_amount,
-            )],
-            Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority, mining_owner],
             context.last_blockhash,
         );
 
