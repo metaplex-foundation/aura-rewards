@@ -389,7 +389,7 @@ pub fn close_mining(
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::CloseMining, accounts)
 }
 
-/// Creates 'Distribute Rewards" instruction.
+/// Creates 'Change Delegate" instruction.
 #[allow(clippy::too_many_arguments)]
 pub fn change_delegate(
     program_id: &Pubkey,
