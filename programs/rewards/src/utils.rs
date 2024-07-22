@@ -1,31 +1,36 @@
 //! Arbitrary auxilliary functions
 use std::iter::Enumerate;
 
+use crate::{
+    asserts::assert_account_key,
+    error::MplxRewardsError,
+    state::{Mining, RewardPool},
+};
+use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::AccountInfo,
+    clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
     msg,
     program::{invoke, invoke_signed},
     program_error::ProgramError,
-    program_pack::{IsInitialized, Pack},
+    program_pack::Pack,
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
     sysvar::Sysvar,
 };
 
-use crate::error::MplxRewardsError;
-
 /// Generates mining address
 pub fn find_mining_program_address(
     program_id: &Pubkey,
-    user: &Pubkey,
+    mining_owner: &Pubkey,
     reward_pool: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             "mining".as_bytes(),
-            &user.to_bytes(),
+            &mining_owner.to_bytes(),
             &reward_pool.to_bytes(),
         ],
         program_id,
@@ -51,100 +56,12 @@ pub fn find_vault_program_address(
 /// Generates reward pool address
 pub fn find_reward_pool_program_address(
     program_id: &Pubkey,
-    root_account: &Pubkey,
-    liquidity_mint: &Pubkey,
+    authority_account: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[
-            "reward_pool".as_bytes(),
-            &root_account.to_bytes(),
-            &liquidity_mint.to_bytes(),
-        ],
+        &["reward_pool".as_bytes(), &authority_account.to_bytes()],
         program_id,
     )
-}
-
-/// Trait that verifies whether an acount is initialized
-pub trait Uninitialized {
-    /// Is uninitialized
-    fn is_uninitialized(&self) -> bool;
-}
-
-/// Assert signer.
-pub fn assert_signer(account: &AccountInfo) -> ProgramResult {
-    if account.is_signer {
-        return Ok(());
-    }
-
-    Err(ProgramError::MissingRequiredSignature)
-}
-
-/// Assert initilialized
-pub fn assert_initialized<T: IsInitialized>(account: &T) -> ProgramResult {
-    if account.is_initialized() {
-        Ok(())
-    } else {
-        Err(ProgramError::UninitializedAccount)
-    }
-}
-
-/// Assert unitilialized
-pub fn assert_uninitialized<T: Uninitialized>(account: &T) -> ProgramResult {
-    if account.is_uninitialized() {
-        Ok(())
-    } else {
-        Err(ProgramError::AccountAlreadyInitialized)
-    }
-}
-
-/// Assert owned by
-pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
-    if account.owner != owner {
-        msg!(
-            "Assert {} owner error. Got {} Expected {}",
-            *account.key,
-            *account.owner,
-            *owner
-        );
-        Err(MplxRewardsError::InvalidAccountOwner.into())
-    } else {
-        Ok(())
-    }
-}
-
-/// Assert account key
-pub fn assert_account_key(account_info: &AccountInfo, key: &Pubkey) -> ProgramResult {
-    if *account_info.key != *key {
-        msg!(
-            "Assert account error. Got {} Expected {}",
-            *account_info.key,
-            *key
-        );
-        Err(ProgramError::InvalidArgument)
-    } else {
-        Ok(())
-    }
-}
-
-/// Assert rent exempt
-pub fn assert_rent_exempt(account_info: &AccountInfo) -> ProgramResult {
-    let rent = Rent::get()?;
-
-    if !rent.is_exempt(account_info.lamports(), account_info.data_len()) {
-        msg!(&rent.minimum_balance(account_info.data_len()).to_string());
-        Err(ProgramError::AccountNotRentExempt)
-    } else {
-        Ok(())
-    }
-}
-
-/// Assert a non-zero amount
-pub fn assert_non_zero_amount(amount: u64) -> ProgramResult {
-    if amount == 0 {
-        return Err(MplxRewardsError::ZeroAmount.into());
-    }
-
-    Ok(())
 }
 
 /// Create account
@@ -185,7 +102,7 @@ pub fn initialize_account<'a>(
 }
 
 /// SPL transfer instruction.
-pub fn transfer<'a>(
+pub fn spl_transfer<'a>(
     source: AccountInfo<'a>,
     destination: AccountInfo<'a>,
     authority: AccountInfo<'a>,
@@ -204,6 +121,43 @@ pub fn transfer<'a>(
     invoke_signed(&ix, &[source, destination, authority], signers_seeds)
 }
 
+pub fn assert_and_deserialize_pool_and_mining<'a, 'b>(
+    program_id: &Pubkey,
+    mining_owner: &Pubkey,
+    this_reward_pool: &'a AccountInfo<'b>,
+    this_mining: &'a AccountInfo<'b>,
+    this_deposit_authority: &'a AccountInfo<'b>,
+) -> Result<(RewardPool, Mining), ProgramError> {
+    let reward_pool = RewardPool::unpack(&this_reward_pool.data.borrow())?;
+    let mining = Mining::unpack(&this_mining.data.borrow())?;
+
+    let mining_pubkey = Pubkey::create_program_address(
+        &[
+            b"mining".as_ref(),
+            mining_owner.as_ref(),
+            this_reward_pool.key.as_ref(),
+            &[mining.bump],
+        ],
+        program_id,
+    )?;
+
+    assert_account_key(this_mining, &mining_pubkey)?;
+    assert_account_key(this_deposit_authority, &reward_pool.deposit_authority)?;
+    assert_account_key(this_reward_pool, &mining.reward_pool)?;
+
+    if mining_owner != &mining.owner {
+        msg!(
+            "Assert account error. Got {} Expected {}",
+            *mining_owner,
+            mining.owner
+        );
+
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    Ok((reward_pool, mining))
+}
+
 /// Helper for parsing accounts with arbitrary input conditions
 pub struct AccountLoader {}
 
@@ -213,11 +167,20 @@ impl AccountLoader {
         iter: &mut Enumerate<I>,
     ) -> Result<I::Item, ProgramError> {
         let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
-        if acc.owner.eq(&Pubkey::default()) {
+
+        let AccountInfo {
+            key,
+            lamports,
+            data,
+            owner,
+            ..
+        } = acc;
+
+        if **lamports.borrow() == 0 && data.borrow().is_empty() && *owner == &Pubkey::default() {
             return Ok(acc);
         }
 
-        msg!("Account #{}:{} already initialized", idx, acc.key,);
+        msg!("Account #{}:{} already initialized", idx, key,);
         Err(ProgramError::AccountAlreadyInitialized)
     }
 
@@ -273,30 +236,6 @@ impl AccountLoader {
         Err(ProgramError::MissingRequiredSignature)
     }
 
-    /// Checks if account is initialized and then checks it's owner
-    pub fn next_optional<'a, 'b, I: Iterator<Item = &'a AccountInfo<'b>>>(
-        iter: &mut Enumerate<I>,
-        owner: &Pubkey,
-    ) -> Result<I::Item, ProgramError> {
-        let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
-        if acc.owner.eq(&Pubkey::default()) {
-            return Ok(acc);
-        }
-
-        if acc.owner.eq(owner) {
-            return Ok(acc);
-        }
-
-        msg!(
-            "Account #{}:{} owner error. Got {} Expected unitialized or {}",
-            idx,
-            acc.key,
-            acc.owner,
-            owner
-        );
-        Err(MplxRewardsError::InvalidAccountOwner.into())
-    }
-
     /// Load the account without any checks
     pub fn next_unchecked<'a, 'b, I: Iterator<Item = &'a AccountInfo<'b>>>(
         iter: &mut Enumerate<I>,
@@ -309,5 +248,121 @@ impl AccountLoader {
     pub fn has_more<I: Iterator>(iter: &Enumerate<I>) -> bool {
         let (remaining_len, _) = iter.size_hint();
         remaining_len > 0
+    }
+}
+
+/// LockupPeriod is used to define the time during which the lockup will recieve full reward
+#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+pub enum LockupPeriod {
+    /// Unreachable option
+    None,
+    /// Unlimited lockup period.
+    Flex,
+    /// Three months
+    ThreeMonths,
+    /// SixMonths
+    SixMonths,
+    /// OneYear
+    OneYear,
+}
+
+impl LockupPeriod {
+    /// Converts LockupPeriod into the Multiplier
+    /// which will be used in rewards calculations
+    pub fn multiplier(&self) -> u64 {
+        match self {
+            LockupPeriod::None => 0,
+            LockupPeriod::ThreeMonths => 2,
+            LockupPeriod::SixMonths => 4,
+            LockupPeriod::OneYear => 6,
+            LockupPeriod::Flex => 1,
+        }
+    }
+
+    /// Calculates the time when a lockup should expire
+    pub fn end_timestamp(&self, start_ts: u64) -> Result<u64, MplxRewardsError> {
+        // conversion should be unfailable because negative timestamp means the ts is earlier than 1970y
+        let beginning_of_the_day = start_ts - (start_ts % SECONDS_PER_DAY);
+
+        match self {
+            LockupPeriod::None => Err(MplxRewardsError::InvalidLockupPeriod),
+            LockupPeriod::ThreeMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 90),
+            LockupPeriod::SixMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 180),
+            LockupPeriod::OneYear => Ok(beginning_of_the_day + SECONDS_PER_DAY * 365),
+            LockupPeriod::Flex => Ok(beginning_of_the_day + SECONDS_PER_DAY * 5),
+        }
+    }
+
+    /// Return number of days plain numbers to make them appliable for the self.weighted_stake_diff
+    pub fn days(&self) -> Result<u64, MplxRewardsError> {
+        match self {
+            LockupPeriod::None => Err(MplxRewardsError::InvalidLockupPeriod),
+            LockupPeriod::ThreeMonths => Ok(90),
+            LockupPeriod::SixMonths => Ok(180),
+            LockupPeriod::OneYear => Ok(365),
+            LockupPeriod::Flex => Ok(5),
+        }
+    }
+}
+
+/// Get current unix time
+#[inline]
+pub fn get_curr_unix_ts() -> u64 {
+    // Conversion must be save because negative values
+    // in unix means the date is earlier than 1970y
+    Clock::get().unwrap().unix_timestamp as u64
+}
+
+pub(crate) trait SafeArithmeticOperations
+where
+    Self: std::marker::Sized,
+{
+    fn safe_sub(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+    fn safe_add(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+    fn safe_mul(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+    fn safe_div(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+}
+
+impl SafeArithmeticOperations for u64 {
+    fn safe_sub(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_sub(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_add(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_add(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_mul(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_mul(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_div(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_div(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+}
+
+impl SafeArithmeticOperations for u128 {
+    fn safe_sub(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_sub(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_add(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_add(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_mul(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_mul(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_div(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_div(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
     }
 }

@@ -6,39 +6,44 @@ use solana_sdk::{signature::Keypair, signer::Signer};
 use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards) {
-    let (mut context, _) = presetup().await;
-    let owner = &context.payer.pubkey();
+    let test = ProgramTest::new(
+        "mplx_rewards",
+        mplx_rewards::id(),
+        processor!(mplx_rewards::processor::process_instruction),
+    );
 
-    let mint = Keypair::new();
-    create_mint(&mut context, &mint, owner).await.unwrap();
+    let mut context = test.start_with_context().await;
 
-    let test_reward_pool = TestRewards::new(Some(mint.pubkey()));
+    let mint_owner = &context.payer.pubkey();
+    let reward_mint = Keypair::new();
+    create_mint(&mut context, &reward_mint, mint_owner)
+        .await
+        .unwrap();
 
-    (context, test_reward_pool)
+    let test_rewards = TestRewards::new(reward_mint.pubkey());
+
+    (context, test_rewards)
 }
 
 #[tokio::test]
 async fn success() {
-    let (mut context, test_reward_pool) = setup().await;
+    let (mut context, test_rewards) = setup().await;
 
-    test_reward_pool
-        .initialize_pool(&mut context)
-        .await
-        .unwrap();
+    test_rewards.initialize_pool(&mut context).await.unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_reward_pool.mining_reward_pool).await;
+    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
     let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
 
     assert_eq!(
-        reward_pool.rewards_root,
-        test_reward_pool.rewards_root.pubkey()
-    );
-    assert_eq!(
         reward_pool.deposit_authority,
-        test_reward_pool.deposit_authority.pubkey()
+        test_rewards.deposit_authority.pubkey()
     );
     assert_eq!(
-        reward_pool.liquidity_mint,
-        test_reward_pool.token_mint_pubkey
+        reward_pool.fill_authority,
+        test_rewards.fill_authority.pubkey()
+    );
+    assert_eq!(
+        reward_pool.calculator.reward_mint,
+        test_rewards.token_mint_pubkey
     );
 }

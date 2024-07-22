@@ -1,20 +1,25 @@
-use crate::utils::*;
+use crate::utils::{assert_custom_on_chain_error::AssertCustomOnChainErr, *};
+use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
 use solana_program::program_pack::Pack;
-use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::signature::Keypair;
-use solana_sdk::signer::Signer;
+use solana_sdk::{signature::Keypair, signer::Signer};
 use spl_token::state::Account;
 use std::borrow::Borrow;
 
-async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey, Pubkey) {
-    let (mut context, _) = presetup().await;
+async fn setup() -> (ProgramTestContext, TestRewards) {
+    let test = ProgramTest::new(
+        "mplx_rewards",
+        mplx_rewards::id(),
+        processor!(mplx_rewards::processor::process_instruction),
+    );
+
+    let mut context = test.start_with_context().await;
     let owner = &context.payer.pubkey();
 
     let mint = Keypair::new();
     create_mint(&mut context, &mint, owner).await.unwrap();
 
-    let test_reward_pool = TestRewards::new(Some(mint.pubkey()));
+    let test_reward_pool = TestRewards::new(mint.pubkey());
     test_reward_pool
         .initialize_pool(&mut context)
         .await
@@ -25,22 +30,21 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey, Pubkey) {
         .initialize_mining(&mut context, &user.pubkey())
         .await;
     test_reward_pool
-        .deposit_mining(&mut context, &user.pubkey(), &user_mining, 100)
+        .deposit_mining(
+            &mut context,
+            &user_mining,
+            100,
+            LockupPeriod::ThreeMonths,
+            &user.pubkey(),
+            &user_mining,
+        )
         .await
         .unwrap();
 
-    let rewarder = Keypair::new();
-    create_token_account(&mut context, &rewarder, &mint.pubkey(), owner, 0)
-        .await
-        .unwrap();
-    mint_tokens(&mut context, &mint.pubkey(), &rewarder.pubkey(), 1_000_000)
-        .await
-        .unwrap();
-
-    let fee_keypair = Keypair::new();
+    let account = Keypair::new();
     create_token_account(
         &mut context,
-        &fee_keypair,
+        &account,
         &test_reward_pool.token_mint_pubkey,
         &user.pubkey(),
         0,
@@ -48,37 +52,90 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey, Pubkey) {
     .await
     .unwrap();
 
-    let vault = test_reward_pool
-        .add_vault(&mut context, &fee_keypair.pubkey())
-        .await;
-
-    (
-        context,
-        test_reward_pool,
-        vault,
-        fee_keypair.pubkey(),
-        rewarder.pubkey(),
-    )
+    (context, test_reward_pool)
 }
 
 #[tokio::test]
 async fn success() {
-    let (mut context, test_rewards, vault, fee, rewarder) = setup().await;
+    let (mut context, test_rewards) = setup().await;
+    // mint token for fill_authority aka wallet who will fill the vault with tokens
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        100,
+    )
+    .await
+    .unwrap();
+
+    // calculate distribution_ens time
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + 86400 * 100;
 
     test_rewards
-        .fill_vault(&mut context, &fee, &rewarder, 1_000_000)
+        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
         .await
         .unwrap();
 
-    let vault_account = get_account(&mut context, &vault).await;
-    let fee_account = get_account(&mut context, &fee).await;
-    let rewarder_account = get_account(&mut context, &rewarder).await;
+    let vault_account = get_account(&mut context, &test_rewards.vault_pubkey).await;
+    let rewarder_account = get_account(&mut context, &rewarder.pubkey()).await;
 
     let vault = Account::unpack(vault_account.data.borrow()).unwrap();
-    let fee = Account::unpack(fee_account.data.borrow()).unwrap();
     let rewarder = Account::unpack(rewarder_account.data.borrow()).unwrap();
 
-    assert_eq!(vault.amount, 980_000);
-    assert_eq!(fee.amount, 20_000);
+    assert_eq!(vault.amount, 100);
     assert_eq!(rewarder.amount, 0);
+}
+
+#[tokio::test]
+async fn zero_amount_of_rewards() {
+    let (mut context, test_rewards) = setup().await;
+
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        100,
+    )
+    .await
+    .unwrap();
+
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + 86400 * 100;
+
+    test_rewards
+        .fill_vault(&mut context, &rewarder.pubkey(), 0, distribution_ends_at)
+        .await
+        .assert_on_chain_err(MplxRewardsError::RewardsMustBeGreaterThanZero);
 }

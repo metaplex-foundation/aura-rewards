@@ -1,22 +1,20 @@
-use crate::error::MplxRewardsError;
-use crate::state::RewardPool;
-use crate::utils::{assert_account_key, transfer, AccountLoader};
-
-use solana_program::account_info::AccountInfo;
-use solana_program::entrypoint::ProgramResult;
-use solana_program::program_error::ProgramError;
-use solana_program::program_pack::Pack;
-use solana_program::pubkey::Pubkey;
-
-const FEE_PERCENTAGE: u64 = 2;
+use crate::{
+    asserts::assert_account_key,
+    error::MplxRewardsError,
+    state::RewardPool,
+    utils::{get_curr_unix_ts, spl_transfer, AccountLoader, SafeArithmeticOperations},
+};
+use solana_program::{
+    account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
+    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+};
 
 /// Instruction context
 pub struct FillVaultContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     reward_mint: &'a AccountInfo<'b>,
     vault: &'a AccountInfo<'b>,
-    fee_account: &'a AccountInfo<'b>,
-    authority: &'a AccountInfo<'b>,
+    fill_authority: &'a AccountInfo<'b>,
     source_token_account: &'a AccountInfo<'b>,
 }
 
@@ -31,8 +29,7 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let vault = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
-        let fee_account = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
-        let authority = AccountLoader::next_signer(account_info_iter)?;
+        let fill_authority = AccountLoader::next_signer(account_info_iter)?;
         let source_token_account =
             AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
         let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
@@ -41,63 +38,69 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             reward_pool,
             reward_mint,
             vault,
-            fee_account,
-            authority,
+            fill_authority,
             source_token_account,
         })
     }
 
     /// Process instruction
-    pub fn process(&self, program_id: &Pubkey, amount: u64) -> ProgramResult {
+    pub fn process(
+        &self,
+        program_id: &Pubkey,
+        rewards: u64,
+        distribution_ends_at: u64,
+    ) -> ProgramResult {
+        if rewards == 0 {
+            return Err(MplxRewardsError::RewardsMustBeGreaterThanZero.into());
+        }
+
         let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
+        assert_account_key(self.fill_authority, &reward_pool.fill_authority)?;
 
         {
-            let vault = reward_pool
-                .vaults
-                .iter()
-                .find(|v| &v.reward_mint == self.reward_mint.key)
-                .ok_or(ProgramError::InvalidArgument)?;
             let vault_seeds = &[
                 b"vault".as_ref(),
-                &self.reward_pool.key.to_bytes()[..32],
-                &self.reward_mint.key.to_bytes()[..32],
-                &[vault.bump],
+                self.reward_pool.key.as_ref(),
+                self.reward_mint.key.as_ref(),
+                &[reward_pool.calculator.token_account_bump],
             ];
-            assert_account_key(self.fee_account, &vault.fee_account)?;
             assert_account_key(
                 self.vault,
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
-            )?
-        }
-
-        let fee_amount = amount
-            .checked_mul(FEE_PERCENTAGE)
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_div(100)
-            .ok_or(MplxRewardsError::MathOverflow)?;
-        let reward_amount = amount
-            .checked_sub(fee_amount)
-            .ok_or(MplxRewardsError::MathOverflow)?;
-
-        reward_pool.fill(*self.reward_mint.key, reward_amount)?;
-
-        transfer(
-            self.source_token_account.clone(),
-            self.vault.clone(),
-            self.authority.clone(),
-            reward_amount,
-            &[],
-        )?;
-
-        if fee_amount > 0 {
-            transfer(
-                self.source_token_account.clone(),
-                self.fee_account.clone(),
-                self.authority.clone(),
-                fee_amount,
-                &[],
             )?;
         }
+
+        {
+            // beginning of the day where distribution_ends_at
+            let distribution_ends_at_day_start =
+                distribution_ends_at - (distribution_ends_at % SECONDS_PER_DAY);
+            let curr_ts = get_curr_unix_ts();
+            let beginning_of_the_curr_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
+            if distribution_ends_at_day_start < beginning_of_the_curr_day {
+                return Err(MplxRewardsError::DistributionInThePast.into());
+            }
+
+            let days_diff = distribution_ends_at_day_start
+                .safe_sub(reward_pool.calculator.distribution_ends_at)?;
+
+            reward_pool.calculator.distribution_ends_at = reward_pool
+                .calculator
+                .distribution_ends_at
+                .safe_add(days_diff)?;
+
+            reward_pool.calculator.tokens_available_for_distribution = reward_pool
+                .calculator
+                .tokens_available_for_distribution
+                .safe_add(rewards)?;
+        }
+
+        spl_transfer(
+            self.source_token_account.clone(),
+            self.vault.clone(),
+            self.fill_authority.clone(),
+            rewards,
+            &[],
+        )?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
 
