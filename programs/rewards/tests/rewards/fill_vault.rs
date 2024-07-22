@@ -1,9 +1,8 @@
-use crate::utils::*;
-use mplx_rewards::utils::LockupPeriod;
+use crate::utils::{assert_custom_on_chain_error::AssertCustomOnChainErr, *};
+use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
 use solana_program::program_pack::Pack;
 use solana_program_test::*;
-use solana_sdk::signature::Keypair;
-use solana_sdk::signer::Signer;
+use solana_sdk::{signature::Keypair, signer::Signer};
 use spl_token::state::Account;
 use std::borrow::Borrow;
 
@@ -37,6 +36,7 @@ async fn setup() -> (ProgramTestContext, TestRewards) {
             100,
             LockupPeriod::ThreeMonths,
             &user.pubkey(),
+            &user_mining,
         )
         .await
         .unwrap();
@@ -100,4 +100,42 @@ async fn success() {
 
     assert_eq!(vault.amount, 100);
     assert_eq!(rewarder.amount, 0);
+}
+
+#[tokio::test]
+async fn zero_amount_of_rewards() {
+    let (mut context, test_rewards) = setup().await;
+
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        100,
+    )
+    .await
+    .unwrap();
+
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + 86400 * 100;
+
+    test_rewards
+        .fill_vault(&mut context, &rewarder.pubkey(), 0, distribution_ends_at)
+        .await
+        .assert_on_chain_err(MplxRewardsError::RewardsMustBeGreaterThanZero);
 }

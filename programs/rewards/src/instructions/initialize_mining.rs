@@ -1,10 +1,11 @@
-use crate::asserts::{assert_account_key, assert_uninitialized};
-use crate::state::Mining;
-use crate::utils::{create_account, find_mining_program_address, AccountLoader};
-use solana_program::program_pack::Pack;
+use crate::{
+    asserts::{assert_account_key, assert_uninitialized},
+    state::Mining,
+    utils::{create_account, find_mining_program_address, AccountLoader},
+};
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    pubkey::Pubkey, system_program,
+    program_pack::Pack, pubkey::Pubkey, system_program,
 };
 
 /// Instruction context

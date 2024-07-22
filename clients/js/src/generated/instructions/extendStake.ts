@@ -34,7 +34,7 @@ import {
 } from '../types';
 
 // Accounts.
-export type RestakeDepositInstructionAccounts = {
+export type ExtendStakeInstructionAccounts = {
   /** The address of the reward pool */
   rewardPool: PublicKey | Pda;
   /** The address of the mining account which belongs to the user and stores info about user's rewards */
@@ -46,7 +46,7 @@ export type RestakeDepositInstructionAccounts = {
 };
 
 // Data.
-export type RestakeDepositInstructionData = {
+export type ExtendStakeInstructionData = {
   discriminator: number;
   oldLockupPeriod: LockupPeriod;
   newLockupPeriod: LockupPeriod;
@@ -56,7 +56,7 @@ export type RestakeDepositInstructionData = {
   miningOwner: PublicKey;
 };
 
-export type RestakeDepositInstructionDataArgs = {
+export type ExtendStakeInstructionDataArgs = {
   oldLockupPeriod: LockupPeriodArgs;
   newLockupPeriod: LockupPeriodArgs;
   depositStartTs: number | bigint;
@@ -65,16 +65,16 @@ export type RestakeDepositInstructionDataArgs = {
   miningOwner: PublicKey;
 };
 
-export function getRestakeDepositInstructionDataSerializer(): Serializer<
-  RestakeDepositInstructionDataArgs,
-  RestakeDepositInstructionData
+export function getExtendStakeInstructionDataSerializer(): Serializer<
+  ExtendStakeInstructionDataArgs,
+  ExtendStakeInstructionData
 > {
   return mapSerializer<
-    RestakeDepositInstructionDataArgs,
+    ExtendStakeInstructionDataArgs,
     any,
-    RestakeDepositInstructionData
+    ExtendStakeInstructionData
   >(
-    struct<RestakeDepositInstructionData>(
+    struct<ExtendStakeInstructionData>(
       [
         ['discriminator', u8()],
         ['oldLockupPeriod', getLockupPeriodSerializer()],
@@ -84,22 +84,19 @@ export function getRestakeDepositInstructionDataSerializer(): Serializer<
         ['additionalAmount', u64()],
         ['miningOwner', publicKeySerializer()],
       ],
-      { description: 'RestakeDepositInstructionData' }
+      { description: 'ExtendStakeInstructionData' }
     ),
     (value) => ({ ...value, discriminator: 6 })
-  ) as Serializer<
-    RestakeDepositInstructionDataArgs,
-    RestakeDepositInstructionData
-  >;
+  ) as Serializer<ExtendStakeInstructionDataArgs, ExtendStakeInstructionData>;
 }
 
 // Args.
-export type RestakeDepositInstructionArgs = RestakeDepositInstructionDataArgs;
+export type ExtendStakeInstructionArgs = ExtendStakeInstructionDataArgs;
 
 // Instruction.
-export function restakeDeposit(
+export function extendStake(
   context: Pick<Context, 'programs'>,
-  input: RestakeDepositInstructionAccounts & RestakeDepositInstructionArgs
+  input: ExtendStakeInstructionAccounts & ExtendStakeInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -132,7 +129,7 @@ export function restakeDeposit(
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: RestakeDepositInstructionArgs = { ...input };
+  const resolvedArgs: ExtendStakeInstructionArgs = { ...input };
 
   // Accounts in order.
   const orderedAccounts: ResolvedAccount[] = Object.values(
@@ -147,8 +144,8 @@ export function restakeDeposit(
   );
 
   // Data.
-  const data = getRestakeDepositInstructionDataSerializer().serialize(
-    resolvedArgs as RestakeDepositInstructionDataArgs
+  const data = getExtendStakeInstructionDataSerializer().serialize(
+    resolvedArgs as ExtendStakeInstructionDataArgs
   );
 
   // Bytes Created On Chain.

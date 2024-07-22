@@ -6,19 +6,21 @@
 //!
 
 pub(crate) mod r#claim;
+pub(crate) mod r#close_mining;
 pub(crate) mod r#deposit_mining;
 pub(crate) mod r#distribute_rewards;
+pub(crate) mod r#extend_stake;
 pub(crate) mod r#fill_vault;
 pub(crate) mod r#initialize_mining;
 pub(crate) mod r#initialize_pool;
-pub(crate) mod r#restake_deposit;
 pub(crate) mod r#withdraw_mining;
 
 pub use self::r#claim::*;
+pub use self::r#close_mining::*;
 pub use self::r#deposit_mining::*;
 pub use self::r#distribute_rewards::*;
+pub use self::r#extend_stake::*;
 pub use self::r#fill_vault::*;
 pub use self::r#initialize_mining::*;
 pub use self::r#initialize_pool::*;
-pub use self::r#restake_deposit::*;
 pub use self::r#withdraw_mining::*;

@@ -7,10 +7,11 @@
  */
 
 export * from './claim';
+export * from './closeMining';
 export * from './depositMining';
 export * from './distributeRewards';
+export * from './extendStake';
 export * from './fillVault';
 export * from './initializeMining';
 export * from './initializePool';
-export * from './restakeDeposit';
 export * from './withdrawMining';

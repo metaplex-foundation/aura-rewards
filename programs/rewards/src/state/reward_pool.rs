@@ -1,8 +1,10 @@
-use std::collections::BTreeMap;
+use std::collections::{btree_map::Entry, BTreeMap};
 
-use crate::error::MplxRewardsError;
-use crate::state::{AccountType, Mining};
-use crate::utils::{get_curr_unix_ts, LockupPeriod};
+use crate::{
+    error::MplxRewardsError,
+    state::{AccountType, Mining},
+    utils::{get_curr_unix_ts, LockupPeriod, SafeArithmeticOperations},
+};
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
     clock::{Clock, SECONDS_PER_DAY},
@@ -61,8 +63,8 @@ impl RewardPool {
         }
     }
 
-    /// Process fill
-    pub fn fill(&mut self, rewards: u64) -> ProgramResult {
+    /// Distributes rewards via calculating indexes and weighted stakes
+    pub fn distribute(&mut self, rewards: u64) -> ProgramResult {
         if self.total_share == 0 {
             return Err(MplxRewardsError::RewardsNoDeposits.into());
         }
@@ -89,6 +91,11 @@ impl RewardPool {
             beginning_of_the_day,
         )?;
 
+        self.calculator.tokens_available_for_distribution = self
+            .calculator
+            .tokens_available_for_distribution
+            .safe_sub(rewards)?;
+
         Ok(())
     }
 
@@ -98,73 +105,80 @@ impl RewardPool {
         mining: &mut Mining,
         amount: u64,
         lockup_period: LockupPeriod,
+        delegate_mining: Option<&mut Mining>,
     ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
         // regular weighted stake which will be used in rewards distribution
-        let weighted_stake = amount
-            .checked_mul(lockup_period.multiplier())
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        let weighted_stake = amount.safe_mul(lockup_period.multiplier())?;
 
         // shows how weighted stake will change at the end of the staking period
         // weighted_stake_diff = weighted_stake - (amount * flex_multiplier)
-        let weighted_stake_diff = weighted_stake
-            .checked_sub(
-                amount
-                    .checked_mul(LockupPeriod::Flex.multiplier())
-                    .ok_or(MplxRewardsError::MathOverflow)?,
-            )
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        let weighted_stake_diff =
+            weighted_stake.safe_sub(amount.safe_mul(LockupPeriod::Flex.multiplier())?)?;
 
-        self.total_share = self
-            .total_share
-            .checked_add(weighted_stake)
-            .ok_or(MplxRewardsError::MathOverflow)?;
-
-        mining.share = mining
-            .share
-            .checked_add(weighted_stake)
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        self.total_share = self.total_share.safe_add(weighted_stake)?;
+        mining.share = mining.share.safe_add(weighted_stake)?;
 
         let modifier = self
             .calculator
             .weighted_stake_diffs
             .entry(lockup_period.end_timestamp(get_curr_unix_ts())?)
             .or_default();
-        *modifier = modifier
-            .checked_add(weighted_stake_diff)
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        *modifier = modifier.safe_add(weighted_stake_diff)?;
 
         let modifier = mining
             .index
             .weighted_stake_diffs
             .entry(lockup_period.end_timestamp(get_curr_unix_ts())?)
             .or_default();
-        *modifier = modifier
-            .checked_add(weighted_stake_diff)
-            .ok_or(MplxRewardsError::MathOverflow)?;
+
+        *modifier = (*modifier).safe_add(weighted_stake_diff)?;
+
+        if let Some(delegate_mining) = delegate_mining {
+            delegate_mining.stake_from_others =
+                delegate_mining.stake_from_others.safe_add(amount)?;
+
+            self.total_share = self.total_share.safe_add(amount)?;
+            delegate_mining.refresh_rewards(&self.calculator)?;
+        }
 
         Ok(())
     }
 
     /// Process withdraw
-    pub fn withdraw(&mut self, mining: &mut Mining, amount: u64) -> ProgramResult {
+    pub fn withdraw(
+        &mut self,
+        mining: &mut Mining,
+        amount: u64,
+        delegate_mining: Option<&mut Mining>,
+    ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
-        self.total_share = self
-            .total_share
-            .checked_sub(amount)
-            .ok_or(MplxRewardsError::MathOverflow)?;
-        mining.share = mining
-            .share
-            .checked_sub(amount)
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        self.total_share = self.total_share.safe_sub(amount)?;
+        mining.share = mining.share.safe_sub(amount)?;
+
+        let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
+        let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
+        let reward_pool_share = self
+            .calculator
+            .consume_old_modifiers(beginning_of_the_day, self.total_share)?;
+        self.total_share = reward_pool_share;
+
+        if let Some(delegate_mining) = delegate_mining {
+            delegate_mining.stake_from_others =
+                delegate_mining.stake_from_others.safe_sub(amount)?;
+
+            self.total_share = self.total_share.safe_sub(amount)?;
+            delegate_mining.refresh_rewards(&self.calculator)?;
+        }
 
         Ok(())
     }
 
-    /// Process restake deposit
-    pub fn restake(
+    /// Process extend stake
+    #[allow(clippy::too_many_arguments)]
+    pub fn extend(
         &mut self,
         mining: &mut Mining,
         old_lockup_period: LockupPeriod,
@@ -172,6 +186,7 @@ impl RewardPool {
         deposit_start_ts: u64,
         base_amount: u64,
         additional_amount: u64,
+        delegate_mining: Option<&mut Mining>,
     ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
@@ -184,62 +199,112 @@ impl RewardPool {
         };
 
         // curr_part_of_weighted_stake_for_flex = old_base_amount * flex_multipler
-        let curr_part_of_weighted_stake_for_flex = base_amount
-            .checked_mul(LockupPeriod::Flex.multiplier())
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        let curr_part_of_weighted_stake_for_flex =
+            base_amount.safe_mul(LockupPeriod::Flex.multiplier())?;
 
         // if current date is lower than stake expiration date, we need to
         // remove stake modifier from the date of expiration
         if curr_ts < deposit_old_expiration_ts {
-            // current_part_of_weighted_stake =
-            let curr_part_of_weighted_stake = base_amount
-                .checked_mul(old_lockup_period.multiplier())
-                .ok_or(MplxRewardsError::MathOverflow)?;
+            // current_part_of_weighted_stake = base_amount * lockup_period_multiplier
+            let curr_part_of_weighted_stake =
+                base_amount.safe_mul(old_lockup_period.multiplier())?;
 
             // weighted_stake_modifier_to_remove = old_base_amount * lockup_period_multiplier - amount_times_flex
-            let weighted_stake_diff = curr_part_of_weighted_stake
-                .checked_sub(curr_part_of_weighted_stake_for_flex)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+            let weighted_stake_diff =
+                curr_part_of_weighted_stake.safe_sub(curr_part_of_weighted_stake_for_flex)?;
 
-            self.calculator
-                .weighted_stake_diffs
-                .entry(deposit_old_expiration_ts)
-                .and_modify(|modifier| *modifier -= weighted_stake_diff);
+            Self::modify_weighted_stake_diffs(
+                &mut self.calculator.weighted_stake_diffs,
+                deposit_old_expiration_ts,
+                weighted_stake_diff,
+            )?;
 
-            mining
-                .index
-                .weighted_stake_diffs
-                .entry(deposit_old_expiration_ts)
-                .and_modify(|modifier| *modifier -= weighted_stake_diff);
+            Self::modify_weighted_stake_diffs(
+                &mut mining.index.weighted_stake_diffs,
+                deposit_old_expiration_ts,
+                weighted_stake_diff,
+            )?;
 
-            // also, we need to reduce staking power because we want to restake from "scratch"
-            mining.share = mining
-                .share
-                .checked_sub(curr_part_of_weighted_stake)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+            // also, we need to reduce staking power because we want to extend stake from "scratch"
+            mining.share = mining.share.safe_sub(curr_part_of_weighted_stake)?;
 
-            self.total_share = self
-                .total_share
-                .checked_sub(curr_part_of_weighted_stake)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+            self.total_share = self.total_share.safe_sub(curr_part_of_weighted_stake)?;
         } else {
             // otherwise, we want to substract flex multiplier, becase deposit has expired already
             mining.share = mining
                 .share
-                .checked_sub(curr_part_of_weighted_stake_for_flex)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+                .safe_sub(curr_part_of_weighted_stake_for_flex)?;
 
             self.total_share = self
                 .total_share
-                .checked_sub(curr_part_of_weighted_stake_for_flex)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+                .safe_sub(curr_part_of_weighted_stake_for_flex)?;
         }
 
         // do actions like it's a regular deposit
-        let amount_to_restake = base_amount
-            .checked_add(additional_amount)
-            .ok_or(MplxRewardsError::MathOverflow)?;
-        self.deposit(mining, amount_to_restake, new_lockup_period)?;
+        let amount_to_restake = base_amount.safe_add(additional_amount)?;
+
+        let delegate_mining = match delegate_mining {
+            Some(dm) => {
+                dm.stake_from_others = dm.stake_from_others.safe_sub(base_amount)?;
+                self.total_share = self.total_share.safe_sub(base_amount)?;
+                dm.refresh_rewards(&self.calculator)?;
+
+                Some(dm)
+            }
+            None => None,
+        };
+
+        self.deposit(
+            mining,
+            amount_to_restake,
+            new_lockup_period,
+            delegate_mining,
+        )?;
+
+        Ok(())
+    }
+
+    fn modify_weighted_stake_diffs(
+        diffs: &mut BTreeMap<u64, u64>,
+        timestamp: u64,
+        weighted_stake_diff: u64,
+    ) -> Result<(), MplxRewardsError> {
+        match diffs.entry(timestamp) {
+            Entry::Vacant(_) => Err(MplxRewardsError::NoWeightedStakeModifiersAtADate),
+            Entry::Occupied(mut entry) => {
+                let modifier = entry.get_mut();
+                *modifier = modifier
+                    .checked_sub(weighted_stake_diff)
+                    .ok_or(MplxRewardsError::MathOverflow)?;
+                Ok(())
+            }
+        }
+    }
+
+    pub fn change_delegate(
+        &mut self,
+        mining: &mut Mining,
+        new_delegate_mining: Option<&mut Mining>,
+        old_delegate_mining: Option<&mut Mining>,
+        staked_amount: u64,
+    ) -> ProgramResult {
+        mining.refresh_rewards(&self.calculator)?;
+
+        if let Some(old_delegate_mining) = old_delegate_mining {
+            old_delegate_mining.stake_from_others = old_delegate_mining
+                .stake_from_others
+                .safe_sub(staked_amount)?;
+            self.total_share = self.total_share.safe_sub(staked_amount)?;
+            old_delegate_mining.refresh_rewards(&self.calculator)?;
+        }
+
+        if let Some(new_delegate_mining) = new_delegate_mining {
+            new_delegate_mining.stake_from_others = new_delegate_mining
+                .stake_from_others
+                .safe_add(staked_amount)?;
+            self.total_share = self.total_share.safe_add(staked_amount)?;
+            new_delegate_mining.refresh_rewards(&self.calculator)?;
+        }
 
         Ok(())
     }
@@ -311,9 +376,7 @@ impl RewardCalculator {
                 break;
             }
 
-            total_share = total_share
-                .checked_sub(*modifier)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+            total_share = total_share.safe_sub(*modifier)?;
         }
         // drop keys because they have been already consumed and no longer needed
         // +1 because we don't need beginning_of_the_day
@@ -332,26 +395,13 @@ impl RewardCalculator {
         date_to_process: u64,
     ) -> ProgramResult {
         let index = PRECISION
-            .checked_mul(u128::from(rewards))
-            .ok_or(MplxRewardsError::MathOverflow)?
-            .checked_div(u128::from(total_share))
-            .ok_or(MplxRewardsError::MathOverflow)?;
+            .safe_mul(u128::from(rewards))?
+            .safe_div(u128::from(total_share))?;
 
-        let cumulative_index_to_insert = {
-            if let Some((_, index)) = cumulative_index.last_key_value() {
-                *index
-            } else {
-                0
-            }
-            .checked_add(index)
-            .ok_or(MplxRewardsError::MathOverflow)?
-        };
+        let latest_index = index_with_precision.safe_add(index)?;
 
-        cumulative_index.insert(date_to_process, cumulative_index_to_insert);
-
-        *index_with_precision = index_with_precision
-            .checked_add(index)
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        cumulative_index.insert(date_to_process, latest_index);
+        *index_with_precision = latest_index;
 
         Ok(())
     }
@@ -368,13 +418,10 @@ impl RewardCalculator {
 
         // ((tokens_available_for_distribution * precision) / days_left) / precision
         Ok(u64::try_from(
-            ((u128::from(self.tokens_available_for_distribution))
-                .checked_mul(PRECISION)
-                .ok_or(MplxRewardsError::MathOverflow)?
-                .checked_div(distribution_days_left)
-                .ok_or(MplxRewardsError::MathOverflow)?)
-            .checked_div(PRECISION)
-            .ok_or(MplxRewardsError::MathOverflow)?,
+            (u128::from(self.tokens_available_for_distribution))
+                .safe_mul(PRECISION)?
+                .safe_div(distribution_days_left)?
+                .safe_div(PRECISION)?,
         )
         .map_err(|_| MplxRewardsError::InvalidPrimitiveTypesConversion)?)
     }

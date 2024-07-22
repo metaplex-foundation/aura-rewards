@@ -1,13 +1,15 @@
 use std::borrow::{Borrow, BorrowMut};
 
-use mplx_rewards::utils::LockupPeriod;
-use solana_program::pubkey::Pubkey;
+use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
+use solana_program::{instruction::InstructionError, pubkey::Pubkey};
 use solana_program_test::{BanksClientError, ProgramTestContext};
-use solana_sdk::account::Account;
-use solana_sdk::program_pack::Pack;
-use solana_sdk::signature::{Keypair, Signer};
-use solana_sdk::system_instruction;
-use solana_sdk::transaction::Transaction;
+use solana_sdk::{
+    account::Account,
+    program_pack::Pack,
+    signature::{Keypair, Signer},
+    system_instruction::{self},
+    transaction::{Transaction, TransactionError},
+};
 use spl_token::state::Account as SplTokenAccount;
 
 pub type BanksClientResult<T> = Result<T, BanksClientError>;
@@ -18,7 +20,7 @@ pub struct TestRewards {
     pub deposit_authority: Keypair,
     pub distribution_authority: Keypair,
     pub fill_authority: Keypair,
-    pub mining_reward_pool: Pubkey,
+    pub reward_pool: Pubkey,
     pub vault_pubkey: Pubkey,
 }
 
@@ -28,7 +30,7 @@ impl TestRewards {
         let fill_authority = Keypair::new();
         let distribution_authority = Keypair::new();
 
-        let (mining_reward_pool, _) = Pubkey::find_program_address(
+        let (reward_pool, _) = Pubkey::find_program_address(
             &[
                 b"reward_pool".as_ref(),
                 &deposit_authority.pubkey().to_bytes(),
@@ -39,7 +41,7 @@ impl TestRewards {
         let (vault_pubkey, _vault_bump) = Pubkey::find_program_address(
             &[
                 b"vault".as_ref(),
-                &mining_reward_pool.to_bytes(),
+                &reward_pool.to_bytes(),
                 &token_mint_pubkey.to_bytes(),
             ],
             &mplx_rewards::id(),
@@ -49,7 +51,7 @@ impl TestRewards {
             token_mint_pubkey,
             deposit_authority,
             fill_authority,
-            mining_reward_pool,
+            reward_pool,
             vault_pubkey,
             distribution_authority,
         }
@@ -60,7 +62,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::initialize_pool(
                 &mplx_rewards::id(),
-                &self.mining_reward_pool,
+                &self.reward_pool,
                 &self.token_mint_pubkey,
                 &self.vault_pubkey,
                 &context.payer.pubkey(),
@@ -69,7 +71,7 @@ impl TestRewards {
                 &self.distribution_authority.pubkey(),
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer],
+            &[&context.payer, &self.deposit_authority],
             context.last_blockhash,
         );
 
@@ -79,13 +81,13 @@ impl TestRewards {
     pub async fn initialize_mining(
         &self,
         context: &mut ProgramTestContext,
-        user: &Pubkey,
+        mining_owner: &Pubkey,
     ) -> Pubkey {
         let (mining_account, _) = Pubkey::find_program_address(
             &[
                 b"mining".as_ref(),
-                user.as_ref(),
-                self.mining_reward_pool.as_ref(),
+                mining_owner.as_ref(),
+                self.reward_pool.as_ref(),
             ],
             &mplx_rewards::id(),
         );
@@ -93,10 +95,10 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::initialize_mining(
                 &mplx_rewards::id(),
-                &self.mining_reward_pool,
+                &self.reward_pool,
                 &mining_account,
                 &context.payer.pubkey(),
-                user,
+                mining_owner,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer],
@@ -108,6 +110,34 @@ impl TestRewards {
         mining_account
     }
 
+    pub async fn change_delegate(
+        &self,
+        context: &mut ProgramTestContext,
+        mining: &Pubkey,
+        mining_owner: &Keypair,
+        new_delegate_mining: &Pubkey,
+        old_delegate_mining: &Pubkey,
+        amount: u64,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::change_delegate(
+                &mplx_rewards::id(),
+                &self.reward_pool,
+                mining,
+                &self.deposit_authority.pubkey(),
+                &mining_owner.pubkey(),
+                old_delegate_mining,
+                new_delegate_mining,
+                amount,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&self.deposit_authority, mining_owner, &context.payer],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
     pub async fn deposit_mining(
         &self,
         context: &mut ProgramTestContext,
@@ -115,13 +145,15 @@ impl TestRewards {
         amount: u64,
         lockup_period: LockupPeriod,
         owner: &Pubkey,
+        delegate_mining: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
                 &mplx_rewards::id(),
-                &self.mining_reward_pool,
+                &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                delegate_mining,
                 amount,
                 lockup_period,
                 owner,
@@ -138,15 +170,17 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
+        delegate_mining: &Pubkey,
         amount: u64,
         owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::withdraw_mining(
                 &mplx_rewards::id(),
-                &self.mining_reward_pool,
+                &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                delegate_mining,
                 amount,
                 owner,
             )],
@@ -168,7 +202,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::fill_vault(
                 &mplx_rewards::id(),
-                &self.mining_reward_pool,
+                &self.reward_pool,
                 &self.token_mint_pubkey,
                 &self.vault_pubkey,
                 &self.fill_authority.pubkey(),
@@ -194,7 +228,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::claim(
                 &mplx_rewards::id(),
-                &self.mining_reward_pool,
+                &self.reward_pool,
                 &self.token_mint_pubkey,
                 &self.vault_pubkey,
                 mining_account,
@@ -217,7 +251,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::distribute_rewards(
                 &mplx_rewards::id(),
-                &self.mining_reward_pool,
+                &self.reward_pool,
                 &self.distribution_authority.pubkey(),
             )],
             Some(&context.payer.pubkey()),
@@ -229,10 +263,11 @@ impl TestRewards {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn restake_deposit(
+    pub async fn extend_stake(
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
+        delegate_mining: &Pubkey,
         old_lockup_period: LockupPeriod,
         new_lockup_period: LockupPeriod,
         deposit_start_ts: u64,
@@ -241,11 +276,12 @@ impl TestRewards {
         mining_owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::restake_deposit(
+            &[mplx_rewards::instruction::extend_stake(
                 &mplx_rewards::id(),
-                &self.mining_reward_pool,
+                &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                delegate_mining,
                 old_lockup_period,
                 new_lockup_period,
                 deposit_start_ts,
@@ -255,6 +291,30 @@ impl TestRewards {
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
+    pub async fn close_mining(
+        &self,
+        context: &mut ProgramTestContext,
+        mining_account: &Pubkey,
+        mining_owner: &Keypair,
+        target_account: &Pubkey,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::close_mining(
+                &mplx_rewards::id(),
+                mining_account,
+                &mining_owner.pubkey(),
+                target_account,
+                &self.deposit_authority.pubkey(),
+                &self.reward_pool,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, &self.deposit_authority, mining_owner],
             context.last_blockhash,
         );
 
@@ -421,4 +481,28 @@ pub async fn claim_and_assert(
         .await
         .unwrap();
     assert_tokens(context, user_reward, amount).await;
+}
+
+pub mod assert_custom_on_chain_error {
+    use super::*;
+    use std::fmt::Debug;
+
+    pub trait AssertCustomOnChainErr {
+        fn assert_on_chain_err(self, expected_err: MplxRewardsError);
+    }
+
+    impl<T: Debug> AssertCustomOnChainErr for Result<T, BanksClientError> {
+        fn assert_on_chain_err(self, expected_err: MplxRewardsError) {
+            assert!(self.is_err());
+            match self.unwrap_err() {
+                BanksClientError::TransactionError(TransactionError::InstructionError(
+                    _,
+                    InstructionError::Custom(code),
+                )) => {
+                    debug_assert_eq!(expected_err as u32, code);
+                }
+                _ => unreachable!("BanksClientError has no 'Custom' variant."),
+            }
+        }
+    }
 }

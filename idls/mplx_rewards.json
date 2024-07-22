@@ -364,7 +364,7 @@
       }
     },
     {
-      "name": "RestakeDeposit",
+      "name": "ExtendStake",
       "accounts": [
         {
           "name": "rewardPool",
@@ -458,6 +458,53 @@
       "discriminant": {
         "type": "u8",
         "value": 7
+      }
+    },
+    {
+      "name": "CloseMining",
+      "accounts": [
+        {
+          "name": "mining",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of the user's mining account"
+          ]
+        },
+        {
+          "name": "miningOwner",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The end user the mining accounts belongs to"
+          ]
+        },
+        {
+          "name": "targetAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address where lamports from account closing will be transferred"
+          ]
+        },
+        {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 8
       }
     }
   ],
@@ -688,6 +735,11 @@
       "code": 5,
       "name": "InvalidPrimitiveTypesConversion",
       "msg": "Rewards: distribution_ends_at date is lower than current date "
+    },
+    {
+      "code": 11,
+      "name": "RewardsMustBeClaimed",
+      "msg": "Rewards: unclaimed rewards must be claimed"
     }
   ],
   "metadata": {

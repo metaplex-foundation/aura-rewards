@@ -2,8 +2,7 @@ use crate::utils::*;
 use mplx_rewards::state::Mining;
 use solana_program::program_pack::Pack;
 use solana_program_test::*;
-use solana_sdk::signature::Keypair;
-use solana_sdk::signer::Signer;
+use solana_sdk::{signature::Keypair, signer::Signer};
 use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards) {
@@ -40,6 +39,6 @@ async fn success() {
     let mining_account = get_account(&mut context, &user_mining).await;
     let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
 
-    assert_eq!(mining.reward_pool, test_rewards.mining_reward_pool);
+    assert_eq!(mining.reward_pool, test_rewards.reward_pool);
     assert_eq!(mining.owner, user.pubkey());
 }

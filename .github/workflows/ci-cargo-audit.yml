@@ -1,0 +1,40 @@
+name: Cargo Audit
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+  # Allowing manual runs with ability to choose branch
+  workflow_dispatch:
+
+  # Optimisation option by targeting direct paths to only scan when there are changes to dependencies in the push/PR
+  #  push:
+  #    paths:
+  #      - 'Cargo.toml'
+  #      - 'Cargo.lock'
+  #  pull_request:
+  #    paths:
+  #      - 'Cargo.toml'
+  #      - 'Cargo.lock'
+
+  # Example of running scheduled scans at 6AM UTC every Monday to regularly check for vulnerable dependencies
+  #  schedule:
+  #  - cron: '0 6 * * 1'
+
+jobs:
+  Cargo-audit:
+    name: Cargo Vulnerability Scanner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Cargo Audit
+        uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-audit
+          version: latest
+
+      - name: Run Cargo Audit
+        run: cargo audit -c always

@@ -1,6 +1,4 @@
-use crate::state::RewardPool;
-use crate::utils::AccountLoader;
-use crate::{asserts::assert_account_key, error::MplxRewardsError};
+use crate::{asserts::assert_account_key, state::RewardPool, utils::AccountLoader};
 
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
@@ -36,12 +34,7 @@ impl<'a, 'b> DistributeRewardsContext<'a, 'b> {
         let rewards_to_distribute = reward_pool.calculator.rewards_to_distribute()?;
         assert_account_key(self.distribute_authority, &reward_pool.distribute_authority)?;
 
-        reward_pool.fill(rewards_to_distribute)?;
-        reward_pool.calculator.tokens_available_for_distribution = reward_pool
-            .calculator
-            .tokens_available_for_distribution
-            .checked_sub(rewards_to_distribute)
-            .ok_or(MplxRewardsError::MathOverflow)?;
+        reward_pool.distribute(rewards_to_distribute)?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
 

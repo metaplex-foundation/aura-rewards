@@ -28,6 +28,9 @@ pub enum MplxRewardsError {
     /// 5 (0x5) - Rewards: distribution_ends_at date is lower than current date
     #[error("Rewards: distribution_ends_at date is lower than current date ")]
     InvalidPrimitiveTypesConversion,
+    /// 11 (0xB) - Rewards: unclaimed rewards must be claimed
+    #[error("Rewards: unclaimed rewards must be claimed")]
+    RewardsMustBeClaimed,
 }
 
 impl solana_program::program_error::PrintProgramError for MplxRewardsError {
