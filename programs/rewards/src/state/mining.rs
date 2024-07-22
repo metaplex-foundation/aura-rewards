@@ -37,8 +37,8 @@ pub struct Mining {
     /// That "index" points at the moment when the last reward has been recieved. Also,
     /// it' s responsible for weighted_stake changes and, therefore, rewards calculations.
     pub index: RewardIndex,
-    /// Delegate address where tokens will be staked in "delegated staking model".
-    pub delegate: Pubkey,
+    /// This field sums up each time somebody stakes to that account as a delegate.
+    pub stake_from_others: u64,
 }
 
 impl Mining {
@@ -48,10 +48,8 @@ impl Mining {
             account_type: AccountType::Mining,
             reward_pool,
             bump,
-            share: 0,
             owner,
-            index: RewardIndex::default(),
-            delegate: owner,
+            ..Default::default()
         }
     }
 
@@ -64,7 +62,7 @@ impl Mining {
     pub fn refresh_rewards(&mut self, vault: &RewardCalculator) -> ProgramResult {
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
-        let mut share = self.share;
+        let mut share = self.share.safe_add(self.stake_from_others)?;
 
         share = self
             .index
@@ -76,7 +74,7 @@ impl Mining {
             &mut self.index.unclaimed_rewards,
             &mut self.index.index_with_precision,
         )?;
-        self.share = share;
+        self.share = share.safe_sub(self.stake_from_others)?;
 
         Ok(())
     }
@@ -144,9 +142,7 @@ impl RewardIndex {
                 &mut self.index_with_precision,
             )?;
 
-            total_share = total_share
-                .checked_sub(*modifier_diff)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+            total_share = total_share.safe_sub(*modifier_diff)?;
         }
         // +1 because we don't need beginning_of_the_day
         self.weighted_stake_diffs = self
@@ -173,19 +169,14 @@ impl RewardIndex {
 
         let rewards = u64::try_from(
             vault_index_for_date
-                .checked_sub(*index_with_precision)
-                .ok_or(MplxRewardsError::MathOverflow)?
-                .checked_mul(u128::from(total_share))
-                .ok_or(MplxRewardsError::MathOverflow)?
-                .checked_div(PRECISION)
-                .ok_or(MplxRewardsError::MathOverflow)?,
+                .safe_sub(*index_with_precision)?
+                .safe_mul(u128::from(total_share))?
+                .safe_div(PRECISION)?,
         )
         .map_err(|_| MplxRewardsError::InvalidPrimitiveTypesConversion)?;
 
         if rewards > 0 {
-            *unclaimed_rewards = unclaimed_rewards
-                .checked_add(rewards)
-                .ok_or(MplxRewardsError::MathOverflow)?;
+            *unclaimed_rewards = (*unclaimed_rewards).safe_add(rewards)?;
         }
 
         *index_with_precision = *vault_index_for_date;
@@ -199,3 +190,4 @@ impl IsInitialized for Mining {
         self.account_type == AccountType::Mining
     }
 }
+use crate::utils::SafeArithmeticOperations;

@@ -77,9 +77,24 @@ pub enum MplxRewardsError {
     RewardsMustBeGreaterThanZero,
 
     /// 13
+    /// Delegate lack of tokens
+    #[error("Rewards: Delegate must have at least 15_000_000 of own weighted stake")]
+    InsufficientWeightedStake,
+
+    /// 14
+    /// Stake from others must be zero
+    #[error("Rewards: Stake from others must be zero")]
+    StakeFromOthersMustBeZero,
+
+    /// 15
     /// No need to transfer zero amount of rewards.
     #[error("No changes at the date in weighted stake modifiers while they're expected")]
     NoWeightedStakeModifiersAtADate,
+
+    /// 16
+    /// To change a delegate, the new delegate must differ from the current one
+    #[error("Passed delegates are the same")]
+    DelegatesAreTheSame,
 }
 
 impl PrintProgramError for MplxRewardsError {

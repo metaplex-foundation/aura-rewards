@@ -1,4 +1,5 @@
 use crate::{
+    asserts::get_delegate_mining,
     state::{Mining, RewardPool},
     utils::{assert_and_deserialize_pool_and_mining, AccountLoader, LockupPeriod},
 };
@@ -12,6 +13,7 @@ pub struct ExtendStakeContext<'a, 'b> {
     reward_pool: &'a AccountInfo<'b>,
     mining: &'a AccountInfo<'b>,
     deposit_authority: &'a AccountInfo<'b>,
+    delegate_mining: &'a AccountInfo<'b>,
 }
 
 impl<'a, 'b> ExtendStakeContext<'a, 'b> {
@@ -25,11 +27,13 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
         let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
         let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+        let delegate_mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
 
         Ok(ExtendStakeContext {
             reward_pool,
             mining,
             deposit_authority,
+            delegate_mining,
         })
     }
 
@@ -54,6 +58,8 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
             self.deposit_authority,
         )?;
 
+        let mut delegate_mining = get_delegate_mining(self.delegate_mining, self.mining)?;
+
         reward_pool.extend(
             &mut mining,
             old_lockup_period,
@@ -61,10 +67,15 @@ impl<'a, 'b> ExtendStakeContext<'a, 'b> {
             deposit_start_ts,
             base_amount,
             additional_amount,
+            delegate_mining.as_mut(),
         )?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
         Mining::pack(mining, *self.mining.data.borrow_mut())?;
+
+        if let Some(delegate_mining) = delegate_mining {
+            Mining::pack(delegate_mining, *self.delegate_mining.data.borrow_mut())?;
+        }
 
         Ok(())
     }

@@ -1,8 +1,11 @@
-use crate::utils::{assert_custom_on_chain_error::AssertCustomOnChainErr, *};
-use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
+use std::borrow::Borrow;
+
+use crate::utils::*;
+use assert_custom_on_chain_error::AssertCustomOnChainErr;
+use mplx_rewards::{error::MplxRewardsError, state::Mining, utils::LockupPeriod};
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
+use solana_sdk::{clock::SECONDS_PER_DAY, program_pack::Pack, signature::Keypair, signer::Signer};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
     let test = ProgramTest::new(
@@ -50,6 +53,7 @@ async fn success() {
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
+            &mining,
         )
         .await
         .unwrap();
@@ -67,8 +71,29 @@ async fn success() {
 }
 
 #[tokio::test]
-async fn success_after_not_interacting_for_a_long_time() {
+async fn close_when_has_stake_from_others() {
     let (mut context, test_rewards, mining_owner, mining) = setup().await;
+
+    let delegate = Keypair::new();
+    let delegate_mining = test_rewards
+        .initialize_mining(&mut context, &delegate.pubkey())
+        .await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &delegate_mining,
+            3_000_000, // 18_000_000 of weighted stake
+            LockupPeriod::OneYear,
+            &delegate.pubkey(),
+            &delegate_mining,
+        )
+        .await
+        .unwrap();
+    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    assert_eq!(d_mining.share, 18_000_000);
+    assert_eq!(d_mining.stake_from_others, 0);
+
     let mining_owner_before = context
         .banks_client
         .get_account(mining_owner.pubkey())
@@ -83,6 +108,34 @@ async fn success_after_not_interacting_for_a_long_time() {
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
+            &delegate_mining,
+        )
+        .await
+        .unwrap();
+
+    test_rewards
+        .close_mining(
+            &mut context,
+            &delegate_mining,
+            &delegate,
+            &delegate.pubkey(),
+        )
+        .await
+        .assert_on_chain_err(MplxRewardsError::StakeFromOthersMustBeZero);
+}
+
+#[tokio::test]
+async fn close_when_has_unclaimed_rewards() {
+    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            LockupPeriod::ThreeMonths,
+            &mining_owner.pubkey(),
+            &mining,
         )
         .await
         .unwrap();

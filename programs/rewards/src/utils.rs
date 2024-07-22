@@ -276,19 +276,18 @@ impl AccountLoader {
 }
 
 /// LockupPeriod is used to define the time during which the lockup will recieve full reward
-#[repr(u8)]
-#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub enum LockupPeriod {
     /// Unreachable option
     None,
+    /// Unlimited lockup period.
+    Flex,
     /// Three months
     ThreeMonths,
     /// SixMonths
     SixMonths,
     /// OneYear
     OneYear,
-    /// Unlimited lockup period.
-    Flex,
 }
 
 impl LockupPeriod {
@@ -336,4 +335,58 @@ pub fn get_curr_unix_ts() -> u64 {
     // Conversion must be save because negative values
     // in unix means the date is earlier than 1970y
     Clock::get().unwrap().unix_timestamp as u64
+}
+
+pub(crate) trait SafeArithmeticOperations
+where
+    Self: std::marker::Sized,
+{
+    fn safe_sub(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+    fn safe_add(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+    fn safe_mul(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+    fn safe_div(&self, amount: Self) -> Result<Self, MplxRewardsError>;
+}
+
+impl SafeArithmeticOperations for u64 {
+    fn safe_sub(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_sub(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_add(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_add(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_mul(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_mul(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_div(&self, amount: u64) -> Result<u64, MplxRewardsError> {
+        self.checked_div(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+}
+
+impl SafeArithmeticOperations for u128 {
+    fn safe_sub(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_sub(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_add(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_add(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_mul(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_mul(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
+
+    fn safe_div(&self, amount: u128) -> Result<u128, MplxRewardsError> {
+        self.checked_div(amount)
+            .ok_or(MplxRewardsError::MathOverflow)
+    }
 }

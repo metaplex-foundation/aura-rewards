@@ -58,6 +58,7 @@ pub enum RewardsInstruction {
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(4, name = "delegate_mining", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
     DepositMining {
         /// Amount to deposit
         amount: u64,
@@ -71,6 +72,7 @@ pub enum RewardsInstruction {
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(3, name = "delegate_mining", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
     WithdrawMining {
         /// Amount to withdraw
         amount: u64,
@@ -94,6 +96,7 @@ pub enum RewardsInstruction {
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, name = "reward_mint", desc = "The address of the reward mint")]
     #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(4, name = "delegate_mining", desc = "The address of Mining Account that might be used as a delegate in delegated staking model")]
     ExtendStake {
         /// Lockup period before restaking. Actually it's only needed
         /// for Flex to AnyPeriod edge case
@@ -125,6 +128,18 @@ pub enum RewardsInstruction {
     #[account(3, signer, name = "deposit_authority")]
     #[account(4, writable, name = "reward_pool", desc = "The address of the reward pool")]
     CloseMining,
+
+    /// Changes delegate mining account
+    #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    #[account(2, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(3, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
+    #[account(4, writable, name = "old_delegate_mining", desc = "The address of the old delegate mining account")]
+    #[account(5, writable, name = "new_delegate_mining", desc = "The address of the new delegate mining account")]
+    ChangeDelegate {
+        /// Amount of staked tokens
+        staked_amount: u64,
+    },
 }
 
 /// Creates 'InitializePool' instruction.
@@ -222,6 +237,7 @@ pub fn deposit_mining(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     deposit_authority: &Pubkey,
+    delegate_mining: &Pubkey,
     amount: u64,
     lockup_period: LockupPeriod,
     owner: &Pubkey,
@@ -230,6 +246,7 @@ pub fn deposit_mining(
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new(*delegate_mining, false),
     ];
 
     Instruction::new_with_borsh(
@@ -249,6 +266,7 @@ pub fn withdraw_mining(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     deposit_authority: &Pubkey,
+    delegate_mining: &Pubkey,
     amount: u64,
     owner: &Pubkey,
 ) -> Instruction {
@@ -256,6 +274,7 @@ pub fn withdraw_mining(
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new(*delegate_mining, false),
     ];
 
     Instruction::new_with_borsh(
@@ -301,6 +320,7 @@ pub fn extend_stake(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     deposit_authority: &Pubkey,
+    delegate_mining: &Pubkey,
     old_lockup_period: LockupPeriod,
     new_lockup_period: LockupPeriod,
     deposit_start_ts: u64,
@@ -312,6 +332,7 @@ pub fn extend_stake(
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new(*delegate_mining, false),
     ];
 
     Instruction::new_with_borsh(
@@ -366,4 +387,32 @@ pub fn close_mining(
     ];
 
     Instruction::new_with_borsh(*program_id, &RewardsInstruction::CloseMining, accounts)
+}
+
+/// Creates 'Change Delegate" instruction.
+#[allow(clippy::too_many_arguments)]
+pub fn change_delegate(
+    program_id: &Pubkey,
+    reward_pool: &Pubkey,
+    mining: &Pubkey,
+    deposit_authority: &Pubkey,
+    mining_owner: &Pubkey,
+    old_delegate_mining: &Pubkey,
+    new_delegate_mining: &Pubkey,
+    staked_amount: u64,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(*reward_pool, false),
+        AccountMeta::new(*mining, false),
+        AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new_readonly(*mining_owner, true),
+        AccountMeta::new(*old_delegate_mining, false),
+        AccountMeta::new(*new_delegate_mining, false),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::ChangeDelegate { staked_amount },
+        accounts,
+    )
 }

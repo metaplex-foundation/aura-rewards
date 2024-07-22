@@ -1,5 +1,6 @@
 //! Program instructions
 
+mod change_delegate;
 mod claim;
 mod close_mining;
 mod deposit_mining;
@@ -10,6 +11,7 @@ mod initialize_mining;
 mod initialize_pool;
 mod withdraw_mining;
 
+pub use change_delegate::*;
 pub use claim::*;
 pub use close_mining::*;
 pub use deposit_mining::*;

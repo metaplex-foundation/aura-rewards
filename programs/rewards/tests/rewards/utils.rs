@@ -110,6 +110,34 @@ impl TestRewards {
         mining_account
     }
 
+    pub async fn change_delegate(
+        &self,
+        context: &mut ProgramTestContext,
+        mining: &Pubkey,
+        mining_owner: &Keypair,
+        new_delegate_mining: &Pubkey,
+        old_delegate_mining: &Pubkey,
+        amount: u64,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::change_delegate(
+                &mplx_rewards::id(),
+                &self.reward_pool,
+                mining,
+                &self.deposit_authority.pubkey(),
+                &mining_owner.pubkey(),
+                old_delegate_mining,
+                new_delegate_mining,
+                amount,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&self.deposit_authority, mining_owner, &context.payer],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
     pub async fn deposit_mining(
         &self,
         context: &mut ProgramTestContext,
@@ -117,6 +145,7 @@ impl TestRewards {
         amount: u64,
         lockup_period: LockupPeriod,
         owner: &Pubkey,
+        delegate_mining: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
@@ -124,6 +153,7 @@ impl TestRewards {
                 &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                delegate_mining,
                 amount,
                 lockup_period,
                 owner,
@@ -140,6 +170,7 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
+        delegate_mining: &Pubkey,
         amount: u64,
         owner: &Pubkey,
     ) -> BanksClientResult<()> {
@@ -149,6 +180,7 @@ impl TestRewards {
                 &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                delegate_mining,
                 amount,
                 owner,
             )],
@@ -235,6 +267,7 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
+        delegate_mining: &Pubkey,
         old_lockup_period: LockupPeriod,
         new_lockup_period: LockupPeriod,
         deposit_start_ts: u64,
@@ -248,6 +281,7 @@ impl TestRewards {
                 &self.reward_pool,
                 mining_account,
                 &self.deposit_authority.pubkey(),
+                delegate_mining,
                 old_lockup_period,
                 new_lockup_period,
                 deposit_start_ts,

@@ -42,7 +42,14 @@ async fn success() {
     let (mut context, test_rewards, user, mining) = setup().await;
 
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, LockupPeriod::ThreeMonths, &user)
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            LockupPeriod::ThreeMonths,
+            &user,
+            &mining,
+        )
         .await
         .unwrap();
 
@@ -61,7 +68,14 @@ async fn success_with_flex() {
     let (mut context, test_rewards, user, mining) = setup().await;
 
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, LockupPeriod::Flex, &user)
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            LockupPeriod::Flex,
+            &user,
+            &mining,
+        )
         .await
         .unwrap();
 
@@ -69,6 +83,57 @@ async fn success_with_flex() {
     let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
 
     assert_eq!(reward_pool.total_share, 100);
+
+    let mining_account = get_account(&mut context, &mining).await;
+    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    assert_eq!(mining.share, 100);
+}
+
+#[tokio::test]
+async fn delegating_success() {
+    let (mut context, test_rewards, user, mining) = setup().await;
+
+    let delegate = Keypair::new();
+    let delegate_mining = test_rewards
+        .initialize_mining(&mut context, &delegate.pubkey())
+        .await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &delegate_mining,
+            3_000_000, // 18_000_000 of weighted stake
+            LockupPeriod::OneYear,
+            &delegate.pubkey(),
+            &delegate_mining,
+        )
+        .await
+        .unwrap();
+    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    assert_eq!(d_mining.share, 18_000_000);
+    assert_eq!(d_mining.stake_from_others, 0);
+
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            LockupPeriod::Flex,
+            &user,
+            &delegate_mining,
+        )
+        .await
+        .unwrap();
+
+    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
+    assert_eq!(d_mining.share, 18_000_000);
+    assert_eq!(d_mining.stake_from_others, 100);
+
+    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+
+    assert_eq!(reward_pool.total_share, 18_000_200);
 
     let mining_account = get_account(&mut context, &mining).await;
     let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
