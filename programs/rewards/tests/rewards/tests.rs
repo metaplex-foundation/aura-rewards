@@ -1,4 +1,6 @@
+mod change_delegate;
 mod claim;
+mod close_mining;
 mod deposit_mining;
 mod distribute_rewards;
 mod fill_vault;
@@ -8,4 +10,4 @@ mod integration;
 mod utils;
 mod withdraw_mining;
 
-mod restake_deposit;
+mod extend_stake;

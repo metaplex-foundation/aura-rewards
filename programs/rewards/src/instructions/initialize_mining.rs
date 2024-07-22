@@ -1,13 +1,12 @@
-use crate::state::Mining;
-use crate::utils::{
-    assert_account_key, create_account, find_mining_program_address, AccountLoader,
+use crate::{
+    asserts::{assert_account_key, assert_uninitialized},
+    state::Mining,
+    utils::{create_account, find_mining_program_address, AccountLoader},
 };
-use solana_program::account_info::AccountInfo;
-use solana_program::entrypoint::ProgramResult;
-use solana_program::program_error::ProgramError;
-use solana_program::program_pack::Pack;
-use solana_program::pubkey::Pubkey;
-use solana_program::system_program;
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
+    program_pack::Pack, pubkey::Pubkey, system_program,
+};
 
 /// Instruction context
 pub struct InitializeMiningContext<'a, 'b> {
@@ -39,6 +38,8 @@ impl<'a, 'b> InitializeMiningContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self, program_id: &Pubkey, mining_owner: &Pubkey) -> ProgramResult {
+        assert_uninitialized(self.mining)?;
+
         let bump = {
             let (pubkey, bump) =
                 find_mining_program_address(program_id, mining_owner, self.reward_pool.key);

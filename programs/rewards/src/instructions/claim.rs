@@ -1,5 +1,8 @@
-use crate::state::{Mining, RewardPool};
-use crate::utils::{assert_account_key, spl_transfer, AccountLoader};
+use crate::{
+    asserts::assert_account_key,
+    state::{Mining, RewardPool},
+    utils::{spl_transfer, AccountLoader},
+};
 use borsh::BorshSerialize;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program::set_return_data,
@@ -85,14 +88,14 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
                 b"vault".as_ref(),
                 &self.reward_pool.key.to_bytes(),
                 &self.reward_mint.key.to_bytes(),
-                &[reward_pool.vault.bump],
+                &[reward_pool.calculator.token_account_bump],
             ];
             assert_account_key(
                 self.vault,
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
             )?;
         }
-        mining.refresh_rewards(&reward_pool.vault)?;
+        mining.refresh_rewards(&reward_pool.calculator)?;
         let amount = mining.index.unclaimed_rewards;
         mining.claim();
 

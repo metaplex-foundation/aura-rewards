@@ -31,7 +31,7 @@ async fn success() {
 
     test_rewards.initialize_pool(&mut context).await.unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.mining_reward_pool).await;
+    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
     let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
 
     assert_eq!(
@@ -43,7 +43,7 @@ async fn success() {
         test_rewards.fill_authority.pubkey()
     );
     assert_eq!(
-        reward_pool.vault.reward_mint,
+        reward_pool.calculator.reward_mint,
         test_rewards.token_mint_pubkey
     );
 }

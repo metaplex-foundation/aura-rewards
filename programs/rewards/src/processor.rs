@@ -1,8 +1,11 @@
 //! Program processor
-use crate::instruction::RewardsInstruction;
-use crate::instructions::{
-    ClaimContext, DepositMiningContext, DistributeRewardsContext, FillVaultContext,
-    InitializeMiningContext, InitializePoolContext, RestakeDepositContext, WithdrawMiningContext,
+use crate::{
+    instruction::RewardsInstruction,
+    instructions::{
+        ChangeDelegateContext, ClaimContext, CloseMiningContext, DepositMiningContext,
+        DistributeRewardsContext, ExtendStakeContext, FillVaultContext, InitializeMiningContext,
+        InitializePoolContext, WithdrawMiningContext,
+    },
 };
 use borsh::BorshDeserialize;
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey};
@@ -17,14 +20,12 @@ pub fn process_instruction(
 
     match instruction {
         RewardsInstruction::InitializePool {
-            deposit_authority,
             fill_authority,
             distribute_authority,
         } => {
             msg!("RewardsInstruction: InitializePool");
             InitializePoolContext::new(program_id, accounts)?.process(
                 program_id,
-                deposit_authority,
                 fill_authority,
                 distribute_authority,
             )
@@ -65,7 +66,7 @@ pub fn process_instruction(
             msg!("RewardsInstruction: Claim");
             ClaimContext::new(program_id, accounts)?.process(program_id)
         }
-        RewardsInstruction::RestakeDeposit {
+        RewardsInstruction::ExtendStake {
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
@@ -73,8 +74,8 @@ pub fn process_instruction(
             additional_amount,
             mining_owner,
         } => {
-            msg!("RewardsInstruction: RestakeDeposit");
-            RestakeDepositContext::new(program_id, accounts)?.process(
+            msg!("RewardsInstruction: ExtendStake");
+            ExtendStakeContext::new(program_id, accounts)?.process(
                 program_id,
                 old_lockup_period,
                 new_lockup_period,
@@ -86,7 +87,15 @@ pub fn process_instruction(
         }
         RewardsInstruction::DistributeRewards => {
             msg!("RewardsInstruction: FillVault");
-            DistributeRewardsContext::new(program_id, accounts)?.process(program_id)
+            DistributeRewardsContext::new(program_id, accounts)?.process()
+        }
+        RewardsInstruction::CloseMining => {
+            msg!("RewardsInstruction: CloseAccount");
+            CloseMiningContext::new(program_id, accounts)?.process()
+        }
+        RewardsInstruction::ChangeDelegate { staked_amount } => {
+            msg!("RewardsInstruction: ChangeDelegate");
+            ChangeDelegateContext::new(program_id, accounts)?.process(program_id, staked_amount)
         }
     }
 }

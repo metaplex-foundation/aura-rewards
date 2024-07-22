@@ -1,9 +1,8 @@
 //! Program entrypoint
-use crate::error::MplxRewardsError;
-use crate::processor::process_instruction;
-use solana_program::program_error::PrintProgramError;
+use crate::{error::MplxRewardsError, processor::process_instruction};
 use solana_program::{
-    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult,
+    program_error::PrintProgramError, pubkey::Pubkey,
 };
 
 entrypoint!(program_entrypoint);
