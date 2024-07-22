@@ -72,15 +72,6 @@ pub fn assert_rent_exempt(account_info: &AccountInfo) -> ProgramResult {
     }
 }
 
-/// Assert a non-zero amount
-pub fn assert_non_zero_amount(amount: u64) -> ProgramResult {
-    if amount == 0 {
-        return Err(MplxRewardsError::ZeroAmount.into());
-    }
-
-    Ok(())
-}
-
 pub fn assert_pubkey_eq(given: &Pubkey, expected: &Pubkey) -> ProgramResult {
     if given == expected {
         Ok(())

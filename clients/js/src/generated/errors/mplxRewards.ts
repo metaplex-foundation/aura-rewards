@@ -41,109 +41,37 @@ export class MathOverflowError extends ProgramError {
 codeToErrorMap.set(0x1, MathOverflowError);
 nameToErrorMap.set('MathOverflow', MathOverflowError);
 
-/** ZeroAmount: Zero amount */
-export class ZeroAmountError extends ProgramError {
-  override readonly name: string = 'ZeroAmount';
-
-  readonly code: number = 0x2; // 2
-
-  constructor(program: Program, cause?: Error) {
-    super('Zero amount', program, cause);
-  }
-}
-codeToErrorMap.set(0x2, ZeroAmountError);
-nameToErrorMap.set('ZeroAmount', ZeroAmountError);
-
-/** RewardsInvalidVault: Rewards: Invalid vault */
-export class RewardsInvalidVaultError extends ProgramError {
-  override readonly name: string = 'RewardsInvalidVault';
-
-  readonly code: number = 0x3; // 3
-
-  constructor(program: Program, cause?: Error) {
-    super('Rewards: Invalid vault', program, cause);
-  }
-}
-codeToErrorMap.set(0x3, RewardsInvalidVaultError);
-nameToErrorMap.set('RewardsInvalidVault', RewardsInvalidVaultError);
-
 /** RewardsNoDeposits: Rewards: No deposits */
 export class RewardsNoDepositsError extends ProgramError {
   override readonly name: string = 'RewardsNoDeposits';
 
-  readonly code: number = 0x4; // 4
+  readonly code: number = 0x2; // 2
 
   constructor(program: Program, cause?: Error) {
     super('Rewards: No deposits', program, cause);
   }
 }
-codeToErrorMap.set(0x4, RewardsNoDepositsError);
+codeToErrorMap.set(0x2, RewardsNoDepositsError);
 nameToErrorMap.set('RewardsNoDeposits', RewardsNoDepositsError);
-
-/** RebalanceLiquidityCheckFailed: Rebalancing: liquidity check failed */
-export class RebalanceLiquidityCheckFailedError extends ProgramError {
-  override readonly name: string = 'RebalanceLiquidityCheckFailed';
-
-  readonly code: number = 0x5; // 5
-
-  constructor(program: Program, cause?: Error) {
-    super('Rebalancing: liquidity check failed', program, cause);
-  }
-}
-codeToErrorMap.set(0x5, RebalanceLiquidityCheckFailedError);
-nameToErrorMap.set(
-  'RebalanceLiquidityCheckFailed',
-  RebalanceLiquidityCheckFailedError
-);
-
-/** IndexMustExist: Rewards: index receiving failed */
-export class IndexMustExistError extends ProgramError {
-  override readonly name: string = 'IndexMustExist';
-
-  readonly code: number = 0x6; // 6
-
-  constructor(program: Program, cause?: Error) {
-    super('Rewards: index receiving failed', program, cause);
-  }
-}
-codeToErrorMap.set(0x6, IndexMustExistError);
-nameToErrorMap.set('IndexMustExist', IndexMustExistError);
 
 /** InvalidLockupPeriod: Rewards: lockup period invalid */
 export class InvalidLockupPeriodError extends ProgramError {
   override readonly name: string = 'InvalidLockupPeriod';
 
-  readonly code: number = 0x7; // 7
+  readonly code: number = 0x3; // 3
 
   constructor(program: Program, cause?: Error) {
     super('Rewards: lockup period invalid', program, cause);
   }
 }
-codeToErrorMap.set(0x7, InvalidLockupPeriodError);
+codeToErrorMap.set(0x3, InvalidLockupPeriodError);
 nameToErrorMap.set('InvalidLockupPeriod', InvalidLockupPeriodError);
-
-/** InvalidCpiCaller: Rewards: only Staking contract is allowed to do CPI calls */
-export class InvalidCpiCallerError extends ProgramError {
-  override readonly name: string = 'InvalidCpiCaller';
-
-  readonly code: number = 0x8; // 8
-
-  constructor(program: Program, cause?: Error) {
-    super(
-      'Rewards: only Staking contract is allowed to do CPI calls',
-      program,
-      cause
-    );
-  }
-}
-codeToErrorMap.set(0x8, InvalidCpiCallerError);
-nameToErrorMap.set('InvalidCpiCaller', InvalidCpiCallerError);
 
 /** DistributionInThePast: Rewards: distribution_ends_at date is lower than current date  */
 export class DistributionInThePastError extends ProgramError {
   override readonly name: string = 'DistributionInThePast';
 
-  readonly code: number = 0x9; // 9
+  readonly code: number = 0x4; // 4
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -153,14 +81,14 @@ export class DistributionInThePastError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0x9, DistributionInThePastError);
+codeToErrorMap.set(0x4, DistributionInThePastError);
 nameToErrorMap.set('DistributionInThePast', DistributionInThePastError);
 
 /** InvalidPrimitiveTypesConversion: Rewards: distribution_ends_at date is lower than current date  */
 export class InvalidPrimitiveTypesConversionError extends ProgramError {
   override readonly name: string = 'InvalidPrimitiveTypesConversion';
 
-  readonly code: number = 0xa; // 10
+  readonly code: number = 0x5; // 5
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -170,7 +98,7 @@ export class InvalidPrimitiveTypesConversionError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0xa, InvalidPrimitiveTypesConversionError);
+codeToErrorMap.set(0x5, InvalidPrimitiveTypesConversionError);
 nameToErrorMap.set(
   'InvalidPrimitiveTypesConversion',
   InvalidPrimitiveTypesConversionError

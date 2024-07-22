@@ -236,30 +236,6 @@ impl AccountLoader {
         Err(ProgramError::MissingRequiredSignature)
     }
 
-    /// Checks if account is initialized and then checks it's owner
-    pub fn next_optional<'a, 'b, I: Iterator<Item = &'a AccountInfo<'b>>>(
-        iter: &mut Enumerate<I>,
-        owner: &Pubkey,
-    ) -> Result<I::Item, ProgramError> {
-        let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
-        if acc.owner.eq(&Pubkey::default()) {
-            return Ok(acc);
-        }
-
-        if acc.owner.eq(owner) {
-            return Ok(acc);
-        }
-
-        msg!(
-            "Account #{}:{} owner error. Got {} Expected unitialized or {}",
-            idx,
-            acc.key,
-            acc.owner,
-            owner
-        );
-        Err(MplxRewardsError::InvalidAccountOwner.into())
-    }
-
     /// Load the account without any checks
     pub fn next_unchecked<'a, 'b, I: Iterator<Item = &'a AccountInfo<'b>>>(
         iter: &mut Enumerate<I>,
