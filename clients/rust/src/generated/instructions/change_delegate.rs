@@ -5,39 +5,39 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::LockupPeriod;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_program::pubkey::Pubkey;
 
 /// Accounts.
-pub struct ExtendStake {
+pub struct ChangeDelegate {
     /// The address of the reward pool
     pub reward_pool: solana_program::pubkey::Pubkey,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
     pub mining: solana_program::pubkey::Pubkey,
-    /// The address of the reward mint
-    pub reward_mint: solana_program::pubkey::Pubkey,
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     pub deposit_authority: solana_program::pubkey::Pubkey,
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
-    pub delegate_mining: solana_program::pubkey::Pubkey,
+    /// The end user the mining accounts belongs to
+    pub mining_owner: solana_program::pubkey::Pubkey,
+    /// The address of the old delegate mining account
+    pub old_delegate_mining: solana_program::pubkey::Pubkey,
+    /// The address of the new delegate mining account
+    pub new_delegate_mining: solana_program::pubkey::Pubkey,
 }
 
-impl ExtendStake {
+impl ChangeDelegate {
     pub fn instruction(
         &self,
-        args: ExtendStakeInstructionArgs,
+        args: ChangeDelegateInstructionArgs,
     ) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: ExtendStakeInstructionArgs,
+        args: ChangeDelegateInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.reward_pool,
             false,
@@ -47,19 +47,23 @@ impl ExtendStake {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.reward_mint,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.deposit_authority,
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.delegate_mining,
+            self.mining_owner,
+            true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.old_delegate_mining,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.new_delegate_mining,
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = ExtendStakeInstructionData::new().try_to_vec().unwrap();
+        let mut data = ChangeDelegateInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
         data.append(&mut args);
 
@@ -72,53 +76,45 @@ impl ExtendStake {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct ExtendStakeInstructionData {
+pub struct ChangeDelegateInstructionData {
     discriminator: u8,
 }
 
-impl ExtendStakeInstructionData {
+impl ChangeDelegateInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 6 }
+        Self { discriminator: 9 }
     }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ExtendStakeInstructionArgs {
-    pub old_lockup_period: LockupPeriod,
-    pub new_lockup_period: LockupPeriod,
-    pub deposit_start_ts: u64,
-    pub base_amount: u64,
-    pub additional_amount: u64,
-    pub mining_owner: Pubkey,
+pub struct ChangeDelegateInstructionArgs {
+    pub staked_amount: u64,
 }
 
-/// Instruction builder for `ExtendStake`.
+/// Instruction builder for `ChangeDelegate`.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable]` reward_pool
 ///   1. `[writable]` mining
-///   2. `[]` reward_mint
-///   3. `[signer]` deposit_authority
-///   4. `[]` delegate_mining
+///   2. `[signer]` deposit_authority
+///   3. `[signer]` mining_owner
+///   4. `[writable]` old_delegate_mining
+///   5. `[writable]` new_delegate_mining
 #[derive(Default)]
-pub struct ExtendStakeBuilder {
+pub struct ChangeDelegateBuilder {
     reward_pool: Option<solana_program::pubkey::Pubkey>,
     mining: Option<solana_program::pubkey::Pubkey>,
-    reward_mint: Option<solana_program::pubkey::Pubkey>,
     deposit_authority: Option<solana_program::pubkey::Pubkey>,
-    delegate_mining: Option<solana_program::pubkey::Pubkey>,
-    old_lockup_period: Option<LockupPeriod>,
-    new_lockup_period: Option<LockupPeriod>,
-    deposit_start_ts: Option<u64>,
-    base_amount: Option<u64>,
-    additional_amount: Option<u64>,
-    mining_owner: Option<Pubkey>,
+    mining_owner: Option<solana_program::pubkey::Pubkey>,
+    old_delegate_mining: Option<solana_program::pubkey::Pubkey>,
+    new_delegate_mining: Option<solana_program::pubkey::Pubkey>,
+    staked_amount: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl ExtendStakeBuilder {
+impl ChangeDelegateBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -134,12 +130,6 @@ impl ExtendStakeBuilder {
         self.mining = Some(mining);
         self
     }
-    /// The address of the reward mint
-    #[inline(always)]
-    pub fn reward_mint(&mut self, reward_mint: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.reward_mint = Some(reward_mint);
-        self
-    }
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     #[inline(always)]
     pub fn deposit_authority(
@@ -149,43 +139,33 @@ impl ExtendStakeBuilder {
         self.deposit_authority = Some(deposit_authority);
         self
     }
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
+    /// The end user the mining accounts belongs to
     #[inline(always)]
-    pub fn delegate_mining(
-        &mut self,
-        delegate_mining: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.delegate_mining = Some(delegate_mining);
-        self
-    }
-    #[inline(always)]
-    pub fn old_lockup_period(&mut self, old_lockup_period: LockupPeriod) -> &mut Self {
-        self.old_lockup_period = Some(old_lockup_period);
-        self
-    }
-    #[inline(always)]
-    pub fn new_lockup_period(&mut self, new_lockup_period: LockupPeriod) -> &mut Self {
-        self.new_lockup_period = Some(new_lockup_period);
-        self
-    }
-    #[inline(always)]
-    pub fn deposit_start_ts(&mut self, deposit_start_ts: u64) -> &mut Self {
-        self.deposit_start_ts = Some(deposit_start_ts);
-        self
-    }
-    #[inline(always)]
-    pub fn base_amount(&mut self, base_amount: u64) -> &mut Self {
-        self.base_amount = Some(base_amount);
-        self
-    }
-    #[inline(always)]
-    pub fn additional_amount(&mut self, additional_amount: u64) -> &mut Self {
-        self.additional_amount = Some(additional_amount);
-        self
-    }
-    #[inline(always)]
-    pub fn mining_owner(&mut self, mining_owner: Pubkey) -> &mut Self {
+    pub fn mining_owner(&mut self, mining_owner: solana_program::pubkey::Pubkey) -> &mut Self {
         self.mining_owner = Some(mining_owner);
+        self
+    }
+    /// The address of the old delegate mining account
+    #[inline(always)]
+    pub fn old_delegate_mining(
+        &mut self,
+        old_delegate_mining: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.old_delegate_mining = Some(old_delegate_mining);
+        self
+    }
+    /// The address of the new delegate mining account
+    #[inline(always)]
+    pub fn new_delegate_mining(
+        &mut self,
+        new_delegate_mining: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.new_delegate_mining = Some(new_delegate_mining);
+        self
+    }
+    #[inline(always)]
+    pub fn staked_amount(&mut self, staked_amount: u64) -> &mut Self {
+        self.staked_amount = Some(staked_amount);
         self
     }
     /// Add an aditional account to the instruction.
@@ -208,85 +188,81 @@ impl ExtendStakeBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = ExtendStake {
+        let accounts = ChangeDelegate {
             reward_pool: self.reward_pool.expect("reward_pool is not set"),
             mining: self.mining.expect("mining is not set"),
-            reward_mint: self.reward_mint.expect("reward_mint is not set"),
             deposit_authority: self
                 .deposit_authority
                 .expect("deposit_authority is not set"),
-            delegate_mining: self.delegate_mining.expect("delegate_mining is not set"),
+            mining_owner: self.mining_owner.expect("mining_owner is not set"),
+            old_delegate_mining: self
+                .old_delegate_mining
+                .expect("old_delegate_mining is not set"),
+            new_delegate_mining: self
+                .new_delegate_mining
+                .expect("new_delegate_mining is not set"),
         };
-        let args = ExtendStakeInstructionArgs {
-            old_lockup_period: self
-                .old_lockup_period
+        let args = ChangeDelegateInstructionArgs {
+            staked_amount: self
+                .staked_amount
                 .clone()
-                .expect("old_lockup_period is not set"),
-            new_lockup_period: self
-                .new_lockup_period
-                .clone()
-                .expect("new_lockup_period is not set"),
-            deposit_start_ts: self
-                .deposit_start_ts
-                .clone()
-                .expect("deposit_start_ts is not set"),
-            base_amount: self.base_amount.clone().expect("base_amount is not set"),
-            additional_amount: self
-                .additional_amount
-                .clone()
-                .expect("additional_amount is not set"),
-            mining_owner: self.mining_owner.clone().expect("mining_owner is not set"),
+                .expect("staked_amount is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
     }
 }
 
-/// `extend_stake` CPI accounts.
-pub struct ExtendStakeCpiAccounts<'a, 'b> {
+/// `change_delegate` CPI accounts.
+pub struct ChangeDelegateCpiAccounts<'a, 'b> {
     /// The address of the reward pool
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the reward mint
-    pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
-    pub delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The end user the mining accounts belongs to
+    pub mining_owner: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The address of the old delegate mining account
+    pub old_delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The address of the new delegate mining account
+    pub new_delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `extend_stake` CPI instruction.
-pub struct ExtendStakeCpi<'a, 'b> {
+/// `change_delegate` CPI instruction.
+pub struct ChangeDelegateCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the reward pool
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the reward mint
-    pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
-    pub delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The end user the mining accounts belongs to
+    pub mining_owner: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The address of the old delegate mining account
+    pub old_delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The address of the new delegate mining account
+    pub new_delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: ExtendStakeInstructionArgs,
+    pub __args: ChangeDelegateInstructionArgs,
 }
 
-impl<'a, 'b> ExtendStakeCpi<'a, 'b> {
+impl<'a, 'b> ChangeDelegateCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: ExtendStakeCpiAccounts<'a, 'b>,
-        args: ExtendStakeInstructionArgs,
+        accounts: ChangeDelegateCpiAccounts<'a, 'b>,
+        args: ChangeDelegateInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
             reward_pool: accounts.reward_pool,
             mining: accounts.mining,
-            reward_mint: accounts.reward_mint,
             deposit_authority: accounts.deposit_authority,
-            delegate_mining: accounts.delegate_mining,
+            mining_owner: accounts.mining_owner,
+            old_delegate_mining: accounts.old_delegate_mining,
+            new_delegate_mining: accounts.new_delegate_mining,
             __args: args,
         }
     }
@@ -323,7 +299,7 @@ impl<'a, 'b> ExtendStakeCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.reward_pool.key,
             false,
@@ -333,15 +309,19 @@ impl<'a, 'b> ExtendStakeCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.reward_mint.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.deposit_authority.key,
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.delegate_mining.key,
+            *self.mining_owner.key,
+            true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.old_delegate_mining.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.new_delegate_mining.key,
             false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
@@ -351,7 +331,7 @@ impl<'a, 'b> ExtendStakeCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = ExtendStakeInstructionData::new().try_to_vec().unwrap();
+        let mut data = ChangeDelegateInstructionData::new().try_to_vec().unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
         data.append(&mut args);
 
@@ -360,13 +340,14 @@ impl<'a, 'b> ExtendStakeCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.reward_pool.clone());
         account_infos.push(self.mining.clone());
-        account_infos.push(self.reward_mint.clone());
         account_infos.push(self.deposit_authority.clone());
-        account_infos.push(self.delegate_mining.clone());
+        account_infos.push(self.mining_owner.clone());
+        account_infos.push(self.old_delegate_mining.clone());
+        account_infos.push(self.new_delegate_mining.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -379,34 +360,31 @@ impl<'a, 'b> ExtendStakeCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `ExtendStake` via CPI.
+/// Instruction builder for `ChangeDelegate` via CPI.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable]` reward_pool
 ///   1. `[writable]` mining
-///   2. `[]` reward_mint
-///   3. `[signer]` deposit_authority
-///   4. `[]` delegate_mining
-pub struct ExtendStakeCpiBuilder<'a, 'b> {
-    instruction: Box<ExtendStakeCpiBuilderInstruction<'a, 'b>>,
+///   2. `[signer]` deposit_authority
+///   3. `[signer]` mining_owner
+///   4. `[writable]` old_delegate_mining
+///   5. `[writable]` new_delegate_mining
+pub struct ChangeDelegateCpiBuilder<'a, 'b> {
+    instruction: Box<ChangeDelegateCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
+impl<'a, 'b> ChangeDelegateCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(ExtendStakeCpiBuilderInstruction {
+        let instruction = Box::new(ChangeDelegateCpiBuilderInstruction {
             __program: program,
             reward_pool: None,
             mining: None,
-            reward_mint: None,
             deposit_authority: None,
-            delegate_mining: None,
-            old_lockup_period: None,
-            new_lockup_period: None,
-            deposit_start_ts: None,
-            base_amount: None,
-            additional_amount: None,
             mining_owner: None,
+            old_delegate_mining: None,
+            new_delegate_mining: None,
+            staked_amount: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -429,15 +407,6 @@ impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
         self.instruction.mining = Some(mining);
         self
     }
-    /// The address of the reward mint
-    #[inline(always)]
-    pub fn reward_mint(
-        &mut self,
-        reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.reward_mint = Some(reward_mint);
-        self
-    }
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     #[inline(always)]
     pub fn deposit_authority(
@@ -447,43 +416,36 @@ impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
         self.instruction.deposit_authority = Some(deposit_authority);
         self
     }
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
+    /// The end user the mining accounts belongs to
     #[inline(always)]
-    pub fn delegate_mining(
+    pub fn mining_owner(
         &mut self,
-        delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
+        mining_owner: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.delegate_mining = Some(delegate_mining);
-        self
-    }
-    #[inline(always)]
-    pub fn old_lockup_period(&mut self, old_lockup_period: LockupPeriod) -> &mut Self {
-        self.instruction.old_lockup_period = Some(old_lockup_period);
-        self
-    }
-    #[inline(always)]
-    pub fn new_lockup_period(&mut self, new_lockup_period: LockupPeriod) -> &mut Self {
-        self.instruction.new_lockup_period = Some(new_lockup_period);
-        self
-    }
-    #[inline(always)]
-    pub fn deposit_start_ts(&mut self, deposit_start_ts: u64) -> &mut Self {
-        self.instruction.deposit_start_ts = Some(deposit_start_ts);
-        self
-    }
-    #[inline(always)]
-    pub fn base_amount(&mut self, base_amount: u64) -> &mut Self {
-        self.instruction.base_amount = Some(base_amount);
-        self
-    }
-    #[inline(always)]
-    pub fn additional_amount(&mut self, additional_amount: u64) -> &mut Self {
-        self.instruction.additional_amount = Some(additional_amount);
-        self
-    }
-    #[inline(always)]
-    pub fn mining_owner(&mut self, mining_owner: Pubkey) -> &mut Self {
         self.instruction.mining_owner = Some(mining_owner);
+        self
+    }
+    /// The address of the old delegate mining account
+    #[inline(always)]
+    pub fn old_delegate_mining(
+        &mut self,
+        old_delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.old_delegate_mining = Some(old_delegate_mining);
+        self
+    }
+    /// The address of the new delegate mining account
+    #[inline(always)]
+    pub fn new_delegate_mining(
+        &mut self,
+        new_delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.new_delegate_mining = Some(new_delegate_mining);
+        self
+    }
+    #[inline(always)]
+    pub fn staked_amount(&mut self, staked_amount: u64) -> &mut Self {
+        self.instruction.staked_amount = Some(staked_amount);
         self
     }
     /// Add an additional account to the instruction.
@@ -527,39 +489,14 @@ impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = ExtendStakeInstructionArgs {
-            old_lockup_period: self
+        let args = ChangeDelegateInstructionArgs {
+            staked_amount: self
                 .instruction
-                .old_lockup_period
+                .staked_amount
                 .clone()
-                .expect("old_lockup_period is not set"),
-            new_lockup_period: self
-                .instruction
-                .new_lockup_period
-                .clone()
-                .expect("new_lockup_period is not set"),
-            deposit_start_ts: self
-                .instruction
-                .deposit_start_ts
-                .clone()
-                .expect("deposit_start_ts is not set"),
-            base_amount: self
-                .instruction
-                .base_amount
-                .clone()
-                .expect("base_amount is not set"),
-            additional_amount: self
-                .instruction
-                .additional_amount
-                .clone()
-                .expect("additional_amount is not set"),
-            mining_owner: self
-                .instruction
-                .mining_owner
-                .clone()
-                .expect("mining_owner is not set"),
+                .expect("staked_amount is not set"),
         };
-        let instruction = ExtendStakeCpi {
+        let instruction = ChangeDelegateCpi {
             __program: self.instruction.__program,
 
             reward_pool: self
@@ -569,20 +506,25 @@ impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
 
             mining: self.instruction.mining.expect("mining is not set"),
 
-            reward_mint: self
-                .instruction
-                .reward_mint
-                .expect("reward_mint is not set"),
-
             deposit_authority: self
                 .instruction
                 .deposit_authority
                 .expect("deposit_authority is not set"),
 
-            delegate_mining: self
+            mining_owner: self
                 .instruction
-                .delegate_mining
-                .expect("delegate_mining is not set"),
+                .mining_owner
+                .expect("mining_owner is not set"),
+
+            old_delegate_mining: self
+                .instruction
+                .old_delegate_mining
+                .expect("old_delegate_mining is not set"),
+
+            new_delegate_mining: self
+                .instruction
+                .new_delegate_mining
+                .expect("new_delegate_mining is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -592,19 +534,15 @@ impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
     }
 }
 
-struct ExtendStakeCpiBuilderInstruction<'a, 'b> {
+struct ChangeDelegateCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     reward_pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    reward_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     deposit_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    delegate_mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    old_lockup_period: Option<LockupPeriod>,
-    new_lockup_period: Option<LockupPeriod>,
-    deposit_start_ts: Option<u64>,
-    base_amount: Option<u64>,
-    additional_amount: Option<u64>,
-    mining_owner: Option<Pubkey>,
+    mining_owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    old_delegate_mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    new_delegate_mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    staked_amount: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

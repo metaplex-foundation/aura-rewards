@@ -23,14 +23,29 @@ pub enum MplxRewardsError {
     #[error("Rewards: lockup period invalid")]
     InvalidLockupPeriod,
     /// 4 (0x4) - Rewards: distribution_ends_at date is lower than current date
-    #[error("Rewards: distribution_ends_at date is lower than current date ")]
+    #[error("Rewards: distribution_ends_at date is lower than current date")]
     DistributionInThePast,
     /// 5 (0x5) - Rewards: distribution_ends_at date is lower than current date
-    #[error("Rewards: distribution_ends_at date is lower than current date ")]
+    #[error("Rewards: distribution_ends_at date is lower than current date")]
     InvalidPrimitiveTypesConversion,
-    /// 11 (0xB) - Rewards: unclaimed rewards must be claimed
+    /// 6 (0x6) - Rewards: unclaimed rewards must be claimed
     #[error("Rewards: unclaimed rewards must be claimed")]
     RewardsMustBeClaimed,
+    /// 7 (0x7) - Rewards: rewards amount must be positive
+    #[error("Rewards: rewards amount must be positive")]
+    RewardsMustBeGreaterThanZero,
+    /// 8 (0x8) - Rewards: Delegate must have at least 15_000_000 of own weighted stake
+    #[error("Rewards: Delegate must have at least 15_000_000 of own weighted stake")]
+    InsufficientWeightedStake,
+    /// 9 (0x9) - Rewards: Stake from others must be zero
+    #[error("Rewards: Stake from others must be zero")]
+    StakeFromOthersMustBeZero,
+    /// 10 (0xA) - No changes at the date in weighted stake modifiers while they're expected
+    #[error("No changes at the date in weighted stake modifiers while they're expected")]
+    NoWeightedStakeModifiersAtADate,
+    /// 11 (0xB) - Passed delegates are the same
+    #[error("Passed delegates are the same")]
+    DelegatesAreTheSame,
 }
 
 impl solana_program::program_error::PrintProgramError for MplxRewardsError {

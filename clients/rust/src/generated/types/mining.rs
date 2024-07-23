@@ -28,9 +28,5 @@ pub struct Mining {
     )]
     pub owner: Pubkey,
     pub index: RewardIndex,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub delegate: Pubkey,
+    pub stake_from_others: u64,
 }

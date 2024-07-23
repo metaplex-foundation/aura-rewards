@@ -17,7 +17,6 @@ import {
 import {
   Serializer,
   mapSerializer,
-  publicKey as publicKeySerializer,
   struct,
   u64,
   u8,
@@ -27,78 +26,63 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
-import {
-  LockupPeriod,
-  LockupPeriodArgs,
-  getLockupPeriodSerializer,
-} from '../types';
 
 // Accounts.
-export type ExtendStakeInstructionAccounts = {
+export type ChangeDelegateInstructionAccounts = {
   /** The address of the reward pool */
   rewardPool: PublicKey | Pda;
   /** The address of the mining account which belongs to the user and stores info about user's rewards */
   mining: PublicKey | Pda;
-  /** The address of the reward mint */
-  rewardMint: PublicKey | Pda;
   /** The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs */
   depositAuthority: Signer;
-  /** The address of Mining Account that might be used as a delegate in delegated staking model */
-  delegateMining: PublicKey | Pda;
+  /** The end user the mining accounts belongs to */
+  miningOwner: Signer;
+  /** The address of the old delegate mining account */
+  oldDelegateMining: PublicKey | Pda;
+  /** The address of the new delegate mining account */
+  newDelegateMining: PublicKey | Pda;
 };
 
 // Data.
-export type ExtendStakeInstructionData = {
+export type ChangeDelegateInstructionData = {
   discriminator: number;
-  oldLockupPeriod: LockupPeriod;
-  newLockupPeriod: LockupPeriod;
-  depositStartTs: bigint;
-  baseAmount: bigint;
-  additionalAmount: bigint;
-  miningOwner: PublicKey;
+  stakedAmount: bigint;
 };
 
-export type ExtendStakeInstructionDataArgs = {
-  oldLockupPeriod: LockupPeriodArgs;
-  newLockupPeriod: LockupPeriodArgs;
-  depositStartTs: number | bigint;
-  baseAmount: number | bigint;
-  additionalAmount: number | bigint;
-  miningOwner: PublicKey;
+export type ChangeDelegateInstructionDataArgs = {
+  stakedAmount: number | bigint;
 };
 
-export function getExtendStakeInstructionDataSerializer(): Serializer<
-  ExtendStakeInstructionDataArgs,
-  ExtendStakeInstructionData
+export function getChangeDelegateInstructionDataSerializer(): Serializer<
+  ChangeDelegateInstructionDataArgs,
+  ChangeDelegateInstructionData
 > {
   return mapSerializer<
-    ExtendStakeInstructionDataArgs,
+    ChangeDelegateInstructionDataArgs,
     any,
-    ExtendStakeInstructionData
+    ChangeDelegateInstructionData
   >(
-    struct<ExtendStakeInstructionData>(
+    struct<ChangeDelegateInstructionData>(
       [
         ['discriminator', u8()],
-        ['oldLockupPeriod', getLockupPeriodSerializer()],
-        ['newLockupPeriod', getLockupPeriodSerializer()],
-        ['depositStartTs', u64()],
-        ['baseAmount', u64()],
-        ['additionalAmount', u64()],
-        ['miningOwner', publicKeySerializer()],
+        ['stakedAmount', u64()],
       ],
-      { description: 'ExtendStakeInstructionData' }
+      { description: 'ChangeDelegateInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 6 })
-  ) as Serializer<ExtendStakeInstructionDataArgs, ExtendStakeInstructionData>;
+    (value) => ({ ...value, discriminator: 9 })
+  ) as Serializer<
+    ChangeDelegateInstructionDataArgs,
+    ChangeDelegateInstructionData
+  >;
 }
 
 // Args.
-export type ExtendStakeInstructionArgs = ExtendStakeInstructionDataArgs;
+export type ChangeDelegateInstructionArgs = ChangeDelegateInstructionDataArgs;
 
 // Instruction.
-export function extendStake(
+export function changeDelegate(
   context: Pick<Context, 'programs'>,
-  input: ExtendStakeInstructionAccounts & ExtendStakeInstructionArgs
+  input: ChangeDelegateInstructionAccounts & ChangeDelegateInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -118,25 +102,30 @@ export function extendStake(
       isWritable: true as boolean,
       value: input.mining ?? null,
     },
-    rewardMint: {
-      index: 2,
-      isWritable: false as boolean,
-      value: input.rewardMint ?? null,
-    },
     depositAuthority: {
-      index: 3,
+      index: 2,
       isWritable: false as boolean,
       value: input.depositAuthority ?? null,
     },
-    delegateMining: {
-      index: 4,
+    miningOwner: {
+      index: 3,
       isWritable: false as boolean,
-      value: input.delegateMining ?? null,
+      value: input.miningOwner ?? null,
+    },
+    oldDelegateMining: {
+      index: 4,
+      isWritable: true as boolean,
+      value: input.oldDelegateMining ?? null,
+    },
+    newDelegateMining: {
+      index: 5,
+      isWritable: true as boolean,
+      value: input.newDelegateMining ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: ExtendStakeInstructionArgs = { ...input };
+  const resolvedArgs: ChangeDelegateInstructionArgs = { ...input };
 
   // Accounts in order.
   const orderedAccounts: ResolvedAccount[] = Object.values(
@@ -151,8 +140,8 @@ export function extendStake(
   );
 
   // Data.
-  const data = getExtendStakeInstructionDataSerializer().serialize(
-    resolvedArgs as ExtendStakeInstructionDataArgs
+  const data = getChangeDelegateInstructionDataSerializer().serialize(
+    resolvedArgs as ChangeDelegateInstructionDataArgs
   );
 
   // Bytes Created On Chain.

@@ -15,8 +15,9 @@ use num_derive::FromPrimitive;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LockupPeriod {
     None,
+    Test,
+    Flex,
     ThreeMonths,
     SixMonths,
     OneYear,
-    Flex,
 }

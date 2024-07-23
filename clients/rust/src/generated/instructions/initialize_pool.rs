@@ -19,6 +19,8 @@ pub struct InitializePool {
     pub vault: solana_program::pubkey::Pubkey,
 
     pub payer: solana_program::pubkey::Pubkey,
+    /// Account responsible for charging mining owners
+    pub deposit_authority: solana_program::pubkey::Pubkey,
     /// The address of the Rent program
     pub rent: solana_program::pubkey::Pubkey,
     /// The address of the Token program where rewards are minted
@@ -40,7 +42,7 @@ impl InitializePool {
         args: InitializePoolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.reward_pool,
             false,
@@ -54,6 +56,10 @@ impl InitializePool {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.payer, true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.deposit_authority,
+            true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.rent, false,
@@ -93,7 +99,6 @@ impl InitializePoolInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InitializePoolInstructionArgs {
-    pub deposit_authority: Pubkey,
     pub fill_authority: Pubkey,
     pub distribute_authority: Pubkey,
 }
@@ -106,19 +111,20 @@ pub struct InitializePoolInstructionArgs {
 ///   1. `[]` reward_mint
 ///   2. `[writable]` vault
 ///   3. `[writable, signer]` payer
-///   4. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   5. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   6. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   4. `[signer]` deposit_authority
+///   5. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
+///   6. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   7. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct InitializePoolBuilder {
     reward_pool: Option<solana_program::pubkey::Pubkey>,
     reward_mint: Option<solana_program::pubkey::Pubkey>,
     vault: Option<solana_program::pubkey::Pubkey>,
     payer: Option<solana_program::pubkey::Pubkey>,
+    deposit_authority: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    deposit_authority: Option<Pubkey>,
     fill_authority: Option<Pubkey>,
     distribute_authority: Option<Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -151,6 +157,15 @@ impl InitializePoolBuilder {
         self.payer = Some(payer);
         self
     }
+    /// Account responsible for charging mining owners
+    #[inline(always)]
+    pub fn deposit_authority(
+        &mut self,
+        deposit_authority: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.deposit_authority = Some(deposit_authority);
+        self
+    }
     /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
     /// The address of the Rent program
     #[inline(always)]
@@ -170,11 +185,6 @@ impl InitializePoolBuilder {
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn deposit_authority(&mut self, deposit_authority: Pubkey) -> &mut Self {
-        self.deposit_authority = Some(deposit_authority);
         self
     }
     #[inline(always)]
@@ -212,6 +222,9 @@ impl InitializePoolBuilder {
             reward_mint: self.reward_mint.expect("reward_mint is not set"),
             vault: self.vault.expect("vault is not set"),
             payer: self.payer.expect("payer is not set"),
+            deposit_authority: self
+                .deposit_authority
+                .expect("deposit_authority is not set"),
             rent: self.rent.unwrap_or(solana_program::pubkey!(
                 "SysvarRent111111111111111111111111111111111"
             )),
@@ -223,10 +236,6 @@ impl InitializePoolBuilder {
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
         let args = InitializePoolInstructionArgs {
-            deposit_authority: self
-                .deposit_authority
-                .clone()
-                .expect("deposit_authority is not set"),
             fill_authority: self
                 .fill_authority
                 .clone()
@@ -251,6 +260,8 @@ pub struct InitializePoolCpiAccounts<'a, 'b> {
     pub vault: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Account responsible for charging mining owners
+    pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the Rent program
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the Token program where rewards are minted
@@ -271,6 +282,8 @@ pub struct InitializePoolCpi<'a, 'b> {
     pub vault: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Account responsible for charging mining owners
+    pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the Rent program
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the Token program where rewards are minted
@@ -293,6 +306,7 @@ impl<'a, 'b> InitializePoolCpi<'a, 'b> {
             reward_mint: accounts.reward_mint,
             vault: accounts.vault,
             payer: accounts.payer,
+            deposit_authority: accounts.deposit_authority,
             rent: accounts.rent,
             token_program: accounts.token_program,
             system_program: accounts.system_program,
@@ -332,7 +346,7 @@ impl<'a, 'b> InitializePoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.reward_pool.key,
             false,
@@ -347,6 +361,10 @@ impl<'a, 'b> InitializePoolCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.payer.key,
+            true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.deposit_authority.key,
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -377,12 +395,13 @@ impl<'a, 'b> InitializePoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(7 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(8 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.reward_pool.clone());
         account_infos.push(self.reward_mint.clone());
         account_infos.push(self.vault.clone());
         account_infos.push(self.payer.clone());
+        account_infos.push(self.deposit_authority.clone());
         account_infos.push(self.rent.clone());
         account_infos.push(self.token_program.clone());
         account_infos.push(self.system_program.clone());
@@ -406,9 +425,10 @@ impl<'a, 'b> InitializePoolCpi<'a, 'b> {
 ///   1. `[]` reward_mint
 ///   2. `[writable]` vault
 ///   3. `[writable, signer]` payer
-///   4. `[]` rent
-///   5. `[]` token_program
-///   6. `[]` system_program
+///   4. `[signer]` deposit_authority
+///   5. `[]` rent
+///   6. `[]` token_program
+///   7. `[]` system_program
 pub struct InitializePoolCpiBuilder<'a, 'b> {
     instruction: Box<InitializePoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -421,10 +441,10 @@ impl<'a, 'b> InitializePoolCpiBuilder<'a, 'b> {
             reward_mint: None,
             vault: None,
             payer: None,
+            deposit_authority: None,
             rent: None,
             token_program: None,
             system_program: None,
-            deposit_authority: None,
             fill_authority: None,
             distribute_authority: None,
             __remaining_accounts: Vec::new(),
@@ -460,6 +480,15 @@ impl<'a, 'b> InitializePoolCpiBuilder<'a, 'b> {
         self.instruction.payer = Some(payer);
         self
     }
+    /// Account responsible for charging mining owners
+    #[inline(always)]
+    pub fn deposit_authority(
+        &mut self,
+        deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.deposit_authority = Some(deposit_authority);
+        self
+    }
     /// The address of the Rent program
     #[inline(always)]
     pub fn rent(&mut self, rent: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
@@ -482,11 +511,6 @@ impl<'a, 'b> InitializePoolCpiBuilder<'a, 'b> {
         system_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn deposit_authority(&mut self, deposit_authority: Pubkey) -> &mut Self {
-        self.instruction.deposit_authority = Some(deposit_authority);
         self
     }
     #[inline(always)]
@@ -541,11 +565,6 @@ impl<'a, 'b> InitializePoolCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = InitializePoolInstructionArgs {
-            deposit_authority: self
-                .instruction
-                .deposit_authority
-                .clone()
-                .expect("deposit_authority is not set"),
             fill_authority: self
                 .instruction
                 .fill_authority
@@ -574,6 +593,11 @@ impl<'a, 'b> InitializePoolCpiBuilder<'a, 'b> {
 
             payer: self.instruction.payer.expect("payer is not set"),
 
+            deposit_authority: self
+                .instruction
+                .deposit_authority
+                .expect("deposit_authority is not set"),
+
             rent: self.instruction.rent.expect("rent is not set"),
 
             token_program: self
@@ -600,10 +624,10 @@ struct InitializePoolCpiBuilderInstruction<'a, 'b> {
     reward_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    deposit_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    deposit_authority: Option<Pubkey>,
     fill_authority: Option<Pubkey>,
     distribute_authority: Option<Pubkey>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

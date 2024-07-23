@@ -30,7 +30,7 @@ export type Mining = {
   share: bigint;
   owner: PublicKey;
   index: RewardIndex;
-  delegate: PublicKey;
+  stakeFromOthers: bigint;
 };
 
 export type MiningArgs = {
@@ -40,7 +40,7 @@ export type MiningArgs = {
   share: number | bigint;
   owner: PublicKey;
   index: RewardIndexArgs;
-  delegate: PublicKey;
+  stakeFromOthers: number | bigint;
 };
 
 export function getMiningSerializer(): Serializer<MiningArgs, Mining> {
@@ -52,7 +52,7 @@ export function getMiningSerializer(): Serializer<MiningArgs, Mining> {
       ['share', u64()],
       ['owner', publicKeySerializer()],
       ['index', getRewardIndexSerializer()],
-      ['delegate', publicKeySerializer()],
+      ['stakeFromOthers', u64()],
     ],
     { description: 'Mining' }
   ) as Serializer<MiningArgs, Mining>;

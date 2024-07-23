@@ -36,6 +36,8 @@ export type WithdrawMiningInstructionAccounts = {
   mining: PublicKey | Pda;
   /** The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs */
   depositAuthority: Signer;
+  /** The address of Mining Account that might be used as a delegate in delegated staking model */
+  delegateMining: PublicKey | Pda;
 };
 
 // Data.
@@ -104,6 +106,11 @@ export function withdrawMining(
       index: 2,
       isWritable: false as boolean,
       value: input.depositAuthority ?? null,
+    },
+    delegateMining: {
+      index: 3,
+      isWritable: false as boolean,
+      value: input.delegateMining ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 

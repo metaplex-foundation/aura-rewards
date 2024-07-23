@@ -35,6 +35,14 @@
           "isSigner": true
         },
         {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Account responsible for charging mining owners"
+          ]
+        },
+        {
           "name": "rent",
           "isMut": false,
           "isSigner": false,
@@ -60,10 +68,6 @@
         }
       ],
       "args": [
-        {
-          "name": "depositAuthority",
-          "type": "publicKey"
-        },
         {
           "name": "fillAuthority",
           "type": "publicKey"
@@ -223,6 +227,14 @@
           "docs": [
             "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
           ]
+        },
+        {
+          "name": "delegateMining",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of Mining Account that might be used as a delegate in delegated staking model"
+          ]
         }
       ],
       "args": [
@@ -271,6 +283,14 @@
           "isSigner": true,
           "docs": [
             "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        },
+        {
+          "name": "delegateMining",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of Mining Account that might be used as a delegate in delegated staking model"
           ]
         }
       ],
@@ -397,6 +417,14 @@
           "docs": [
             "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
           ]
+        },
+        {
+          "name": "delegateMining",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of Mining Account that might be used as a delegate in delegated staking model"
+          ]
         }
       ],
       "args": [
@@ -506,6 +534,69 @@
         "type": "u8",
         "value": 8
       }
+    },
+    {
+      "name": "ChangeDelegate",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "mining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the mining account which belongs to the user and stores info about user's rewards"
+          ]
+        },
+        {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        },
+        {
+          "name": "miningOwner",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The end user the mining accounts belongs to"
+          ]
+        },
+        {
+          "name": "oldDelegateMining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the old delegate mining account"
+          ]
+        },
+        {
+          "name": "newDelegateMining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the new delegate mining account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "stakedAmount",
+          "type": "u64"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 9
+      }
     }
   ],
   "types": [
@@ -543,8 +634,8 @@
             }
           },
           {
-            "name": "delegate",
-            "type": "publicKey"
+            "name": "stakeFromOthers",
+            "type": "u64"
           }
         ]
       }
@@ -690,6 +781,12 @@
             "name": "None"
           },
           {
+            "name": "Test"
+          },
+          {
+            "name": "Flex"
+          },
+          {
             "name": "ThreeMonths"
           },
           {
@@ -697,9 +794,6 @@
           },
           {
             "name": "OneYear"
-          },
-          {
-            "name": "Flex"
           }
         ]
       }
@@ -729,17 +823,42 @@
     {
       "code": 4,
       "name": "DistributionInThePast",
-      "msg": "Rewards: distribution_ends_at date is lower than current date "
+      "msg": "Rewards: distribution_ends_at date is lower than current date"
     },
     {
       "code": 5,
       "name": "InvalidPrimitiveTypesConversion",
-      "msg": "Rewards: distribution_ends_at date is lower than current date "
+      "msg": "Rewards: distribution_ends_at date is lower than current date"
+    },
+    {
+      "code": 6,
+      "name": "RewardsMustBeClaimed",
+      "msg": "Rewards: unclaimed rewards must be claimed"
+    },
+    {
+      "code": 7,
+      "name": "RewardsMustBeGreaterThanZero",
+      "msg": "Rewards: rewards amount must be positive"
+    },
+    {
+      "code": 8,
+      "name": "InsufficientWeightedStake",
+      "msg": "Rewards: Delegate must have at least 15_000_000 of own weighted stake"
+    },
+    {
+      "code": 9,
+      "name": "StakeFromOthersMustBeZero",
+      "msg": "Rewards: Stake from others must be zero"
+    },
+    {
+      "code": 10,
+      "name": "NoWeightedStakeModifiersAtADate",
+      "msg": "No changes at the date in weighted stake modifiers while they're expected"
     },
     {
       "code": 11,
-      "name": "RewardsMustBeClaimed",
-      "msg": "Rewards: unclaimed rewards must be claimed"
+      "name": "DelegatesAreTheSame",
+      "msg": "Passed delegates are the same"
     }
   ],
   "metadata": {

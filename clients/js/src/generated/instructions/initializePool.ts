@@ -37,6 +37,8 @@ export type InitializePoolInstructionAccounts = {
   /** The address of the reward vault */
   vault: PublicKey | Pda;
   payer?: Signer;
+  /** Account responsible for charging mining owners */
+  depositAuthority: Signer;
   /** The address of the Rent program */
   rent?: PublicKey | Pda;
   /** The address of the Token program where rewards are minted */
@@ -48,13 +50,11 @@ export type InitializePoolInstructionAccounts = {
 // Data.
 export type InitializePoolInstructionData = {
   discriminator: number;
-  depositAuthority: PublicKey;
   fillAuthority: PublicKey;
   distributeAuthority: PublicKey;
 };
 
 export type InitializePoolInstructionDataArgs = {
-  depositAuthority: PublicKey;
   fillAuthority: PublicKey;
   distributeAuthority: PublicKey;
 };
@@ -71,7 +71,6 @@ export function getInitializePoolInstructionDataSerializer(): Serializer<
     struct<InitializePoolInstructionData>(
       [
         ['discriminator', u8()],
-        ['depositAuthority', publicKeySerializer()],
         ['fillAuthority', publicKeySerializer()],
         ['distributeAuthority', publicKeySerializer()],
       ],
@@ -120,14 +119,19 @@ export function initializePool(
       isWritable: true as boolean,
       value: input.payer ?? null,
     },
-    rent: { index: 4, isWritable: false as boolean, value: input.rent ?? null },
+    depositAuthority: {
+      index: 4,
+      isWritable: false as boolean,
+      value: input.depositAuthority ?? null,
+    },
+    rent: { index: 5, isWritable: false as boolean, value: input.rent ?? null },
     tokenProgram: {
-      index: 5,
+      index: 6,
       isWritable: false as boolean,
       value: input.tokenProgram ?? null,
     },
     systemProgram: {
-      index: 6,
+      index: 7,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },

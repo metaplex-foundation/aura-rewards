@@ -5,6 +5,7 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+pub(crate) mod r#change_delegate;
 pub(crate) mod r#claim;
 pub(crate) mod r#close_mining;
 pub(crate) mod r#deposit_mining;
@@ -15,6 +16,7 @@ pub(crate) mod r#initialize_mining;
 pub(crate) mod r#initialize_pool;
 pub(crate) mod r#withdraw_mining;
 
+pub use self::r#change_delegate::*;
 pub use self::r#claim::*;
 pub use self::r#close_mining::*;
 pub use self::r#deposit_mining::*;
