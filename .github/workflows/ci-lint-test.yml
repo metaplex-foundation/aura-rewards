@@ -9,7 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   SOLANA_VERSION: "1.18.9"
-  RUST_TOOLCHAIN: "1.78.0"
+  RUST_STABLE_VERSION: "1.78.0"
 
 defaults:
   run:
@@ -23,15 +23,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust nightly
+      - name: Install stable Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: ${{ env.RUST_TOOLCHAIN }}
-          components: rustfmt, clippy
+          toolchain: ${{ env.RUST_STABLE_VERSION }}
+          components: clippy
           cache: true
 
+      - name: Install nightly Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt
+          cache: true
+
+      - name: Set default Rust toolchain
+        run: |
+          rustup show 
+          rustup override set ${{ env.RUST_STABLE_VERSION }}
+
       - name: Run fmt
-        run: cargo fmt -- --check
+        run: cargo +nightly fmt -- --check
 
       - name: Run clippy
         run: cargo clippy --all-targets --all-features --workspace --exclude rewards -- -D warnings
@@ -46,17 +58,17 @@ jobs:
       - name: Install Linux dependencies
         run: sudo apt-get update && sudo apt-get install -y pkg-config build-essential libudev-dev
 
-      - name: Install Rust nightly
+      - name: Install stable Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          toolchain: ${{ env.RUST_STABLE_VERSION }}
           cache: true
 
       - name: Cache Solana binaries
         uses: actions/cache@v2
         with:
           path: ~/.cache/solana
-          key: ${{ runner.os }}-${{ env.RUST_TOOLCHAIN }}
+          key: ${{ runner.os }}-${{ env.RUST_STABLE_VERSION }}
 
       - name: Install Solana
         run: |
@@ -69,7 +81,7 @@ jobs:
 
       - name: Switch toolchain
         run: |
-          rustup override set ${{ env.RUST_TOOLCHAIN }}
+          rustup override set ${{ env.RUST_STABLE_VERSION }}
           solana-install init ${{ env.SOLANA_VERSION }}
 
       - name: Run tests
