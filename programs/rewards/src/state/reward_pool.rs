@@ -75,13 +75,13 @@ impl RewardPool {
         self.total_share = self
             .calculator
             .consume_old_modifiers(beginning_of_the_day, self.total_share)?;
-        if self
-            .calculator
-            .cumulative_index
-            .contains_key(&beginning_of_the_day)
-        {
-            return Ok(());
-        }
+        // if self
+        //     .calculator
+        //     .cumulative_index
+        //     .contains_key(&beginning_of_the_day)
+        // {
+        //     return Ok(());
+        // }
 
         RewardCalculator::update_index(
             &mut self.calculator.cumulative_index,

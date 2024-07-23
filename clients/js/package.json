@@ -1,6 +1,6 @@
 {
-  "name": "@metaplex-foundation/mpl-project-name",
-  "version": "0.1.0",
+  "name": "@void_devourers/mpl-rewards-client",
+  "version": "0.1.10",
   "description": "My project description",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -22,7 +22,10 @@
     "registry": "https://registry.npmjs.org"
   },
   "homepage": "https://metaplex.com",
-  "repository": "https://github.com/metaplex-foundation/mpl-project-name.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/metaplex-foundation/mpl-project-name.git"
+  },
   "author": "Metaplex Maintainers <contact@metaplex.com>",
   "license": "Apache-2.0",
   "dependencies": {
@@ -62,5 +65,11 @@
       }
     }
   },
-  "packageManager": "pnpm@8.2.0"
+  "packageManager": "pnpm@8.2.0",
+  "directories": {
+    "test": "test"
+  },
+  "bugs": {
+    "url": "https://github.com/metaplex-foundation/mpl-project-name/issues"
+  }
 }
