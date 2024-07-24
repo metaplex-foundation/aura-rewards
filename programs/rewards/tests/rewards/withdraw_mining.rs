@@ -1,12 +1,12 @@
 use crate::utils::*;
 use mplx_rewards::{
-    state::{Mining, RewardPool},
+    state::{RewardPool, WrappedMining},
     utils::LockupPeriod,
 };
 use solana_program::{program_pack::Pack, pubkey::Pubkey};
 use solana_program_test::*;
 use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
     let test = ProgramTest::new(
@@ -55,9 +55,10 @@ async fn success() {
 
     assert_eq!(reward_pool.total_share, 170);
 
-    let mining_account = get_account(&mut context, &mining).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining.share, 170);
+    let mut mining_account = get_account(&mut context, &mining).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
+    assert_eq!(mining.mining.share, 170);
 }
 
 #[tokio::test]
@@ -89,7 +90,8 @@ async fn success_with_5kkk_after_expiring() {
 
     assert_eq!(reward_pool.total_share, 0);
 
-    let mining_account = get_account(&mut context, &mining).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining.share, 0);
+    let mut mining_account = get_account(&mut context, &mining).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let wrapped_mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
+    assert_eq!(wrapped_mining.mining.share, 0);
 }

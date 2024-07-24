@@ -1,12 +1,13 @@
 use crate::utils::*;
 use mplx_rewards::{
-    state::{Mining, RewardPool},
+    state::{RewardPool, WrappedMining},
     utils::LockupPeriod,
 };
+use sokoban::NodeAllocatorMap;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
 use solana_sdk::{clock::SECONDS_PER_DAY, program_pack::Pack, signature::Keypair, signer::Signer};
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
     let test = ProgramTest::new(
@@ -350,10 +351,12 @@ async fn prolong_with_delegate() {
         )
         .await
         .unwrap();
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
-    assert_eq!(d_mining.share, 18_000_000);
-    assert_eq!(d_mining.stake_from_others, 0);
+
+    let mut delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining_data = &mut delegate_mining_account.data.borrow_mut();
+    let d_wrapped_mining = WrappedMining::from_bytes_mut(d_mining_data).unwrap();
+    assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
+    assert_eq!(d_wrapped_mining.mining.stake_from_others, 0);
 
     let deposit_start_ts = context
         .banks_client
@@ -377,15 +380,17 @@ async fn prolong_with_delegate() {
         )
         .await
         .unwrap();
-    let mining_account = get_account(&mut context, &mining).await;
-    let mining_unpacked = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining_unpacked.share, 200);
-    assert_eq!(mining_unpacked.stake_from_others, 0);
+    let mut mining_account = get_account(&mut context, &mining).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let wrapped_mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
+    assert_eq!(wrapped_mining.mining.share, 200);
+    assert_eq!(wrapped_mining.mining.stake_from_others, 0);
 
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
-    assert_eq!(d_mining.share, 18_000_000);
-    assert_eq!(d_mining.stake_from_others, 100);
+    let mut delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining_data = &mut delegate_mining_account.data.borrow_mut();
+    let d_wrapped_mining = WrappedMining::from_bytes_mut(d_mining_data).unwrap();
+    assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
+    assert_eq!(d_wrapped_mining.mining.stake_from_others, 100);
 
     let reward_pool_acc = get_account(&mut context, &test_rewards.reward_pool).await;
     let reward_pool_unpacked = RewardPool::unpack(reward_pool_acc.data.borrow()).unwrap();
@@ -431,22 +436,23 @@ pub async fn check_weighted_stake(
     mining_account: Pubkey,
     expected_share: u64,
 ) {
-    let mining_account = get_account(context, &mining_account).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining.share, expected_share);
+    let mut mining_account = get_account(context, &mining_account).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let wrapped_mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
+    assert_eq!(wrapped_mining.mining.share, expected_share);
 }
 
 pub async fn check_modifier_at_a_day(
-    context: &mut ProgramTestContext,
+    mut context: &mut ProgramTestContext,
     mining_account: Pubkey,
     expected_modifier: u64,
     day_to_check: u64,
 ) {
-    let mining_account = get_account(context, &mining_account).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
+    let mut mining_account = get_account(&mut context, &mining_account).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let wrapped_mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
 
-    let expiration_modifier_for_day = mining
-        .index
+    let expiration_modifier_for_day = wrapped_mining
         .weighted_stake_diffs
         .get(&day_to_check)
         .unwrap_or_else(|| panic!("Modifier for date: {:?} must exist", day_to_check));

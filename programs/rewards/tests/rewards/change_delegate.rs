@@ -1,9 +1,9 @@
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
 
 use crate::utils::*;
 use assert_custom_on_chain_error::AssertCustomOnChainErr;
 use mplx_rewards::{
-    state::{Mining, RewardPool},
+    state::{RewardPool, WrappedMining},
     utils::LockupPeriod,
 };
 use solana_program::{program_pack::Pack, pubkey::Pubkey};
@@ -96,10 +96,11 @@ async fn change_delegate_then_claim() {
         )
         .await
         .unwrap();
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
-    assert_eq!(d_mining.share, 18_000_000);
-    assert_eq!(d_mining.stake_from_others, 0);
+    let mut delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining_data = &mut delegate_mining_account.data.borrow_mut();
+    let d_wrapped_mining = WrappedMining::from_bytes_mut(d_mining_data).unwrap();
+    assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
+    assert_eq!(d_wrapped_mining.mining.stake_from_others, 0);
 
     let (user_a, user_rewards_a, user_mining_a) =
         create_end_user(&mut context, &test_rewards).await;
@@ -126,19 +127,21 @@ async fn change_delegate_then_claim() {
         .await
         .unwrap();
 
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
-    assert_eq!(d_mining.share, 18_000_000);
-    assert_eq!(d_mining.stake_from_others, 1_000_000);
+    let mut delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining_data = &mut delegate_mining_account.data.borrow_mut();
+    let d_wrapped_mining = WrappedMining::from_bytes_mut(d_mining_data).unwrap();
+    assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
+    assert_eq!(d_wrapped_mining.mining.stake_from_others, 1_000_000);
 
     let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
     let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
 
     assert_eq!(reward_pool.total_share, 25_000_000);
 
-    let mining_account = get_account(&mut context, &user_mining_a).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining.share, 6_000_000);
+    let mut mining_account = get_account(&mut context, &user_mining_a).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let wrapped_mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
+    assert_eq!(wrapped_mining.mining.share, 6_000_000);
 
     // fill vault with tokens
     let distribution_ends_at = context
