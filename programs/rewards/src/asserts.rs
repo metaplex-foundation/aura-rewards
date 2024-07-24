@@ -1,10 +1,10 @@
 //! Asserts for account verifications
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey, rent::Rent, sysvar::Sysvar,
+    pubkey::Pubkey, rent::Rent, sysvar::Sysvar,
 };
 
-use crate::{error::MplxRewardsError, state::Mining};
+use crate::error::MplxRewardsError;
 
 /// Assert signer.
 pub fn assert_signer(account: &AccountInfo) -> ProgramResult {
@@ -82,18 +82,5 @@ pub fn assert_pubkey_eq(given: &Pubkey, expected: &Pubkey) -> ProgramResult {
             *expected
         );
         Err(ProgramError::InvalidArgument)
-    }
-}
-
-pub fn get_delegate_mining(
-    delegate_mining: &AccountInfo,
-    mining: &AccountInfo,
-) -> Result<Option<Mining>, ProgramError> {
-    if mining.key != delegate_mining.key {
-        let delegate_mining = Mining::unpack(&delegate_mining.data.borrow())?;
-        Ok(Some(delegate_mining))
-    } else {
-        // None means delegate_mining is the same as mining
-        Ok(None)
     }
 }

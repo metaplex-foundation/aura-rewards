@@ -1,11 +1,13 @@
 use crate::{
     asserts::{assert_account_key, assert_uninitialized},
-    state::Mining,
-    utils::{create_account, find_mining_program_address, AccountLoader},
+    state::{Mining, WrappedMining, TREE_MAX_SIZE},
+    utils::{find_mining_program_address, AccountLoader},
 };
+use sokoban::AVLTree;
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey, system_program,
+    account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed,
+    program_error::ProgramError, pubkey::Pubkey, rent::Rent, system_instruction, system_program,
+    sysvar::Sysvar,
 };
 
 /// Instruction context
@@ -54,15 +56,27 @@ impl<'a, 'b> InitializeMiningContext<'a, 'b> {
             &[bump],
         ];
 
-        create_account::<Mining>(
+        // TODO: refactor account creation
+        let mining_acc_size = Mining::LEN + std::mem::size_of::<AVLTree<u64, u64, TREE_MAX_SIZE>>();
+        let rent = Rent::get()?;
+        let ix = system_instruction::create_account(
+            &self.payer.key,
+            &self.mining.key,
+            rent.minimum_balance(mining_acc_size),
+            (mining_acc_size) as u64,
             program_id,
-            self.payer.clone(),
-            self.mining.clone(),
+        );
+        invoke_signed(
+            &ix,
+            &[self.payer.clone(), self.mining.clone()],
             &[signers_seeds],
         )?;
 
-        let mining = Mining::initialize(*self.reward_pool.key, bump, *mining_owner);
-        Mining::pack(mining, *self.mining.data.borrow_mut())?;
+        let mining_data = &mut self.mining.data.borrow_mut();
+        let wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
+        let mining = &mut Mining::initialize(*self.reward_pool.key, bump, *mining_owner);
+        *wrapped_mining.mining = *mining;
+        wrapped_mining.weighted_stake_diffs.initialize();
 
         Ok(())
     }

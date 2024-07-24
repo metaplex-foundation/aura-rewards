@@ -7,10 +7,12 @@ edition = "2021"
 solana-program = "^1.18"
 spl-token = { version = "4", features = ["no-entrypoint"] }
 borsh = { version = "1.5", features = ["derive"] }
+bytemuck = "1.7"
 num-derive = "0.4"
 num-traits = "0.2"
-thiserror = "1.0"
-shank = "0.4.2"
+thiserror = "1"
+shank = "0.4"
+lib-sokoban = "0.3"
 
 [dev-dependencies]
 solana-program-test = "^1.18"

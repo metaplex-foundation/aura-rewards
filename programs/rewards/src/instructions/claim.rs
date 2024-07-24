@@ -1,6 +1,6 @@
 use crate::{
     asserts::assert_account_key,
-    state::{Mining, RewardPool},
+    state::{RewardPool, WrappedMining},
     utils::{spl_transfer, AccountLoader},
 };
 use borsh::BorshSerialize;
@@ -53,7 +53,9 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
     /// Process instruction
     pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
         let reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-        let mut mining = Mining::unpack(&self.mining.data.borrow())?;
+
+        let mining_data = &mut self.mining.data.borrow_mut();
+        let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
 
         assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
 
@@ -77,8 +79,8 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
         ];
 
         {
-            assert_account_key(self.mining_owner, &mining.owner)?;
-            assert_account_key(self.reward_pool, &mining.reward_pool)?;
+            assert_account_key(self.mining_owner, &wrapped_mining.mining.owner)?;
+            assert_account_key(self.reward_pool, &wrapped_mining.mining.reward_pool)?;
             assert_account_key(
                 self.reward_pool,
                 &Pubkey::create_program_address(reward_pool_seeds, program_id)?,
@@ -95,9 +97,9 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
             )?;
         }
-        mining.refresh_rewards(&reward_pool.calculator)?;
-        let amount = mining.index.unclaimed_rewards;
-        mining.claim();
+        wrapped_mining.refresh_rewards(&reward_pool.calculator)?;
+        let amount = wrapped_mining.mining.unclaimed_rewards;
+        wrapped_mining.mining.claim();
 
         if amount > 0 {
             spl_transfer(
@@ -109,7 +111,6 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
             )?;
         }
 
-        Mining::pack(mining, *self.mining.data.borrow_mut())?;
         let mut amount_writer = vec![];
         amount.serialize(&mut amount_writer)?;
         set_return_data(&amount_writer);

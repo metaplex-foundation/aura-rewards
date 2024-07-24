@@ -2,11 +2,13 @@ use std::collections::{btree_map::Entry, BTreeMap};
 
 use crate::{
     error::MplxRewardsError,
-    state::{AccountType, Mining},
+    state::AccountType,
     utils::{get_curr_unix_ts, LockupPeriod, SafeArithmeticOperations},
 };
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use sokoban::{AVLTree, NodeAllocatorMap};
 use solana_program::{
+    account_info::AccountInfo,
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
     msg,
@@ -15,6 +17,8 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
+
+use super::{WrappedMining, TREE_MAX_SIZE};
 
 /// Precision for index calculation
 pub const PRECISION: u128 = 10_000_000_000_000_000;
@@ -102,10 +106,10 @@ impl RewardPool {
     /// Process deposit
     pub fn deposit(
         &mut self,
-        mining: &mut Mining,
+        mining: &mut WrappedMining,
         amount: u64,
         lockup_period: LockupPeriod,
-        delegate_mining: Option<&mut Mining>,
+        delegate_mining: Option<&AccountInfo>,
     ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
@@ -118,7 +122,7 @@ impl RewardPool {
             weighted_stake.safe_sub(amount.safe_mul(LockupPeriod::Flex.multiplier())?)?;
 
         self.total_share = self.total_share.safe_add(weighted_stake)?;
-        mining.share = mining.share.safe_add(weighted_stake)?;
+        mining.mining.share = mining.mining.share.safe_add(weighted_stake)?;
 
         let modifier = self
             .calculator
@@ -127,17 +131,22 @@ impl RewardPool {
             .or_default();
         *modifier = modifier.safe_add(weighted_stake_diff)?;
 
-        let modifier = mining
-            .index
-            .weighted_stake_diffs
-            .entry(lockup_period.end_timestamp(get_curr_unix_ts())?)
-            .or_default();
+        let date_to_insert = &lockup_period.end_timestamp(get_curr_unix_ts())?;
+        if mining.weighted_stake_diffs.get(date_to_insert).is_some() {
+            let modifier = mining.weighted_stake_diffs.get_mut(date_to_insert).unwrap();
+            *modifier = modifier.safe_add(weighted_stake_diff)?;
+        } else {
+            mining
+                .weighted_stake_diffs
+                .insert(*date_to_insert, weighted_stake_diff);
+        }
 
-        *modifier = (*modifier).safe_add(weighted_stake_diff)?;
+        if let Some(delegate_mining_acc) = delegate_mining {
+            let delegate_mining_data = &mut delegate_mining_acc.data.borrow_mut();
+            let mut delegate_mining = WrappedMining::from_bytes_mut(delegate_mining_data)?;
 
-        if let Some(delegate_mining) = delegate_mining {
-            delegate_mining.stake_from_others =
-                delegate_mining.stake_from_others.safe_add(amount)?;
+            delegate_mining.mining.stake_from_others =
+                delegate_mining.mining.stake_from_others.safe_add(amount)?;
 
             self.total_share = self.total_share.safe_add(amount)?;
             delegate_mining.refresh_rewards(&self.calculator)?;
@@ -149,14 +158,14 @@ impl RewardPool {
     /// Process withdraw
     pub fn withdraw(
         &mut self,
-        mining: &mut Mining,
+        mining: &mut WrappedMining,
         amount: u64,
-        delegate_mining: Option<&mut Mining>,
+        delegate_mining: Option<&AccountInfo>,
     ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
         self.total_share = self.total_share.safe_sub(amount)?;
-        mining.share = mining.share.safe_sub(amount)?;
+        mining.mining.share = mining.mining.share.safe_sub(amount)?;
 
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
@@ -165,9 +174,12 @@ impl RewardPool {
             .consume_old_modifiers(beginning_of_the_day, self.total_share)?;
         self.total_share = reward_pool_share;
 
-        if let Some(delegate_mining) = delegate_mining {
-            delegate_mining.stake_from_others =
-                delegate_mining.stake_from_others.safe_sub(amount)?;
+        if let Some(delegate_mining_acc) = delegate_mining {
+            let delegate_mining_data = &mut delegate_mining_acc.data.borrow_mut();
+            let mut delegate_mining = WrappedMining::from_bytes_mut(delegate_mining_data)?;
+
+            delegate_mining.mining.stake_from_others =
+                delegate_mining.mining.stake_from_others.safe_sub(amount)?;
 
             self.total_share = self.total_share.safe_sub(amount)?;
             delegate_mining.refresh_rewards(&self.calculator)?;
@@ -180,13 +192,13 @@ impl RewardPool {
     #[allow(clippy::too_many_arguments)]
     pub fn extend(
         &mut self,
-        mining: &mut Mining,
+        mining: &mut WrappedMining,
         old_lockup_period: LockupPeriod,
         new_lockup_period: LockupPeriod,
         deposit_start_ts: u64,
         base_amount: u64,
         additional_amount: u64,
-        delegate_mining: Option<&mut Mining>,
+        delegate_mining: Option<&AccountInfo>,
     ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
@@ -219,19 +231,20 @@ impl RewardPool {
                 weighted_stake_diff,
             )?;
 
-            Self::modify_weighted_stake_diffs(
-                &mut mining.index.weighted_stake_diffs,
+            Self::modify_weighted_stake_diffs_avl(
+                mining.weighted_stake_diffs,
                 deposit_old_expiration_ts,
                 weighted_stake_diff,
             )?;
 
             // also, we need to reduce staking power because we want to extend stake from "scratch"
-            mining.share = mining.share.safe_sub(curr_part_of_weighted_stake)?;
+            mining.mining.share = mining.mining.share.safe_sub(curr_part_of_weighted_stake)?;
 
             self.total_share = self.total_share.safe_sub(curr_part_of_weighted_stake)?;
         } else {
             // otherwise, we want to substract flex multiplier, becase deposit has expired already
-            mining.share = mining
+            mining.mining.share = mining
+                .mining
                 .share
                 .safe_sub(curr_part_of_weighted_stake_for_flex)?;
 
@@ -244,12 +257,18 @@ impl RewardPool {
         let amount_to_restake = base_amount.safe_add(additional_amount)?;
 
         let delegate_mining = match delegate_mining {
-            Some(dm) => {
-                dm.stake_from_others = dm.stake_from_others.safe_sub(base_amount)?;
-                self.total_share = self.total_share.safe_sub(base_amount)?;
-                dm.refresh_rewards(&self.calculator)?;
+            Some(delegate_mining_acc) => {
+                let delegate_mining_data = &mut delegate_mining_acc.data.borrow_mut();
+                let mut delegate_mining = WrappedMining::from_bytes_mut(delegate_mining_data)?;
 
-                Some(dm)
+                delegate_mining.mining.stake_from_others = delegate_mining
+                    .mining
+                    .stake_from_others
+                    .safe_sub(base_amount)?;
+                self.total_share = self.total_share.safe_sub(base_amount)?;
+                delegate_mining.refresh_rewards(&self.calculator)?;
+
+                Some(delegate_mining_acc)
             }
             None => None,
         };
@@ -262,6 +281,20 @@ impl RewardPool {
         )?;
 
         Ok(())
+    }
+
+    fn modify_weighted_stake_diffs_avl(
+        diffs: &mut AVLTree<u64, u64, TREE_MAX_SIZE>,
+        timestamp: u64,
+        weighted_stake_diff: u64,
+    ) -> Result<(), MplxRewardsError> {
+        match diffs.get_mut(&timestamp) {
+            None => Err(MplxRewardsError::NoWeightedStakeModifiersAtADate),
+            Some(modifier) => {
+                *modifier = modifier.safe_sub(weighted_stake_diff)?;
+                Ok(())
+            }
+        }
     }
 
     fn modify_weighted_stake_diffs(
@@ -283,23 +316,31 @@ impl RewardPool {
 
     pub fn change_delegate(
         &mut self,
-        mining: &mut Mining,
-        new_delegate_mining: Option<&mut Mining>,
-        old_delegate_mining: Option<&mut Mining>,
+        mining: &mut WrappedMining,
+        new_delegate_mining: Option<&AccountInfo>,
+        old_delegate_mining: Option<&AccountInfo>,
         staked_amount: u64,
     ) -> ProgramResult {
         mining.refresh_rewards(&self.calculator)?;
 
-        if let Some(old_delegate_mining) = old_delegate_mining {
-            old_delegate_mining.stake_from_others = old_delegate_mining
+        if let Some(old_delegate_info) = old_delegate_mining {
+            let old_delegate_mining_data = &mut old_delegate_info.data.borrow_mut();
+            let mut old_delegate_mining = WrappedMining::from_bytes_mut(old_delegate_mining_data)?;
+
+            old_delegate_mining.mining.stake_from_others = old_delegate_mining
+                .mining
                 .stake_from_others
                 .safe_sub(staked_amount)?;
             self.total_share = self.total_share.safe_sub(staked_amount)?;
             old_delegate_mining.refresh_rewards(&self.calculator)?;
         }
 
-        if let Some(new_delegate_mining) = new_delegate_mining {
-            new_delegate_mining.stake_from_others = new_delegate_mining
+        if let Some(new_delegate_info) = new_delegate_mining {
+            let new_delegate_mining_data = &mut new_delegate_info.data.borrow_mut();
+            let mut new_delegate_mining = WrappedMining::from_bytes_mut(new_delegate_mining_data)?;
+
+            new_delegate_mining.mining.stake_from_others = new_delegate_mining
+                .mining
                 .stake_from_others
                 .safe_add(staked_amount)?;
             self.total_share = self.total_share.safe_add(staked_amount)?;

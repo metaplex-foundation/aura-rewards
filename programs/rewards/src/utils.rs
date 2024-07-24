@@ -1,11 +1,7 @@
 //! Arbitrary auxilliary functions
 use std::iter::Enumerate;
 
-use crate::{
-    asserts::assert_account_key,
-    error::MplxRewardsError,
-    state::{Mining, RewardPool},
-};
+use crate::error::MplxRewardsError;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::AccountInfo,
@@ -121,41 +117,16 @@ pub fn spl_transfer<'a>(
     invoke_signed(&ix, &[source, destination, authority], signers_seeds)
 }
 
-pub fn assert_and_deserialize_pool_and_mining<'a, 'b>(
-    program_id: &Pubkey,
-    mining_owner: &Pubkey,
-    this_reward_pool: &'a AccountInfo<'b>,
-    this_mining: &'a AccountInfo<'b>,
-    this_deposit_authority: &'a AccountInfo<'b>,
-) -> Result<(RewardPool, Mining), ProgramError> {
-    let reward_pool = RewardPool::unpack(&this_reward_pool.data.borrow())?;
-    let mining = Mining::unpack(&this_mining.data.borrow())?;
-
-    let mining_pubkey = Pubkey::create_program_address(
-        &[
-            b"mining".as_ref(),
-            mining_owner.as_ref(),
-            this_reward_pool.key.as_ref(),
-            &[mining.bump],
-        ],
-        program_id,
-    )?;
-
-    assert_account_key(this_mining, &mining_pubkey)?;
-    assert_account_key(this_deposit_authority, &reward_pool.deposit_authority)?;
-    assert_account_key(this_reward_pool, &mining.reward_pool)?;
-
-    if mining_owner != &mining.owner {
-        msg!(
-            "Assert account error. Got {} Expected {}",
-            *mining_owner,
-            mining.owner
-        );
-
-        return Err(ProgramError::InvalidArgument);
+pub fn get_delegate_mining<'a, 'b>(
+    delegate_mining: &'a AccountInfo<'b>,
+    mining: &'a AccountInfo<'b>,
+) -> Result<Option<&'a AccountInfo<'b>>, ProgramError> {
+    if mining.key != delegate_mining.key {
+        Ok(Some(delegate_mining))
+    } else {
+        // None means delegate_mining is the same as mining
+        Ok(None)
     }
-
-    Ok((reward_pool, mining))
 }
 
 /// Helper for parsing accounts with arbitrary input conditions

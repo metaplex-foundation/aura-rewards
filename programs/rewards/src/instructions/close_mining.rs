@@ -1,7 +1,7 @@
 use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
-    state::{Mining, RewardPool},
+    state::{RewardPool, WrappedMining},
     utils::{AccountLoader, SafeArithmeticOperations},
 };
 use solana_program::{
@@ -44,19 +44,22 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self) -> ProgramResult {
-        let reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-        assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
+        {
+            let reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
+            assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
 
-        let mut mining = Mining::unpack(&self.mining.data.borrow())?;
-        assert_account_key(self.mining_owner, &mining.owner)?;
+            let mining_data = &mut (*self.mining.data).borrow_mut();
+            let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
+            assert_account_key(self.mining_owner, &wrapped_mining.mining.owner)?;
 
-        mining.refresh_rewards(&reward_pool.calculator)?;
+            wrapped_mining.refresh_rewards(&reward_pool.calculator)?;
 
-        if mining.stake_from_others > 0 {
-            return Err(MplxRewardsError::StakeFromOthersMustBeZero.into());
-        }
-        if mining.index.unclaimed_rewards != 0 {
-            return Err(MplxRewardsError::RewardsMustBeClaimed.into());
+            if wrapped_mining.mining.stake_from_others > 0 {
+                return Err(MplxRewardsError::StakeFromOthersMustBeZero.into());
+            }
+            if wrapped_mining.mining.unclaimed_rewards != 0 {
+                return Err(MplxRewardsError::RewardsMustBeClaimed.into());
+            }
         }
 
         // Snippet from solana cookbook

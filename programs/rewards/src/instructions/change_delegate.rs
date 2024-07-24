@@ -1,11 +1,11 @@
 use crate::{
-    asserts::get_delegate_mining,
+    asserts::assert_account_key,
     error::MplxRewardsError,
-    state::{Mining, RewardPool},
-    utils::{assert_and_deserialize_pool_and_mining, AccountLoader},
+    state::{RewardPool, WrappedMining},
+    utils::{get_delegate_mining, AccountLoader},
 };
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
+    account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     program_pack::Pack, pubkey::Pubkey,
 };
 
@@ -51,42 +51,45 @@ impl<'a, 'b> ChangeDelegateContext<'a, 'b> {
             return Err(MplxRewardsError::DelegatesAreTheSame.into());
         }
 
-        let (mut reward_pool, mut mining) = assert_and_deserialize_pool_and_mining(
+        let mining_data = &mut self.mining.data.borrow_mut();
+        let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
+        let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
+
+        let mining_pubkey = Pubkey::create_program_address(
+            &[
+                b"mining".as_ref(),
+                self.mining_owner.key.as_ref(),
+                self.reward_pool.key.as_ref(),
+                &[wrapped_mining.mining.bump],
+            ],
             program_id,
-            self.mining_owner.key,
-            self.reward_pool,
-            self.mining,
-            self.deposit_authority,
         )?;
 
-        // if new_delegate_mining.is_none that means that new_delegate == self
-        let mut new_delegate_mining = get_delegate_mining(self.new_delegate_mining, self.mining)?;
-        // if old_delegate_mining.is_none that means that old_delegate == self
-        let mut old_delegate_mining = get_delegate_mining(self.old_delegate_mining, self.mining)?;
+        assert_account_key(self.mining, &mining_pubkey)?;
+        assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
+        assert_account_key(self.reward_pool, &wrapped_mining.mining.reward_pool)?;
+
+        if self.mining_owner.key != &wrapped_mining.mining.owner {
+            msg!(
+                "Assert account error. Got {} Expected {}",
+                *self.mining_owner.key,
+                wrapped_mining.mining.owner
+            );
+
+            return Err(ProgramError::InvalidArgument);
+        }
+
+        let new_delegate_mining = get_delegate_mining(self.new_delegate_mining, self.mining)?;
+        let old_delegate_mining = get_delegate_mining(self.old_delegate_mining, self.mining)?;
 
         reward_pool.change_delegate(
-            &mut mining,
-            new_delegate_mining.as_mut(),
-            old_delegate_mining.as_mut(),
+            &mut wrapped_mining,
+            new_delegate_mining,
+            old_delegate_mining,
             staked_amount,
         )?;
 
         RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
-        Mining::pack(mining, *self.mining.data.borrow_mut())?;
-
-        if let Some(new_delegate_mining) = new_delegate_mining {
-            Mining::pack(
-                new_delegate_mining,
-                *self.new_delegate_mining.data.borrow_mut(),
-            )?;
-        }
-
-        if let Some(old_delegate_mining) = old_delegate_mining {
-            Mining::pack(
-                old_delegate_mining,
-                *self.old_delegate_mining.data.borrow_mut(),
-            )?;
-        }
 
         Ok(())
     }

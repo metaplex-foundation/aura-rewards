@@ -70,6 +70,11 @@ pub enum MplxRewardsError {
     /// To change a delegate, the new delegate must differ from the current one
     #[error("Passed delegates are the same")]
     DelegatesAreTheSame,
+
+    /// 17
+    /// Getting pointer to the data of the zero-copy account has failed
+    #[error("Getting pointer to the data of the zero-copy account has failed")]
+    RetreivingZeroCopyAccountFailire,
 }
 
 impl PrintProgramError for MplxRewardsError {
