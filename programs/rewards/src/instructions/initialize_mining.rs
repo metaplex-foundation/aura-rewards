@@ -49,8 +49,8 @@ pub fn process_initialize_mining<'a>(
 
     let mining_data = &mut mining.data.borrow_mut();
     let wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
-    let mining = &mut Mining::initialize(*reward_pool.key, bump, *mining_owner);
-    *wrapped_mining.mining = *mining;
+    let mining = Mining::initialize(*reward_pool.key, bump, *mining_owner);
+    *wrapped_mining.mining = mining;
     wrapped_mining.weighted_stake_diffs.initialize();
 
     Ok(())

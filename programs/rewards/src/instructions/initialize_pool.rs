@@ -98,6 +98,8 @@ pub fn process_initialize_pool<'a>(
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
     *wrapped_reward_pool.pool = pool;
+    wrapped_reward_pool.weighted_stake_diffs.initialize();
+    wrapped_reward_pool.cumulative_index.initialize();
 
     Ok(())
 }
