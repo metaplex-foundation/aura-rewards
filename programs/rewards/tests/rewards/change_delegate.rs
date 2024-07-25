@@ -3,7 +3,7 @@ use std::borrow::{Borrow, BorrowMut};
 use crate::utils::*;
 use assert_custom_on_chain_error::AssertCustomOnChainErr;
 use mplx_rewards::{
-    state::{RewardPool, WrappedMining},
+    state::{WrappedMining, WrappedRewardPool},
     utils::LockupPeriod,
 };
 use solana_program::{program_pack::Pack, pubkey::Pubkey};
@@ -133,8 +133,10 @@ async fn change_delegate_then_claim() {
     assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
     assert_eq!(d_wrapped_mining.mining.stake_from_others, 1_000_000);
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
 
     assert_eq!(reward_pool.total_share, 25_000_000);
 

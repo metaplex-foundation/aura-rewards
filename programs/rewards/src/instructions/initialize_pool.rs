@@ -1,15 +1,17 @@
 use crate::{
     asserts::{assert_account_key, assert_uninitialized},
-    state::{RewardCalculator, RewardPool},
+    state::{CumulativeIndex, RewardPool, WeightedStakeDiffs, WrappedRewardPool},
     utils::{
         create_account, find_reward_pool_program_address, find_vault_program_address,
         initialize_account, AccountLoader,
     },
 };
+use solana_program::sysvar::Sysvar;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey, rent::Rent, system_program, sysvar::SysvarId,
+    pubkey::Pubkey, rent::Rent, system_program, sysvar::SysvarId,
 };
+use solana_program::{program::invoke_signed, system_instruction};
 use spl_token::state::Account as SplTokenAccount;
 
 /// Instruction context
@@ -80,10 +82,21 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             &[token_account_bump],
         ];
 
-        create_account::<RewardPool>(
+        // TODO: refactor account creation
+        let mining_acc_size = RewardPool::LEN
+            + std::mem::size_of::<WeightedStakeDiffs>()
+            + std::mem::size_of::<CumulativeIndex>();
+        let rent = Rent::get()?;
+        let ix = system_instruction::create_account(
+            &self.payer.key,
+            &self.reward_pool.key,
+            rent.minimum_balance(mining_acc_size),
+            (mining_acc_size) as u64,
             program_id,
-            self.payer.clone(),
-            self.reward_pool.clone(),
+        );
+        invoke_signed(
+            &ix,
+            &[self.payer.clone(), self.reward_pool.clone()],
             &[reward_pool_seeds],
         )?;
 
@@ -100,20 +113,19 @@ impl<'a, 'b> InitializePoolContext<'a, 'b> {
             self.rent.clone(),
         )?;
 
-        let reward_vault = RewardCalculator {
-            token_account_bump,
-            reward_mint: *self.reward_mint.key,
-            ..Default::default()
-        };
-
-        let reward_pool = RewardPool::initialize(
-            reward_vault,
+        let pool = RewardPool::initialize(
             pool_bump,
+            token_account_bump,
             *self.deposit_authority.key,
             distribute_authority,
             fill_authority,
+            *self.reward_mint.key,
         );
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
+
+        let reward_pool_data = &mut self.reward_pool.data.borrow_mut();
+        let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
+
+        *wrapped_reward_pool.pool = pool;
 
         Ok(())
     }

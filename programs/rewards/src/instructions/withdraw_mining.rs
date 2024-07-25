@@ -1,12 +1,12 @@
 use crate::{
     asserts::assert_account_key,
-    state::{RewardPool, WrappedMining},
+    state::{WrappedMining, WrappedRewardPool},
     utils::{get_delegate_mining, AccountLoader},
 };
 
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -47,7 +47,8 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
     ) -> ProgramResult {
         let mining_data = &mut self.mining.data.borrow_mut();
         let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
-        let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
+        let reward_pool_data = &mut self.reward_pool.data.borrow_mut();
+        let mut wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
         let mining_pubkey = Pubkey::create_program_address(
             &[
@@ -60,7 +61,10 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
         )?;
 
         assert_account_key(self.mining, &mining_pubkey)?;
-        assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
+        assert_account_key(
+            self.deposit_authority,
+            &wrapped_reward_pool.pool.deposit_authority,
+        )?;
         assert_account_key(self.reward_pool, &wrapped_mining.mining.reward_pool)?;
 
         if mining_owner != &wrapped_mining.mining.owner {
@@ -75,9 +79,7 @@ impl<'a, 'b> WithdrawMiningContext<'a, 'b> {
 
         let delegate_mining = get_delegate_mining(self.delegate_mining, self.mining)?;
 
-        reward_pool.withdraw(&mut wrapped_mining, amount, delegate_mining)?;
-
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
+        wrapped_reward_pool.withdraw(&mut wrapped_mining, amount, delegate_mining)?;
 
         Ok(())
     }

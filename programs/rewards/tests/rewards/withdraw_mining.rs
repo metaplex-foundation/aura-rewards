@@ -1,12 +1,12 @@
 use crate::utils::*;
 use mplx_rewards::{
-    state::{RewardPool, WrappedMining},
+    state::{WrappedMining, WrappedRewardPool},
     utils::LockupPeriod,
 };
-use solana_program::{program_pack::Pack, pubkey::Pubkey};
+use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
 use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::BorrowMut;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
     let test = ProgramTest::new(
@@ -50,8 +50,10 @@ async fn success() {
         .await
         .unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
 
     assert_eq!(reward_pool.total_share, 170);
 
@@ -85,8 +87,10 @@ async fn success_with_5kkk_after_expiring() {
         .await
         .unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
 
     assert_eq!(reward_pool.total_share, 0);
 

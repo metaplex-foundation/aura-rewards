@@ -1,12 +1,12 @@
 use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
-    state::{RewardPool, WrappedMining},
+    state::{WrappedMining, WrappedRewardPool},
     utils::{get_delegate_mining, AccountLoader},
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey,
+    pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -53,7 +53,9 @@ impl<'a, 'b> ChangeDelegateContext<'a, 'b> {
 
         let mining_data = &mut self.mining.data.borrow_mut();
         let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
-        let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
+
+        let reward_pool_data = &mut self.reward_pool.data.borrow_mut();
+        let mut wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
         let mining_pubkey = Pubkey::create_program_address(
             &[
@@ -66,7 +68,10 @@ impl<'a, 'b> ChangeDelegateContext<'a, 'b> {
         )?;
 
         assert_account_key(self.mining, &mining_pubkey)?;
-        assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
+        assert_account_key(
+            self.deposit_authority,
+            &wrapped_reward_pool.pool.deposit_authority,
+        )?;
         assert_account_key(self.reward_pool, &wrapped_mining.mining.reward_pool)?;
 
         if self.mining_owner.key != &wrapped_mining.mining.owner {
@@ -82,14 +87,12 @@ impl<'a, 'b> ChangeDelegateContext<'a, 'b> {
         let new_delegate_mining = get_delegate_mining(self.new_delegate_mining, self.mining)?;
         let old_delegate_mining = get_delegate_mining(self.old_delegate_mining, self.mining)?;
 
-        reward_pool.change_delegate(
+        wrapped_reward_pool.change_delegate(
             &mut wrapped_mining,
             new_delegate_mining,
             old_delegate_mining,
             staked_amount,
         )?;
-
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
 
         Ok(())
     }

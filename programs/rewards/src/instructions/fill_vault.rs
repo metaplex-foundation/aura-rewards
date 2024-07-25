@@ -1,12 +1,12 @@
 use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
-    state::RewardPool,
+    state::WrappedRewardPool,
     utils::{get_curr_unix_ts, spl_transfer, AccountLoader, SafeArithmeticOperations},
 };
 use solana_program::{
     account_info::AccountInfo, clock::SECONDS_PER_DAY, entrypoint::ProgramResult,
-    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+    program_error::ProgramError, pubkey::Pubkey,
 };
 
 /// Instruction context
@@ -54,15 +54,20 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             return Err(MplxRewardsError::RewardsMustBeGreaterThanZero.into());
         }
 
-        let mut reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-        assert_account_key(self.fill_authority, &reward_pool.fill_authority)?;
+        let reward_pool_data = &mut self.reward_pool.data.borrow_mut();
+        let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
+
+        assert_account_key(
+            self.fill_authority,
+            &wrapped_reward_pool.pool.fill_authority,
+        )?;
 
         {
             let vault_seeds = &[
                 b"vault".as_ref(),
                 self.reward_pool.key.as_ref(),
                 self.reward_mint.key.as_ref(),
-                &[reward_pool.calculator.token_account_bump],
+                &[wrapped_reward_pool.pool.token_account_bump],
             ];
             assert_account_key(
                 self.vault,
@@ -81,15 +86,15 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             }
 
             let days_diff = distribution_ends_at_day_start
-                .safe_sub(reward_pool.calculator.distribution_ends_at)?;
+                .safe_sub(wrapped_reward_pool.pool.distribution_ends_at)?;
 
-            reward_pool.calculator.distribution_ends_at = reward_pool
-                .calculator
+            wrapped_reward_pool.pool.distribution_ends_at = wrapped_reward_pool
+                .pool
                 .distribution_ends_at
                 .safe_add(days_diff)?;
 
-            reward_pool.calculator.tokens_available_for_distribution = reward_pool
-                .calculator
+            wrapped_reward_pool.pool.tokens_available_for_distribution = wrapped_reward_pool
+                .pool
                 .tokens_available_for_distribution
                 .safe_add(rewards)?;
         }
@@ -101,8 +106,6 @@ impl<'a, 'b> FillVaultContext<'a, 'b> {
             rewards,
             &[],
         )?;
-
-        RewardPool::pack(reward_pool, *self.reward_pool.data.borrow_mut())?;
 
         Ok(())
     }

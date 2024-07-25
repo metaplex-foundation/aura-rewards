@@ -1,9 +1,8 @@
 use crate::{
     asserts::{assert_account_key, assert_uninitialized},
-    state::{Mining, WrappedMining, TREE_MAX_SIZE},
+    state::{Mining, WeightedStakeDiffs, WrappedMining},
     utils::{find_mining_program_address, AccountLoader},
 };
-use sokoban::AVLTree;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed,
     program_error::ProgramError, pubkey::Pubkey, rent::Rent, system_instruction, system_program,
@@ -57,7 +56,7 @@ impl<'a, 'b> InitializeMiningContext<'a, 'b> {
         ];
 
         // TODO: refactor account creation
-        let mining_acc_size = Mining::LEN + std::mem::size_of::<AVLTree<u64, u64, TREE_MAX_SIZE>>();
+        let mining_acc_size = Mining::LEN + std::mem::size_of::<WeightedStakeDiffs>();
         let rent = Rent::get()?;
         let ix = system_instruction::create_account(
             &self.payer.key,

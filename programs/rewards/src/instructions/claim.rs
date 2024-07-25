@@ -1,6 +1,6 @@
 use crate::{
     asserts::assert_account_key,
-    state::{RewardPool, WrappedMining},
+    state::{WrappedMining, WrappedRewardPool},
     utils::{spl_transfer, AccountLoader},
 };
 use borsh::BorshSerialize;
@@ -52,12 +52,16 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
 
     /// Process instruction
     pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
-        let reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
+        let reward_pool_data = &mut self.reward_pool.data.borrow_mut();
+        let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
         let mining_data = &mut self.mining.data.borrow_mut();
         let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
 
-        assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
+        assert_account_key(
+            self.deposit_authority,
+            &wrapped_reward_pool.pool.deposit_authority,
+        )?;
 
         {
             let mining_user_rewards =
@@ -74,8 +78,8 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
 
         let reward_pool_seeds = &[
             b"reward_pool".as_ref(),
-            &reward_pool.deposit_authority.to_bytes(),
-            &[reward_pool.bump],
+            &wrapped_reward_pool.pool.deposit_authority.to_bytes(),
+            &[wrapped_reward_pool.pool.bump],
         ];
 
         {
@@ -90,14 +94,14 @@ impl<'a, 'b> ClaimContext<'a, 'b> {
                 b"vault".as_ref(),
                 &self.reward_pool.key.to_bytes(),
                 &self.reward_mint.key.to_bytes(),
-                &[reward_pool.calculator.token_account_bump],
+                &[wrapped_reward_pool.pool.token_account_bump],
             ];
             assert_account_key(
                 self.vault,
                 &Pubkey::create_program_address(vault_seeds, program_id)?,
             )?;
         }
-        wrapped_mining.refresh_rewards(&reward_pool.calculator)?;
+        wrapped_mining.refresh_rewards(&wrapped_reward_pool.cumulative_index)?;
         let amount = wrapped_mining.mining.unclaimed_rewards;
         wrapped_mining.mining.claim();
 

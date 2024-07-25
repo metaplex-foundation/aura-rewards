@@ -1,13 +1,13 @@
 use crate::utils::*;
 use mplx_rewards::{
-    state::{RewardPool, WrappedMining},
+    state::{WrappedMining, WrappedRewardPool},
     utils::LockupPeriod,
 };
 use sokoban::NodeAllocatorMap;
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{clock::SECONDS_PER_DAY, program_pack::Pack, signature::Keypair, signer::Signer};
-use std::borrow::{Borrow, BorrowMut};
+use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
+use std::borrow::BorrowMut;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
     let test = ProgramTest::new(
@@ -392,9 +392,12 @@ async fn prolong_with_delegate() {
     assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
     assert_eq!(d_wrapped_mining.mining.stake_from_others, 100);
 
-    let reward_pool_acc = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool_unpacked = RewardPool::unpack(reward_pool_acc.data.borrow()).unwrap();
-    assert_eq!(reward_pool_unpacked.total_share, 18_000_300);
+    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
+
+    assert_eq!(reward_pool.total_share, 18_000_300);
 
     // advance for ten days
     let curr_ts =

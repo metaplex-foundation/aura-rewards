@@ -1,12 +1,9 @@
-use crate::{
-    error::MplxRewardsError,
-    state::{RewardCalculator, PRECISION},
-};
+use crate::{error::MplxRewardsError, state::PRECISION};
 
 use crate::utils::SafeArithmeticOperations;
 use bytemuck::{Pod, Zeroable};
 use shank::ShankAccount;
-use sokoban::{AVLTree, NodeAllocatorMap, ZeroCopy};
+use sokoban::{NodeAllocatorMap, ZeroCopy};
 use solana_program::{
     clock::{Clock, SECONDS_PER_DAY},
     entrypoint::ProgramResult,
@@ -15,16 +12,15 @@ use solana_program::{
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
-use std::ops::Bound::{Excluded, Included};
 
-use super::{AccountType, TREE_MAX_SIZE};
+use super::{AccountType, CumulativeIndex, WeightedStakeDiffs};
 
 pub struct WrappedMining<'a> {
     pub mining: &'a mut Mining,
     /// This structures stores the weighted stake modifiers on the date,
     /// where staking ends. This modifier will be applied on the specified date to the global stake,
     /// so that rewards distribution will change. BTreeMap<unix_timestamp, modifier diff>
-    pub weighted_stake_diffs: &'a mut AVLTree<u64, u64, TREE_MAX_SIZE>,
+    pub weighted_stake_diffs: &'a mut WeightedStakeDiffs,
 }
 
 impl<'a> WrappedMining<'a> {
@@ -33,7 +29,7 @@ impl<'a> WrappedMining<'a> {
         let mining = Mining::load_mut_bytes(mining)
             .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
 
-        let weighted_stake_diffs = AVLTree::load_mut_bytes(weighted_stake_diffs)
+        let weighted_stake_diffs = WeightedStakeDiffs::load_mut_bytes(weighted_stake_diffs)
             .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
 
         Ok(Self {
@@ -43,11 +39,11 @@ impl<'a> WrappedMining<'a> {
     }
 
     pub fn data_len(&self) -> usize {
-        Mining::LEN + std::mem::size_of::<AVLTree<u64, u64, TREE_MAX_SIZE>>()
+        Mining::LEN + std::mem::size_of::<WeightedStakeDiffs>()
     }
 
     /// Refresh rewards
-    pub fn refresh_rewards(&mut self, vault: &RewardCalculator) -> ProgramResult {
+    pub fn refresh_rewards(&mut self, cumulative_index: &CumulativeIndex) -> ProgramResult {
         let curr_ts = Clock::get().unwrap().unix_timestamp as u64;
         let beginning_of_the_day = curr_ts - (curr_ts % SECONDS_PER_DAY);
         let mut share = self.mining.share.safe_add(self.mining.stake_from_others)?;
@@ -55,11 +51,11 @@ impl<'a> WrappedMining<'a> {
         share = self.mining.consume_old_modifiers(
             beginning_of_the_day,
             share,
-            vault,
+            cumulative_index,
             &mut self.weighted_stake_diffs,
         )?;
         Mining::update_index(
-            vault,
+            cumulative_index,
             curr_ts,
             share,
             &mut self.mining.unclaimed_rewards,
@@ -71,7 +67,6 @@ impl<'a> WrappedMining<'a> {
     }
 }
 
-/// Struct to represent an auction.
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Pod, Zeroable, ShankAccount)]
 pub struct Mining {
@@ -105,7 +100,7 @@ pub struct Mining {
 impl ZeroCopy for Mining {}
 
 impl Mining {
-    /// Bytes required to store an `Mining`.
+    /// Bytes required to store the `Mining`.
     pub const LEN: usize = std::mem::size_of::<Mining>();
 
     /// Initialize a Reward Pool
@@ -136,8 +131,8 @@ impl Mining {
         &mut self,
         beginning_of_the_day: u64,
         mut total_share: u64,
-        pool_vault: &RewardCalculator,
-        weighted_stake_diffs: &mut AVLTree<u64, u64, TREE_MAX_SIZE>,
+        cumulative_index: &CumulativeIndex,
+        weighted_stake_diffs: &mut WeightedStakeDiffs,
     ) -> Result<u64, ProgramError> {
         let mut processed_dates = vec![];
         for (date, modifier_diff) in weighted_stake_diffs.iter() {
@@ -146,7 +141,7 @@ impl Mining {
             }
 
             Self::update_index(
-                pool_vault,
+                cumulative_index,
                 *date,
                 total_share,
                 &mut self.unclaimed_rewards,
@@ -166,18 +161,20 @@ impl Mining {
 
     /// Updates index and distributes rewards
     pub fn update_index(
-        pool_vault: &RewardCalculator,
+        cumulative_index: &CumulativeIndex,
         date: u64,
         total_share: u64,
         unclaimed_rewards: &mut u64,
         index_with_precision: &mut u128,
     ) -> ProgramResult {
-        let vault_index_for_date = pool_vault
-            .cumulative_index
-            .range((Included(0), Excluded(date)))
-            .last()
-            .unwrap_or((&0, &0))
-            .1;
+        let mut vault_index_for_date = 0;
+        for (index_date, index) in cumulative_index.iter() {
+            if index_date < &date {
+                vault_index_for_date = *index;
+            } else {
+                break;
+            }
+        }
 
         let rewards = u64::try_from(
             vault_index_for_date
@@ -191,7 +188,7 @@ impl Mining {
             *unclaimed_rewards = (*unclaimed_rewards).safe_add(rewards)?;
         }
 
-        *index_with_precision = *vault_index_for_date;
+        *index_with_precision = vault_index_for_date;
 
         Ok(())
     }

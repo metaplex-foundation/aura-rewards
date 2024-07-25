@@ -1,12 +1,12 @@
 use crate::{
     asserts::assert_account_key,
     error::MplxRewardsError,
-    state::{RewardPool, WrappedMining},
+    state::{WrappedMining, WrappedRewardPool},
     utils::{AccountLoader, SafeArithmeticOperations},
 };
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, program_error::ProgramError,
-    program_pack::Pack, pubkey::Pubkey, system_program,
+    pubkey::Pubkey, system_program,
 };
 
 /// Instruction context
@@ -45,14 +45,18 @@ impl<'a, 'b> CloseMiningContext<'a, 'b> {
     /// Process instruction
     pub fn process(&self) -> ProgramResult {
         {
-            let reward_pool = RewardPool::unpack(&self.reward_pool.data.borrow())?;
-            assert_account_key(self.deposit_authority, &reward_pool.deposit_authority)?;
+            let reward_pool_data = &mut self.reward_pool.data.borrow_mut();
+            let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
+            assert_account_key(
+                self.deposit_authority,
+                &wrapped_reward_pool.pool.deposit_authority,
+            )?;
 
             let mining_data = &mut (*self.mining.data).borrow_mut();
             let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
             assert_account_key(self.mining_owner, &wrapped_mining.mining.owner)?;
 
-            wrapped_mining.refresh_rewards(&reward_pool.calculator)?;
+            wrapped_mining.refresh_rewards(&wrapped_reward_pool.cumulative_index)?;
 
             if wrapped_mining.mining.stake_from_others > 0 {
                 return Err(MplxRewardsError::StakeFromOthersMustBeZero.into());

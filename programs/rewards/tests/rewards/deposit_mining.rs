@@ -1,12 +1,12 @@
 use crate::utils::*;
 use mplx_rewards::{
-    state::{RewardPool, WrappedMining},
+    state::{WrappedMining, WrappedRewardPool},
     utils::LockupPeriod,
 };
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{program_pack::Pack, signature::Keypair, signer::Signer};
-use std::borrow::{Borrow, BorrowMut};
+use solana_sdk::{signature::Keypair, signer::Signer};
+use std::borrow::BorrowMut;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
     let test = ProgramTest::new(
@@ -53,8 +53,10 @@ async fn success() {
         .await
         .unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
 
     assert_eq!(reward_pool.total_share, 200);
 
@@ -80,8 +82,10 @@ async fn success_with_flex() {
         .await
         .unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
 
     assert_eq!(reward_pool.total_share, 100);
 
@@ -134,8 +138,10 @@ async fn delegating_success() {
     assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
     assert_eq!(d_wrapped_mining.mining.stake_from_others, 100);
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
 
     assert_eq!(reward_pool.total_share, 18_000_200);
 
