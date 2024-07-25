@@ -10,115 +10,85 @@ use solana_program::{
 };
 use spl_token::state::Account;
 
-/// Instruction context
-pub struct ClaimContext<'a, 'b> {
-    reward_pool: &'a AccountInfo<'b>,
-    reward_mint: &'a AccountInfo<'b>,
-    vault: &'a AccountInfo<'b>,
-    mining: &'a AccountInfo<'b>,
-    mining_owner: &'a AccountInfo<'b>,
-    mining_owner_reward_token_account: &'a AccountInfo<'b>,
-    deposit_authority: &'a AccountInfo<'b>,
-}
+pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -> ProgramResult {
+    let account_info_iter = &mut accounts.iter().enumerate();
 
-impl<'a, 'b> ClaimContext<'a, 'b> {
-    /// New instruction context
-    pub fn new(
-        program_id: &Pubkey,
-        accounts: &'a [AccountInfo<'b>],
-    ) -> Result<ClaimContext<'a, 'b>, ProgramError> {
-        let account_info_iter = &mut accounts.iter().enumerate();
+    let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
+    let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
+    let vault = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
+    let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
+    let mining_owner = AccountLoader::next_signer(account_info_iter)?;
+    let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+    let mining_owner_reward_token_account =
+        AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
+    let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
 
-        let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
-        let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
-        let vault = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
-        let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
-        let mining_owner = AccountLoader::next_signer(account_info_iter)?;
-        let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
-        let mining_owner_reward_token_account =
-            AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
-        let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
+    let reward_pool_data = &mut reward_pool.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
-        Ok(ClaimContext {
-            reward_pool,
-            reward_mint,
-            vault,
-            mining,
-            mining_owner,
-            mining_owner_reward_token_account,
-            deposit_authority,
-        })
+    let mining_data = &mut mining.data.borrow_mut();
+    let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
+
+    assert_account_key(
+        deposit_authority,
+        &wrapped_reward_pool.pool.deposit_authority,
+    )?;
+
+    {
+        let mining_user_rewards =
+            Account::unpack(&mining_owner_reward_token_account.data.borrow())?;
+        if mining_user_rewards.owner != *mining_owner.key {
+            msg!(
+                "Rewards account is not owned by mining owner. Got {} Expected {}",
+                mining_user_rewards.owner,
+                mining_owner.key
+            );
+            return Err(ProgramError::InvalidArgument);
+        }
     }
 
-    /// Process instruction
-    pub fn process(&self, program_id: &Pubkey) -> ProgramResult {
-        let reward_pool_data = &mut self.reward_pool.data.borrow_mut();
-        let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
+    let reward_pool_seeds = &[
+        b"reward_pool".as_ref(),
+        &wrapped_reward_pool.pool.deposit_authority.to_bytes(),
+        &[wrapped_reward_pool.pool.bump],
+    ];
 
-        let mining_data = &mut self.mining.data.borrow_mut();
-        let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
-
+    {
+        assert_account_key(mining_owner, &wrapped_mining.mining.owner)?;
+        assert_account_key(reward_pool, &wrapped_mining.mining.reward_pool)?;
         assert_account_key(
-            self.deposit_authority,
-            &wrapped_reward_pool.pool.deposit_authority,
+            reward_pool,
+            &Pubkey::create_program_address(reward_pool_seeds, program_id)?,
         )?;
 
-        {
-            let mining_user_rewards =
-                Account::unpack(&self.mining_owner_reward_token_account.data.borrow())?;
-            if mining_user_rewards.owner != *self.mining_owner.key {
-                msg!(
-                    "Rewards account is not owned by mining owner. Got {} Expected {}",
-                    mining_user_rewards.owner,
-                    self.mining_owner.key
-                );
-                return Err(ProgramError::InvalidArgument);
-            }
-        }
-
-        let reward_pool_seeds = &[
-            b"reward_pool".as_ref(),
-            &wrapped_reward_pool.pool.deposit_authority.to_bytes(),
-            &[wrapped_reward_pool.pool.bump],
+        let vault_seeds = &[
+            b"vault".as_ref(),
+            &reward_pool.key.to_bytes(),
+            &reward_mint.key.to_bytes(),
+            &[wrapped_reward_pool.pool.token_account_bump],
         ];
-
-        {
-            assert_account_key(self.mining_owner, &wrapped_mining.mining.owner)?;
-            assert_account_key(self.reward_pool, &wrapped_mining.mining.reward_pool)?;
-            assert_account_key(
-                self.reward_pool,
-                &Pubkey::create_program_address(reward_pool_seeds, program_id)?,
-            )?;
-
-            let vault_seeds = &[
-                b"vault".as_ref(),
-                &self.reward_pool.key.to_bytes(),
-                &self.reward_mint.key.to_bytes(),
-                &[wrapped_reward_pool.pool.token_account_bump],
-            ];
-            assert_account_key(
-                self.vault,
-                &Pubkey::create_program_address(vault_seeds, program_id)?,
-            )?;
-        }
-        wrapped_mining.refresh_rewards(&wrapped_reward_pool.cumulative_index)?;
-        let amount = wrapped_mining.mining.unclaimed_rewards;
-        wrapped_mining.mining.claim();
-
-        if amount > 0 {
-            spl_transfer(
-                self.vault.clone(),
-                self.mining_owner_reward_token_account.clone(),
-                self.reward_pool.clone(),
-                amount,
-                &[reward_pool_seeds],
-            )?;
-        }
-
-        let mut amount_writer = vec![];
-        amount.serialize(&mut amount_writer)?;
-        set_return_data(&amount_writer);
-
-        Ok(())
+        assert_account_key(
+            vault,
+            &Pubkey::create_program_address(vault_seeds, program_id)?,
+        )?;
     }
+    wrapped_mining.refresh_rewards(&wrapped_reward_pool.cumulative_index)?;
+    let amount = wrapped_mining.mining.unclaimed_rewards;
+    wrapped_mining.mining.claim();
+
+    if amount > 0 {
+        spl_transfer(
+            vault.clone(),
+            mining_owner_reward_token_account.clone(),
+            reward_pool.clone(),
+            amount,
+            &[reward_pool_seeds],
+        )?;
+    }
+
+    let mut amount_writer = vec![];
+    amount.serialize(&mut amount_writer)?;
+    set_return_data(&amount_writer);
+
+    Ok(())
 }

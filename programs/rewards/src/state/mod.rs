@@ -8,8 +8,8 @@ pub use mining::*;
 pub use reward_pool::*;
 use sokoban::AVLTree;
 
-pub const TREE_MAX_SIZE: usize = 400;
-pub const INDEX_HISTORY_MAX_SIZE: usize = 3000;
+pub const TREE_MAX_SIZE: usize = 300;
+pub const INDEX_HISTORY_MAX_SIZE: usize = 300;
 /// Precision for index calculation
 pub const PRECISION: u128 = 10_000_000_000_000_000;
 

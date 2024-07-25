@@ -4,7 +4,10 @@ use solana_program::{
     pubkey::Pubkey, rent::Rent, sysvar::Sysvar,
 };
 
-use crate::error::MplxRewardsError;
+use crate::{
+    error::MplxRewardsError,
+    state::{WrappedMining, WrappedRewardPool},
+};
 
 /// Assert signer.
 pub fn assert_signer(account: &AccountInfo) -> ProgramResult {
@@ -83,4 +86,45 @@ pub fn assert_pubkey_eq(given: &Pubkey, expected: &Pubkey) -> ProgramResult {
         );
         Err(ProgramError::InvalidArgument)
     }
+}
+
+pub fn assert_and_get_pool_and_mining<'a>(
+    program_id: &Pubkey,
+    mining_owner: &Pubkey,
+    mining: &AccountInfo,
+    reward_pool: &AccountInfo,
+    deposit_authority: &AccountInfo,
+    reward_pool_data: &'a mut [u8],
+    mining_data: &'a mut [u8],
+) -> Result<(WrappedRewardPool<'a>, WrappedMining<'a>), ProgramError> {
+    let wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
+    let mining_pubkey = Pubkey::create_program_address(
+        &[
+            b"mining".as_ref(),
+            mining_owner.as_ref(),
+            reward_pool.key.as_ref(),
+            &[wrapped_mining.mining.bump],
+        ],
+        program_id,
+    )?;
+
+    assert_account_key(mining, &mining_pubkey)?;
+    assert_account_key(
+        deposit_authority,
+        &wrapped_reward_pool.pool.deposit_authority,
+    )?;
+    assert_account_key(reward_pool, &wrapped_mining.mining.reward_pool)?;
+
+    if mining_owner != &wrapped_mining.mining.owner {
+        msg!(
+            "Assert account error. Got {} Expected {}",
+            mining_owner,
+            wrapped_mining.mining.owner
+        );
+
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    Ok((wrapped_reward_pool, wrapped_mining))
 }

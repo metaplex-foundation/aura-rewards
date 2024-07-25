@@ -10,11 +10,7 @@ use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
 use std::borrow::BorrowMut;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
-    let test = ProgramTest::new(
-        "mplx_rewards",
-        mplx_rewards::id(),
-        processor!(mplx_rewards::processor::process_instruction),
-    );
+    let test = ProgramTest::default();
 
     let mut context = test.start_with_context().await;
     let deposit_token_mint = Keypair::new();

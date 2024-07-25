@@ -12,11 +12,8 @@ use solana_sdk::{signature::Keypair, signer::Signer};
 use spl_token::state::Account;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey) {
-    let test = ProgramTest::new(
-        "mplx_rewards",
-        mplx_rewards::id(),
-        processor!(mplx_rewards::processor::process_instruction),
-    );
+    let test = ProgramTest::default();
+
     let mut context = test.start_with_context().await;
 
     let owner = &context.payer.pubkey();

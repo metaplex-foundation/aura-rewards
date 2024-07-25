@@ -10,11 +10,7 @@ use spl_token::state::Account;
 use std::borrow::{Borrow, BorrowMut};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey) {
-    let test = ProgramTest::new(
-        "mplx_rewards",
-        mplx_rewards::id(),
-        processor!(mplx_rewards::processor::process_instruction),
-    );
+    let test = ProgramTest::default();
     let mut context = test.start_with_context().await;
 
     let owner = &context.payer.pubkey();

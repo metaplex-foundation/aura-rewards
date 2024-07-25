@@ -38,7 +38,7 @@ pub enum RewardsInstruction {
     #[account(5, name = "token_program", desc = "The address of the Token program where rewards are minted")]
     FillVault {
         /// Amount to fill
-        amount: u64,
+        rewards: u64,
         /// Rewards distribution ends at given date
         distribution_ends_at: u64,
     },
@@ -64,7 +64,7 @@ pub enum RewardsInstruction {
         /// Lockup Period
         lockup_period: LockupPeriod,
         /// Specifies the owner of the Mining Account
-        owner: Pubkey,
+        mining_owner: Pubkey,
     },
 
     /// Withdraws amount of supply to the mining account
@@ -76,7 +76,7 @@ pub enum RewardsInstruction {
         /// Amount to withdraw
         amount: u64,
         /// Specifies the owner of the Mining Account
-        owner: Pubkey,
+        mining_owner: Pubkey,
     },
 
     /// Claims amount of rewards
@@ -183,7 +183,7 @@ pub fn fill_vault(
     vault: &Pubkey,
     authority: &Pubkey,
     from: &Pubkey,
-    amount: u64,
+    rewards: u64,
     distribution_ends_at: u64,
 ) -> Instruction {
     let accounts = vec![
@@ -198,7 +198,7 @@ pub fn fill_vault(
     Instruction::new_with_borsh(
         *program_id,
         &RewardsInstruction::FillVault {
-            amount,
+            rewards,
             distribution_ends_at,
         },
         accounts,
@@ -239,7 +239,7 @@ pub fn deposit_mining(
     delegate_mining: &Pubkey,
     amount: u64,
     lockup_period: LockupPeriod,
-    owner: &Pubkey,
+    mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -253,7 +253,7 @@ pub fn deposit_mining(
         &RewardsInstruction::DepositMining {
             amount,
             lockup_period,
-            owner: *owner,
+            mining_owner: *mining_owner,
         },
         accounts,
     )
@@ -267,7 +267,7 @@ pub fn withdraw_mining(
     deposit_authority: &Pubkey,
     delegate_mining: &Pubkey,
     amount: u64,
-    owner: &Pubkey,
+    mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -280,7 +280,7 @@ pub fn withdraw_mining(
         *program_id,
         &RewardsInstruction::WithdrawMining {
             amount,
-            owner: *owner,
+            mining_owner: *mining_owner,
         },
         accounts,
     )
