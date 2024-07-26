@@ -8,9 +8,9 @@ use solana_program_test::*;
 use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
-    let test = ProgramTest::default();
-
+    let test = ProgramTest::new("mplx_rewards", mplx_rewards::ID, None);
     let mut context = test.start_with_context().await;
+
     let deposit_token_mint = Keypair::new();
     let payer = &context.payer.pubkey();
     create_mint(&mut context, &deposit_token_mint, payer)

@@ -7,9 +7,9 @@ use spl_token::state::Account;
 use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards) {
-    let test = ProgramTest::default();
-
+    let test = ProgramTest::new("mplx_rewards", mplx_rewards::ID, None);
     let mut context = test.start_with_context().await;
+
     let owner = &context.payer.pubkey();
 
     let mint = Keypair::new();

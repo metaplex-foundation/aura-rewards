@@ -5,8 +5,8 @@ use crate::{
 };
 use borsh::BorshSerialize;
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program::set_return_data,
-    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint::ProgramResult, program::set_return_data,
+    program_pack::Pack, pubkey::Pubkey,
 };
 use spl_token::state::Account;
 
@@ -23,66 +23,65 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
         AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
     let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
 
-    let reward_pool_data = &mut reward_pool.data.borrow_mut();
-    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
-
-    let mining_data = &mut mining.data.borrow_mut();
-    let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
-
-    assert_account_key(
-        deposit_authority,
-        &wrapped_reward_pool.pool.deposit_authority,
-    )?;
-
     {
         let mining_user_rewards =
             Account::unpack(&mining_owner_reward_token_account.data.borrow())?;
-        if mining_user_rewards.owner != *mining_owner.key {
-            msg!(
-                "Rewards account is not owned by mining owner. Got {} Expected {}",
-                mining_user_rewards.owner,
-                mining_owner.key
-            );
-            return Err(ProgramError::InvalidArgument);
-        }
+        assert_account_key(mining_owner, &mining_user_rewards.owner)?;
     }
 
-    let reward_pool_seeds = &[
-        b"reward_pool".as_ref(),
-        &wrapped_reward_pool.pool.deposit_authority.to_bytes(),
-        &[wrapped_reward_pool.pool.bump],
-    ];
+    let (amount, pool_seeds_constructor) = {
+        let reward_pool_data = &mut reward_pool.data.borrow_mut();
+        let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
-    {
-        assert_account_key(mining_owner, &wrapped_mining.mining.owner)?;
-        assert_account_key(reward_pool, &wrapped_mining.mining.reward_pool)?;
         assert_account_key(
-            reward_pool,
-            &Pubkey::create_program_address(reward_pool_seeds, program_id)?,
+            deposit_authority,
+            &wrapped_reward_pool.pool.deposit_authority,
         )?;
 
-        let vault_seeds = &[
-            b"vault".as_ref(),
-            &reward_pool.key.to_bytes(),
-            &reward_mint.key.to_bytes(),
-            &[wrapped_reward_pool.pool.token_account_bump],
-        ];
-        assert_account_key(
-            vault,
-            &Pubkey::create_program_address(vault_seeds, program_id)?,
-        )?;
-    }
-    wrapped_mining.refresh_rewards(&wrapped_reward_pool.cumulative_index)?;
-    let amount = wrapped_mining.mining.unclaimed_rewards;
-    wrapped_mining.mining.claim();
+        let pool_seeds_constructor = PoolSeedsConstructor::new(
+            "reward_pool",
+            wrapped_reward_pool.pool.deposit_authority,
+            wrapped_reward_pool.pool.bump,
+        );
+
+        let amount = {
+            let mining_data = &mut mining.data.borrow_mut();
+            let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
+
+            assert_account_key(mining_owner, &wrapped_mining.mining.owner)?;
+            assert_account_key(reward_pool, &wrapped_mining.mining.reward_pool)?;
+            assert_account_key(
+                reward_pool,
+                &Pubkey::create_program_address(&pool_seeds_constructor.seeds(), program_id)?,
+            )?;
+
+            let vault_seeds = &[
+                b"vault".as_ref(),
+                &reward_pool.key.to_bytes(),
+                &reward_mint.key.to_bytes(),
+                &[wrapped_reward_pool.pool.token_account_bump],
+            ];
+            assert_account_key(
+                vault,
+                &Pubkey::create_program_address(vault_seeds, program_id)?,
+            )?;
+
+            wrapped_mining.refresh_rewards(&*wrapped_reward_pool.cumulative_index)?;
+            let amount = wrapped_mining.mining.unclaimed_rewards;
+            wrapped_mining.mining.claim();
+            amount
+        };
+
+        (amount, pool_seeds_constructor)
+    };
 
     if amount > 0 {
         spl_transfer(
-            vault.clone(),
-            mining_owner_reward_token_account.clone(),
-            reward_pool.clone(),
+            vault.to_owned(),
+            mining_owner_reward_token_account.to_owned(),
+            reward_pool.to_owned(),
             amount,
-            &[reward_pool_seeds],
+            &[&pool_seeds_constructor.seeds()[..]],
         )?;
     }
 
@@ -91,4 +90,28 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
     set_return_data(&amount_writer);
 
     Ok(())
+}
+
+pub struct PoolSeedsConstructor {
+    word: &'static str,
+    authority: Pubkey,
+    bump: Vec<u8>,
+}
+
+impl PoolSeedsConstructor {
+    pub fn new(word: &'static str, authority: Pubkey, bump: u8) -> Self {
+        Self {
+            word,
+            authority,
+            bump: vec![bump],
+        }
+    }
+
+    pub fn seeds(&self) -> Vec<&[u8]> {
+        vec![
+            self.word.as_bytes(),
+            self.authority.as_ref(),
+            self.bump.as_slice(),
+        ]
+    }
 }

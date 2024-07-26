@@ -9,26 +9,23 @@ use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
 use std::borrow::BorrowMut;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
-    let test = ProgramTest::default();
-
+    let test = ProgramTest::new("mplx_rewards", mplx_rewards::ID, None);
     let mut context = test.start_with_context().await;
+
     let owner = &context.payer.pubkey();
 
     let mint = Keypair::new();
     create_mint(&mut context, &mint, owner).await.unwrap();
 
-    let test_reward_pool = TestRewards::new(mint.pubkey());
-    test_reward_pool
-        .initialize_pool(&mut context)
-        .await
-        .unwrap();
+    let test_rewards = TestRewards::new(mint.pubkey());
+    test_rewards.initialize_pool(&mut context).await.unwrap();
 
     let user = Keypair::new();
-    let user_mining = test_reward_pool
+    let user_mining = test_rewards
         .initialize_mining(&mut context, &user.pubkey())
         .await;
 
-    (context, test_reward_pool, user.pubkey(), user_mining)
+    (context, test_rewards, user.pubkey(), user_mining)
 }
 
 #[tokio::test]

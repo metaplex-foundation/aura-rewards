@@ -5,7 +5,7 @@ use solana_program_test::*;
 use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey) {
-    let test = ProgramTest::default();
+    let test = ProgramTest::new("mplx_rewards", mplx_rewards::ID, None);
     let mut context = test.start_with_context().await;
 
     let owner = &context.payer.pubkey();
