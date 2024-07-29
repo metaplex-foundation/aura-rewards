@@ -7,6 +7,7 @@ mod fill_vault;
 mod initialize_mining;
 mod initialize_pool;
 mod integration;
+mod precision;
 mod utils;
 mod withdraw_mining;
 

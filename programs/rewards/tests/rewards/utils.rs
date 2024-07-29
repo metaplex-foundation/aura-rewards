@@ -14,6 +14,8 @@ use spl_token::state::Account as SplTokenAccount;
 
 pub type BanksClientResult<T> = Result<T, BanksClientError>;
 
+const TOKEN_DECIMALS: u8 = 6;
+
 #[derive(Debug)]
 pub struct TestRewards {
     pub token_mint_pubkey: Pubkey,
@@ -386,7 +388,7 @@ pub async fn create_mint(
                 &mint.pubkey(),
                 manager,
                 None,
-                0,
+                TOKEN_DECIMALS,
             )
             .unwrap(),
         ],
