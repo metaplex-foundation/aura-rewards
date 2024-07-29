@@ -31,7 +31,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey) {
         &mut context,
         &test_rewards.token_mint_pubkey,
         &rewarder.pubkey(),
-        5000,
+        5000 * 1_000_000,
     )
     .await
     .unwrap();
@@ -49,7 +49,7 @@ async fn precision_distribution() {
         .deposit_mining(
             &mut context,
             &rich_user_mining_addr,
-            333_333_316,
+            333_333_316 * 1_000_000,
             LockupPeriod::Flex,
             &rich_user.pubkey(),
             &rich_user_mining_addr,
@@ -62,7 +62,7 @@ async fn precision_distribution() {
         .deposit_mining(
             &mut context,
             &user_mining_addr,
-            17,
+            17 * 1_000_000,
             LockupPeriod::Flex,
             &user.pubkey(),
             &user_mining_addr,
@@ -80,17 +80,20 @@ async fn precision_distribution() {
         + SECONDS_PER_DAY * 30;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 5000, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            5000 * 1_000_000,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
 
-    // for _ in 0..30 {
-    //     test_rewards.distribute_rewards(&mut context).await.unwrap();
-    //     advance_clock_by_ts(&mut context, SECONDS_PER_DAY.try_into().unwrap()).await;
-    // }
-
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    for _ in 0..30 {
+        test_rewards.distribute_rewards(&mut context).await.unwrap();
+        advance_clock_by_ts(&mut context, SECONDS_PER_DAY.try_into().unwrap()).await;
+    }
 
     // // user claims their rewards
     test_rewards
@@ -103,5 +106,5 @@ async fn precision_distribution() {
         .await
         .unwrap();
 
-    assert_tokens(&mut context, &user_rewards.pubkey(), 225).await;
+    assert_tokens(&mut context, &user_rewards.pubkey(), 254).await;
 }
