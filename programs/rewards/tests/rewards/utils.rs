@@ -37,14 +37,6 @@ impl TestRewards {
         let fill_authority = Keypair::new();
         let distribution_authority = Keypair::new();
 
-        // let (reward_pool, _) = Pubkey::find_program_address(
-        //     &[
-        //         b"reward_pool".as_ref(),
-        //         &deposit_authority.pubkey().to_bytes(),
-        //     ],
-        //     &mplx_rewards::id(),
-        // );
-
         let reward_pool = Pubkey::create_with_seed(
             &deposit_authority.pubkey(),
             "reward_pool",
