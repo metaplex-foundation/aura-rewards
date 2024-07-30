@@ -27,7 +27,7 @@ pub fn process_initialize_pool<'a>(
     let _system_program = AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
 
     let reward_pool_pubkey =
-        Pubkey::create_with_seed(&deposit_authority.key, "reward_pool", program_id)?;
+        Pubkey::create_with_seed(deposit_authority.key, "reward_pool", program_id)?;
     assert_account_key(reward_pool, &reward_pool_pubkey)?;
 
     let (vault_pubkey, token_account_bump) =

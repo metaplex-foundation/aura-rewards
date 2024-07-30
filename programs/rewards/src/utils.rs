@@ -143,7 +143,7 @@ impl AccountLoader {
             .borrow()
             .iter()
             .all(|&x| x == 0)
-            .then(|| acc)
+            .then_some(acc)
             .ok_or_else(|| {
                 msg!("Account #{}:{} is already initialized", idx, acc.key);
                 ProgramError::AccountAlreadyInitialized

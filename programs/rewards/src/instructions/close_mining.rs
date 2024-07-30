@@ -32,7 +32,7 @@ pub fn process_close_mining<'a>(
         let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
         assert_account_key(mining_owner, &wrapped_mining.mining.owner)?;
 
-        wrapped_mining.refresh_rewards(&wrapped_reward_pool.cumulative_index)?;
+        wrapped_mining.refresh_rewards(wrapped_reward_pool.cumulative_index)?;
 
         if wrapped_mining.mining.stake_from_others > 0 {
             return Err(MplxRewardsError::StakeFromOthersMustBeZero.into());

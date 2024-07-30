@@ -50,7 +50,7 @@ impl<'a> WrappedMining<'a> {
             beginning_of_the_day,
             share,
             cumulative_index,
-            &mut self.weighted_stake_diffs,
+            self.weighted_stake_diffs,
         )?;
         Mining::update_index(
             cumulative_index,

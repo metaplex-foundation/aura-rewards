@@ -84,6 +84,12 @@ pub struct InitializePoolInstructionData {
     discriminator: u8,
 }
 
+impl Default for InitializePoolInstructionData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InitializePoolInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 0 }

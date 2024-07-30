@@ -32,8 +32,8 @@ pub fn process_initialize_mining<'a>(
 
     let rent = Rent::get()?;
     let ix = system_instruction::create_account(
-        &payer.key,
-        &mining.key,
+        payer.key,
+        mining.key,
         rent.minimum_balance(WrappedMining::LEN),
         WrappedMining::LEN as u64,
         program_id,

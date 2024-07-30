@@ -442,12 +442,12 @@ pub async fn check_weighted_stake(
 }
 
 pub async fn check_modifier_at_a_day(
-    mut context: &mut ProgramTestContext,
+    context: &mut ProgramTestContext,
     mining_account: Pubkey,
     expected_modifier: u64,
     day_to_check: u64,
 ) {
-    let mut mining_account = get_account(&mut context, &mining_account).await;
+    let mut mining_account = get_account(context, &mining_account).await;
     let mining_data = &mut mining_account.data.borrow_mut();
     let wrapped_mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
 

@@ -114,7 +114,7 @@ impl<'a> WrappedRewardPool<'a> {
         }
 
         WrappedRewardPool::update_index(
-            &mut self.cumulative_index,
+            self.cumulative_index,
             &mut self.pool.index_with_precision,
             rewards,
             self.pool.total_share,
@@ -136,7 +136,7 @@ impl<'a> WrappedRewardPool<'a> {
         old_delegate_mining: Option<&AccountInfo>,
         staked_amount: u64,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.cumulative_index)?;
+        mining.refresh_rewards(self.cumulative_index)?;
 
         if let Some(old_delegate_info) = old_delegate_mining {
             let old_delegate_mining_data = &mut old_delegate_info.data.borrow_mut();
@@ -147,7 +147,7 @@ impl<'a> WrappedRewardPool<'a> {
                 .stake_from_others
                 .safe_sub(staked_amount)?;
             self.pool.total_share = self.pool.total_share.safe_sub(staked_amount)?;
-            old_delegate_mining.refresh_rewards(&self.cumulative_index)?;
+            old_delegate_mining.refresh_rewards(self.cumulative_index)?;
         }
 
         if let Some(new_delegate_info) = new_delegate_mining {
@@ -159,7 +159,7 @@ impl<'a> WrappedRewardPool<'a> {
                 .stake_from_others
                 .safe_add(staked_amount)?;
             self.pool.total_share = self.pool.total_share.safe_add(staked_amount)?;
-            new_delegate_mining.refresh_rewards(&self.cumulative_index)?;
+            new_delegate_mining.refresh_rewards(self.cumulative_index)?;
         }
 
         Ok(())
@@ -173,7 +173,7 @@ impl<'a> WrappedRewardPool<'a> {
         lockup_period: LockupPeriod,
         delegate_mining: Option<&AccountInfo>,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.cumulative_index)?;
+        mining.refresh_rewards(self.cumulative_index)?;
 
         // regular weighted stake which will be used in rewards distribution
         let weighted_stake = amount.safe_mul(lockup_period.multiplier())?;
@@ -217,7 +217,7 @@ impl<'a> WrappedRewardPool<'a> {
                 delegate_mining.mining.stake_from_others.safe_add(amount)?;
 
             self.pool.total_share = self.pool.total_share.safe_add(amount)?;
-            delegate_mining.refresh_rewards(&self.cumulative_index)?;
+            delegate_mining.refresh_rewards(self.cumulative_index)?;
         }
 
         Ok(())
@@ -230,7 +230,7 @@ impl<'a> WrappedRewardPool<'a> {
         amount: u64,
         delegate_mining: Option<&AccountInfo>,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.cumulative_index)?;
+        mining.refresh_rewards(self.cumulative_index)?;
 
         self.pool.total_share = self.pool.total_share.safe_sub(amount)?;
         mining.mining.share = mining.mining.share.safe_sub(amount)?;
@@ -248,7 +248,7 @@ impl<'a> WrappedRewardPool<'a> {
                 delegate_mining.mining.stake_from_others.safe_sub(amount)?;
 
             self.pool.total_share = self.pool.total_share.safe_sub(amount)?;
-            delegate_mining.refresh_rewards(&self.cumulative_index)?;
+            delegate_mining.refresh_rewards(self.cumulative_index)?;
         }
 
         Ok(())
@@ -266,7 +266,7 @@ impl<'a> WrappedRewardPool<'a> {
         additional_amount: u64,
         delegate_mining: Option<&AccountInfo>,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.cumulative_index)?;
+        mining.refresh_rewards(self.cumulative_index)?;
 
         let curr_ts = get_curr_unix_ts();
 
@@ -330,7 +330,7 @@ impl<'a> WrappedRewardPool<'a> {
                     .stake_from_others
                     .safe_sub(base_amount)?;
                 self.pool.total_share = self.pool.total_share.safe_sub(base_amount)?;
-                delegate_mining.refresh_rewards(&self.cumulative_index)?;
+                delegate_mining.refresh_rewards(self.cumulative_index)?;
 
                 Some(delegate_mining_acc)
             }

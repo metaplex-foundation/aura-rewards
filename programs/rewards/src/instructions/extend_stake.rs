@@ -4,6 +4,7 @@ use crate::{
 };
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 
+#[allow(clippy::too_many_arguments)]
 pub fn process_extend_stake<'a>(
     program_id: &Pubkey,
     accounts: &'a [AccountInfo<'a>],
