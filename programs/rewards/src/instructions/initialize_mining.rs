@@ -4,7 +4,7 @@ use crate::{
     utils::AccountLoader,
 };
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey, system_program,
+    account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey, system_program,
 };
 
 pub fn process_initialize_mining<'a>(

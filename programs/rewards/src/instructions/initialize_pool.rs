@@ -49,7 +49,7 @@ pub fn process_initialize_pool<'a>(
     initialize_account(
         reward_vault.clone(),
         reward_mint.clone(),
-        reward_pool.clone(),
+        deposit_authority.clone(),
         rent.clone(),
     )?;
 
