@@ -85,27 +85,3 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
 
     Ok(())
 }
-
-pub struct PoolSeedsConstructor {
-    word: &'static str,
-    authority: Pubkey,
-    bump: Vec<u8>,
-}
-
-impl PoolSeedsConstructor {
-    pub fn new(word: &'static str, authority: Pubkey, bump: u8) -> Self {
-        Self {
-            word,
-            authority,
-            bump: vec![bump],
-        }
-    }
-
-    pub fn seeds(&self) -> Vec<&[u8]> {
-        vec![
-            self.word.as_bytes(),
-            self.authority.as_ref(),
-            self.bump.as_slice(),
-        ]
-    }
-}

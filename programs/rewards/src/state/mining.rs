@@ -13,25 +13,25 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use super::{AccountType, CumulativeIndex, WeightedStakeDiffs};
+use super::{AccountType, CumulativeIndex, MiningWeightedStakeDiffs};
 
 pub struct WrappedMining<'a> {
     pub mining: &'a mut Mining,
     /// This structures stores the weighted stake modifiers on the date,
     /// where staking ends. This modifier will be applied on the specified date to the global stake,
     /// so that rewards distribution will change. BTreeMap<unix_timestamp, modifier diff>
-    pub weighted_stake_diffs: &'a mut WeightedStakeDiffs,
+    pub weighted_stake_diffs: &'a mut MiningWeightedStakeDiffs,
 }
 
 impl<'a> WrappedMining<'a> {
-    pub const LEN: usize = Mining::LEN + std::mem::size_of::<WeightedStakeDiffs>();
+    pub const LEN: usize = Mining::LEN + std::mem::size_of::<MiningWeightedStakeDiffs>();
 
     pub fn from_bytes_mut(bytes: &'a mut [u8]) -> Result<Self, ProgramError> {
         let (mining, weighted_stake_diffs) = bytes.split_at_mut(Mining::LEN);
         let mining = Mining::load_mut_bytes(mining)
             .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
 
-        let weighted_stake_diffs = WeightedStakeDiffs::load_mut_bytes(weighted_stake_diffs)
+        let weighted_stake_diffs = MiningWeightedStakeDiffs::load_mut_bytes(weighted_stake_diffs)
             .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
 
         Ok(Self {
@@ -129,7 +129,7 @@ impl Mining {
         beginning_of_the_day: u64,
         mut total_share: u64,
         cumulative_index: &CumulativeIndex,
-        weighted_stake_diffs: &mut WeightedStakeDiffs,
+        weighted_stake_diffs: &mut MiningWeightedStakeDiffs,
     ) -> Result<u64, ProgramError> {
         let mut processed_dates = vec![];
         for (date, modifier_diff) in weighted_stake_diffs.iter() {

@@ -8,13 +8,15 @@ pub use mining::*;
 pub use reward_pool::*;
 use sokoban::RedBlackTree;
 
-pub const TREE_MAX_SIZE: usize = 100;
-pub const INDEX_HISTORY_MAX_SIZE: usize = 120;
+pub const MINING_MODIFIERS_TREE_CAPACITY: usize = 50;
+pub const POOL_MODIFIERS_TREE_CAPACITY: usize = 365;
+pub const INDEX_HISTORY_MAX_SIZE: usize = 1095;
 /// Precision for index calculation
 pub const PRECISION: u128 = 10_000_000_000_000_000;
 
 pub type CumulativeIndex = RedBlackTree<u64, u128, INDEX_HISTORY_MAX_SIZE>;
-pub type WeightedStakeDiffs = RedBlackTree<u64, u64, TREE_MAX_SIZE>;
+pub type PoolWeightedStakeDiffs = RedBlackTree<u64, u64, POOL_MODIFIERS_TREE_CAPACITY>;
+pub type MiningWeightedStakeDiffs = RedBlackTree<u64, u64, MINING_MODIFIERS_TREE_CAPACITY>;
 
 /// Enum representing the account type managed by the program
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
