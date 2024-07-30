@@ -46,9 +46,12 @@ pub enum RewardsInstruction {
     /// Initializes mining account for the specified mining owner
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
-    #[account(2, writable, signer, name = "mining_owner", desc = "The end user the mining accounts belongs to")]
+    #[account(2, writable, signer, name = "payer")]
     #[account(3, name = "system_program", desc = "The system program")]
-    InitializeMining,
+    InitializeMining {
+        /// Represent the end-user, owner of the mining
+        mining_owner: Pubkey,
+    },
 
     /// Deposits amount of supply to the mining account
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
@@ -207,16 +210,23 @@ pub fn initialize_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
+    payer: &Pubkey,
     mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
-        AccountMeta::new(*mining_owner, true),
+        AccountMeta::new(*payer, true),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 
-    Instruction::new_with_borsh(*program_id, &RewardsInstruction::InitializeMining, accounts)
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::InitializeMining {
+            mining_owner: *mining_owner,
+        },
+        accounts,
+    )
 }
 
 /// Creates 'DepositMining' instruction.

@@ -102,7 +102,7 @@ impl Mining {
     pub const LEN: usize = std::mem::size_of::<Mining>();
 
     /// Initialize a Reward Pool
-    pub fn initialize(reward_pool: Pubkey, owner: Pubkey) -> Mining {
+    pub fn initialize(reward_pool: Pubkey, owner: Pubkey, bump: u8) -> Mining {
         let account_type = AccountType::Mining.into();
         let mut data = [0; 7];
         data[0] = account_type;
@@ -110,6 +110,7 @@ impl Mining {
             data,
             reward_pool,
             owner,
+            bump,
             ..Default::default()
         }
     }

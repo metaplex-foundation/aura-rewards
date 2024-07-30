@@ -1,10 +1,6 @@
 use std::borrow::{Borrow, BorrowMut};
 
-use mplx_rewards::{
-    error::MplxRewardsError,
-    state::{WrappedMining, WrappedRewardPool},
-    utils::LockupPeriod,
-};
+use mplx_rewards::{error::MplxRewardsError, state::WrappedRewardPool, utils::LockupPeriod};
 use solana_program::{instruction::InstructionError, pubkey::Pubkey};
 use solana_program_test::{BanksClientError, ProgramTestContext};
 use solana_sdk::{
@@ -104,34 +100,25 @@ impl TestRewards {
         context: &mut ProgramTestContext,
         mining_owner: &Keypair,
     ) -> Pubkey {
-        let rent = context.banks_client.get_sysvar::<Rent>().await.unwrap();
-
-        let mining_account =
-            Pubkey::create_with_seed(&mining_owner.pubkey(), "mining", &mplx_rewards::id())
-                .unwrap();
-
-        let create_mining_ix = create_account_with_seed(
-            &context.payer.pubkey(),
-            &mining_account,
-            &mining_owner.pubkey(),
-            "mining",
-            rent.minimum_balance(WrappedMining::LEN),
-            WrappedMining::LEN as u64,
+        let (mining_account, _) = Pubkey::find_program_address(
+            &[
+                b"mining".as_ref(),
+                mining_owner.pubkey().as_ref(),
+                self.reward_pool.as_ref(),
+            ],
             &mplx_rewards::id(),
         );
 
         let tx = Transaction::new_signed_with_payer(
-            &[
-                create_mining_ix,
-                mplx_rewards::instruction::initialize_mining(
-                    &mplx_rewards::id(),
-                    &self.reward_pool,
-                    &mining_account,
-                    &mining_owner.pubkey(),
-                ),
-            ],
+            &[mplx_rewards::instruction::initialize_mining(
+                &mplx_rewards::id(),
+                &self.reward_pool,
+                &mining_account,
+                &context.payer.pubkey(),
+                &mining_owner.pubkey(),
+            )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &mining_owner],
+            &[&context.payer],
             context.last_blockhash,
         );
 

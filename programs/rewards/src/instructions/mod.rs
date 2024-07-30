@@ -47,9 +47,9 @@ pub fn process_instruction<'a>(
             msg!("RewardsInstruction: FillVault");
             process_fill_vault(program_id, accounts, rewards, distribution_ends_at)
         }
-        RewardsInstruction::InitializeMining => {
+        RewardsInstruction::InitializeMining { mining_owner } => {
             msg!("RewardsInstruction: InitializeMining");
-            process_initialize_mining(program_id, accounts)
+            process_initialize_mining(program_id, accounts, &mining_owner)
         }
         RewardsInstruction::DepositMining {
             amount,

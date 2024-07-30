@@ -17,6 +17,17 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
+/// Generates reward pool address
+pub fn find_reward_pool_program_address(
+    program_id: &Pubkey,
+    authority_account: &Pubkey,
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &["reward_pool".as_bytes(), &authority_account.to_bytes()],
+        program_id,
+    )
+}
+
 /// Generates mining address
 pub fn find_mining_program_address(
     program_id: &Pubkey,
