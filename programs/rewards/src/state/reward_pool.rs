@@ -30,6 +30,10 @@ pub struct WrappedRewardPool<'a> {
 }
 
 impl<'a> WrappedRewardPool<'a> {
+    pub const LEN: usize = RewardPool::LEN
+        + std::mem::size_of::<WeightedStakeDiffs>()
+        + std::mem::size_of::<CumulativeIndex>();
+
     pub fn from_bytes_mut(bytes: &'a mut [u8]) -> Result<Self, ProgramError> {
         let (pool, trees) = bytes.split_at_mut(RewardPool::LEN);
         let (weighted_stake_diffs, cumulative_index) =
@@ -49,12 +53,6 @@ impl<'a> WrappedRewardPool<'a> {
             weighted_stake_diffs,
             cumulative_index,
         })
-    }
-
-    pub fn data_len(&self) -> usize {
-        RewardPool::LEN
-            + std::mem::size_of::<WeightedStakeDiffs>()
-            + std::mem::size_of::<CumulativeIndex>()
     }
 
     /// Consuming old total share modifiers in order to change the total share for the current date
@@ -375,14 +373,12 @@ pub struct RewardPool {
     pub distribution_ends_at: u64,
     /// Shows the amount of tokens are ready to be distributed
     pub tokens_available_for_distribution: u64, // default: 0, increased on each fill, decreased on each user claim
-    /// Saved bump for reward pool account
-    pub bump: u8,
     pub token_account_bump: u8,
     /// Account type - Mining. This discriminator should exist in order to prevent
     /// shenanigans with customly modified accounts and their fields.
     /// 1: account type
     /// 2-7: unused
-    pub data: [u8; 6],
+    pub data: [u8; 7],
 }
 
 impl ZeroCopy for RewardPool {}
@@ -392,7 +388,6 @@ impl RewardPool {
 
     /// Init reward pool
     pub fn initialize(
-        bump: u8,
         token_account_bump: u8,
         deposit_authority: Pubkey,
         distribute_authority: Pubkey,
@@ -400,11 +395,10 @@ impl RewardPool {
         reward_mint: Pubkey,
     ) -> RewardPool {
         let account_type = AccountType::RewardPool.into();
-        let mut data = [0; 6];
+        let mut data = [0; 7];
         data[0] = account_type;
         RewardPool {
             data,
-            bump,
             token_account_bump,
             deposit_authority,
             distribute_authority,

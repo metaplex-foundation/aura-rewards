@@ -49,17 +49,6 @@ pub fn find_vault_program_address(
     )
 }
 
-/// Generates reward pool address
-pub fn find_reward_pool_program_address(
-    program_id: &Pubkey,
-    authority_account: &Pubkey,
-) -> (Pubkey, u8) {
-    Pubkey::find_program_address(
-        &["reward_pool".as_bytes(), &authority_account.to_bytes()],
-        program_id,
-    )
-}
-
 /// Create account
 pub fn create_account<'a, S: Pack>(
     program_id: &Pubkey,
@@ -139,20 +128,15 @@ impl AccountLoader {
     ) -> Result<I::Item, ProgramError> {
         let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-        let AccountInfo {
-            key,
-            lamports,
-            data,
-            owner,
-            ..
-        } = acc;
-
-        if **lamports.borrow() == 0 && data.borrow().is_empty() && *owner == &Pubkey::default() {
-            return Ok(acc);
-        }
-
-        msg!("Account #{}:{} already initialized", idx, key,);
-        Err(ProgramError::AccountAlreadyInitialized)
+        acc.data
+            .borrow()
+            .iter()
+            .all(|&x| x == 0)
+            .then(|| acc)
+            .ok_or_else(|| {
+                msg!("Account #{}:{} is already initialized", idx, acc.key);
+                ProgramError::AccountAlreadyInitialized
+            })
     }
 
     /// Checks if the next account has an owner with the specified address

@@ -24,6 +24,8 @@ pub struct WrappedMining<'a> {
 }
 
 impl<'a> WrappedMining<'a> {
+    pub const LEN: usize = Mining::LEN + std::mem::size_of::<WeightedStakeDiffs>();
+
     pub fn from_bytes_mut(bytes: &'a mut [u8]) -> Result<Self, ProgramError> {
         let (mining, weighted_stake_diffs) = bytes.split_at_mut(Mining::LEN);
         let mining = Mining::load_mut_bytes(mining)
@@ -36,10 +38,6 @@ impl<'a> WrappedMining<'a> {
             mining,
             weighted_stake_diffs,
         })
-    }
-
-    pub fn data_len(&self) -> usize {
-        Mining::LEN + std::mem::size_of::<WeightedStakeDiffs>()
     }
 
     /// Refresh rewards
@@ -104,14 +102,13 @@ impl Mining {
     pub const LEN: usize = std::mem::size_of::<Mining>();
 
     /// Initialize a Reward Pool
-    pub fn initialize(reward_pool: Pubkey, bump: u8, owner: Pubkey) -> Mining {
+    pub fn initialize(reward_pool: Pubkey, owner: Pubkey) -> Mining {
         let account_type = AccountType::Mining.into();
         let mut data = [0; 7];
         data[0] = account_type;
         Mining {
             data,
             reward_pool,
-            bump,
             owner,
             ..Default::default()
         }

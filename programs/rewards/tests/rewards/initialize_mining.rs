@@ -27,9 +27,7 @@ async fn success() {
     let (mut context, test_rewards) = setup().await;
 
     let user = Keypair::new();
-    let user_mining = test_rewards
-        .initialize_mining(&mut context, &user.pubkey())
-        .await;
+    let user_mining = test_rewards.initialize_mining(&mut context, &user).await;
 
     let mut mining_account = get_account(&mut context, &user_mining).await;
     let mining_data = &mut mining_account.data.borrow_mut();

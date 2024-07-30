@@ -28,7 +28,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
 
     let user = Keypair::new();
     let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &user.pubkey())
+        .initialize_mining(&mut context, &user)
         .await;
 
     (context, test_reward_pool, user.pubkey(), user_mining)
@@ -334,7 +334,7 @@ async fn prolong_with_delegate() {
 
     let delegate = Keypair::new();
     let delegate_mining = test_rewards
-        .initialize_mining(&mut context, &delegate.pubkey())
+        .initialize_mining(&mut context, &delegate)
         .await;
     test_rewards
         .deposit_mining(

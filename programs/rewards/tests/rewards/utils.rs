@@ -1,13 +1,18 @@
 use std::borrow::{Borrow, BorrowMut};
 
-use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
+use mplx_rewards::{
+    error::MplxRewardsError,
+    state::{WrappedMining, WrappedRewardPool},
+    utils::LockupPeriod,
+};
 use solana_program::{instruction::InstructionError, pubkey::Pubkey};
 use solana_program_test::{BanksClientError, ProgramTestContext};
 use solana_sdk::{
     account::Account,
     program_pack::Pack,
+    rent::Rent,
     signature::{Keypair, Signer},
-    system_instruction::{self},
+    system_instruction::{self, create_account_with_seed},
     transaction::{Transaction, TransactionError},
 };
 use spl_token::state::Account as SplTokenAccount;
@@ -32,13 +37,20 @@ impl TestRewards {
         let fill_authority = Keypair::new();
         let distribution_authority = Keypair::new();
 
-        let (reward_pool, _) = Pubkey::find_program_address(
-            &[
-                b"reward_pool".as_ref(),
-                &deposit_authority.pubkey().to_bytes(),
-            ],
+        // let (reward_pool, _) = Pubkey::find_program_address(
+        //     &[
+        //         b"reward_pool".as_ref(),
+        //         &deposit_authority.pubkey().to_bytes(),
+        //     ],
+        //     &mplx_rewards::id(),
+        // );
+
+        let reward_pool = Pubkey::create_with_seed(
+            &deposit_authority.pubkey(),
+            "reward_pool",
             &mplx_rewards::id(),
-        );
+        )
+        .unwrap();
 
         let (vault_pubkey, _vault_bump) = Pubkey::find_program_address(
             &[
@@ -60,18 +72,33 @@ impl TestRewards {
     }
 
     pub async fn initialize_pool(&self, context: &mut ProgramTestContext) -> BanksClientResult<()> {
+        let rent = context.banks_client.get_sysvar::<Rent>().await.unwrap();
+
+        let create_pool_ix = create_account_with_seed(
+            &context.payer.pubkey(),
+            &self.reward_pool,
+            &self.deposit_authority.pubkey(),
+            "reward_pool",
+            rent.minimum_balance(WrappedRewardPool::LEN),
+            WrappedRewardPool::LEN as u64,
+            &mplx_rewards::id(),
+        );
+
         // Initialize mining pool
         let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::initialize_pool(
-                &mplx_rewards::id(),
-                &self.reward_pool,
-                &self.token_mint_pubkey,
-                &self.vault_pubkey,
-                &context.payer.pubkey(),
-                &self.deposit_authority.pubkey(),
-                &self.fill_authority.pubkey(),
-                &self.distribution_authority.pubkey(),
-            )],
+            &[
+                create_pool_ix,
+                mplx_rewards::instruction::initialize_pool(
+                    &mplx_rewards::id(),
+                    &self.reward_pool,
+                    &self.token_mint_pubkey,
+                    &self.vault_pubkey,
+                    &context.payer.pubkey(),
+                    &self.deposit_authority.pubkey(),
+                    &self.fill_authority.pubkey(),
+                    &self.distribution_authority.pubkey(),
+                ),
+            ],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
             context.last_blockhash,
@@ -83,27 +110,36 @@ impl TestRewards {
     pub async fn initialize_mining(
         &self,
         context: &mut ProgramTestContext,
-        mining_owner: &Pubkey,
+        mining_owner: &Keypair,
     ) -> Pubkey {
-        let (mining_account, _) = Pubkey::find_program_address(
-            &[
-                b"mining".as_ref(),
-                mining_owner.as_ref(),
-                self.reward_pool.as_ref(),
-            ],
+        let rent = context.banks_client.get_sysvar::<Rent>().await.unwrap();
+
+        let mining_account =
+            Pubkey::create_with_seed(&mining_owner.pubkey(), "mining", &mplx_rewards::id())
+                .unwrap();
+
+        let create_mining_ix = create_account_with_seed(
+            &context.payer.pubkey(),
+            &mining_account,
+            &mining_owner.pubkey(),
+            "mining",
+            rent.minimum_balance(WrappedMining::LEN),
+            WrappedMining::LEN as u64,
             &mplx_rewards::id(),
         );
 
         let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::initialize_mining(
-                &mplx_rewards::id(),
-                &self.reward_pool,
-                &mining_account,
-                &context.payer.pubkey(),
-                mining_owner,
-            )],
+            &[
+                create_mining_ix,
+                mplx_rewards::instruction::initialize_mining(
+                    &mplx_rewards::id(),
+                    &self.reward_pool,
+                    &mining_account,
+                    &mining_owner.pubkey(),
+                ),
+            ],
             Some(&context.payer.pubkey()),
-            &[&context.payer],
+            &[&context.payer, &mining_owner],
             context.last_blockhash,
         );
 
@@ -457,9 +493,7 @@ pub async fn create_end_user(
     )
     .await
     .unwrap();
-    let user_mining = test_rewards
-        .initialize_mining(context, &user.pubkey())
-        .await;
+    let user_mining = test_rewards.initialize_mining(context, &user).await;
 
     (user, user_reward, user_mining)
 }

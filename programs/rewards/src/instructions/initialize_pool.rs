@@ -1,17 +1,12 @@
 use crate::{
-    asserts::{assert_account_key, assert_uninitialized},
-    state::{CumulativeIndex, RewardPool, WeightedStakeDiffs, WrappedRewardPool},
-    utils::{
-        create_account, find_reward_pool_program_address, find_vault_program_address,
-        initialize_account, AccountLoader,
-    },
+    asserts::assert_account_key,
+    state::{RewardPool, WrappedRewardPool},
+    utils::{create_account, find_vault_program_address, initialize_account, AccountLoader},
 };
-use solana_program::sysvar::Sysvar;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey, rent::Rent,
     system_program, sysvar::SysvarId,
 };
-use solana_program::{program::invoke_signed, system_instruction};
 use spl_token::state::Account as SplTokenAccount;
 
 pub fn process_initialize_pool<'a>(
@@ -31,18 +26,9 @@ pub fn process_initialize_pool<'a>(
     let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
     let _system_program = AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
 
-    assert_uninitialized(reward_pool)?;
-    assert_uninitialized(reward_vault)?;
-
-    let (reward_pool_pubkey, pool_bump) =
-        find_reward_pool_program_address(program_id, deposit_authority.key);
+    let reward_pool_pubkey =
+        Pubkey::create_with_seed(&deposit_authority.key, "reward_pool", program_id)?;
     assert_account_key(reward_pool, &reward_pool_pubkey)?;
-
-    let reward_pool_seeds = &[
-        "reward_pool".as_bytes(),
-        &deposit_authority.key.to_bytes(),
-        &[pool_bump],
-    ];
 
     let (vault_pubkey, token_account_bump) =
         find_vault_program_address(program_id, reward_pool.key, reward_mint.key);
@@ -53,24 +39,6 @@ pub fn process_initialize_pool<'a>(
         reward_mint.key.as_ref(),
         &[token_account_bump],
     ];
-
-    // TODO: refactor account creation
-    let mining_acc_size = RewardPool::LEN
-        + std::mem::size_of::<WeightedStakeDiffs>()
-        + std::mem::size_of::<CumulativeIndex>();
-    let rent_sysvar = Rent::get()?;
-    let ix = system_instruction::create_account(
-        &payer.key,
-        &reward_pool.key,
-        rent_sysvar.minimum_balance(mining_acc_size),
-        (mining_acc_size) as u64,
-        program_id,
-    );
-    invoke_signed(
-        &ix,
-        &[payer.clone(), reward_pool.clone()],
-        &[reward_pool_seeds],
-    )?;
 
     create_account::<SplTokenAccount>(
         &spl_token::id(),
@@ -86,7 +54,6 @@ pub fn process_initialize_pool<'a>(
     )?;
 
     let pool = RewardPool::initialize(
-        pool_bump,
         token_account_bump,
         *deposit_authority.key,
         distribute_authority,

@@ -21,9 +21,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
     test_rewards.initialize_pool(&mut context).await.unwrap();
 
     let user = Keypair::new();
-    let user_mining = test_rewards
-        .initialize_mining(&mut context, &user.pubkey())
-        .await;
+    let user_mining = test_rewards.initialize_mining(&mut context, &user).await;
 
     (context, test_rewards, user.pubkey(), user_mining)
 }
