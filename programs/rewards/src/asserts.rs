@@ -72,6 +72,19 @@ pub fn assert_pubkey_eq(given: &Pubkey, expected: &Pubkey) -> ProgramResult {
     }
 }
 
+pub fn assert_account_len(account: &AccountInfo, len: usize) -> ProgramResult {
+    if account.data_len() >= len {
+        Ok(())
+    } else {
+        msg!(
+            "Assert account len error. Got {} Expected {}",
+            account.data_len(),
+            len
+        );
+        Err(ProgramError::InvalidArgument)
+    }
+}
+
 pub fn assert_and_get_pool_and_mining<'a>(
     program_id: &Pubkey,
     mining_owner: &Pubkey,

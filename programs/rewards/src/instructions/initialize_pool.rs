@@ -1,5 +1,5 @@
 use crate::{
-    asserts::assert_account_key,
+    asserts::{assert_account_key, assert_account_len},
     state::{RewardPool, WrappedRewardPool},
     utils::{create_account, find_vault_program_address, initialize_account, AccountLoader},
 };
@@ -29,6 +29,8 @@ pub fn process_initialize_pool<'a>(
     let reward_pool_pubkey =
         Pubkey::create_with_seed(deposit_authority.key, "reward_pool", program_id)?;
     assert_account_key(reward_pool, &reward_pool_pubkey)?;
+
+    assert_account_len(reward_pool, WrappedRewardPool::LEN)?;
 
     let (vault_pubkey, token_account_bump) =
         find_vault_program_address(program_id, reward_pool.key, reward_mint.key);

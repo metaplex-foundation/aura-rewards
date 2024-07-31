@@ -6,7 +6,6 @@ use solana_program_test::{BanksClientError, ProgramTestContext};
 use solana_sdk::{
     account::Account,
     program_pack::Pack,
-    rent::Rent,
     signature::{Keypair, Signer},
     system_instruction::{self, create_account_with_seed},
     transaction::{Transaction, TransactionError},
@@ -60,7 +59,7 @@ impl TestRewards {
     }
 
     pub async fn initialize_pool(&self, context: &mut ProgramTestContext) -> BanksClientResult<()> {
-        let rent = context.banks_client.get_sysvar::<Rent>().await.unwrap();
+        let rent = context.banks_client.get_rent().await.unwrap();
 
         let create_pool_ix = create_account_with_seed(
             &context.payer.pubkey(),
