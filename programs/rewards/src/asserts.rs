@@ -6,7 +6,7 @@ use solana_program::{
 
 use crate::{
     error::MplxRewardsError,
-    state::{WrappedMining, WrappedRewardPool},
+    state::{CumulativeIndex, PoolWeightedStakeDiffs, RewardPool, WrappedMining, WrappedRewardPool},
 };
 
 /// Assert signer.
@@ -106,7 +106,7 @@ pub fn assert_and_get_pool_and_mining<'a>(
     deposit_authority: &AccountInfo,
     reward_pool_data: &'a mut [u8],
     mining_data: &'a mut [u8],
-) -> Result<(WrappedRewardPool<'a>, WrappedMining<'a>), ProgramError> {
+) -> Result<(WrappedRewardPool<&'a mut RewardPool, &'a mut PoolWeightedStakeDiffs, &'a mut CumulativeIndex>, WrappedMining<'a>), ProgramError> {
     let wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
     let mining_pubkey = Pubkey::create_program_address(
