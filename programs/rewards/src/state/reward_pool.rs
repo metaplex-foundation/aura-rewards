@@ -54,7 +54,9 @@ impl<'a> WrappedRewardPool<&'a RewardPool, &'a PoolWeightedStakeDiffs, &'a Cumul
     }
 }
 
-impl<'a> WrappedRewardPool<&'a mut RewardPool, &'a mut PoolWeightedStakeDiffs, &'a mut CumulativeIndex> {
+impl<'a>
+    WrappedRewardPool<&'a mut RewardPool, &'a mut PoolWeightedStakeDiffs, &'a mut CumulativeIndex>
+{
     pub const LEN: usize = RewardPool::LEN
         + std::mem::size_of::<PoolWeightedStakeDiffs>()
         + std::mem::size_of::<CumulativeIndex>();
