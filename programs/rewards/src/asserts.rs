@@ -111,6 +111,7 @@ pub fn assert_and_get_pool_and_mining<'a>(
 ) -> Result<
     (
         WrappedRewardPool<
+            'a,
             &'a mut RewardPool,
             &'a mut PoolWeightedStakeDiffs,
             &'a mut CumulativeIndex,

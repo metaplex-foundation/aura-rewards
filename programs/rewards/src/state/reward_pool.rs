@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::{
     error::MplxRewardsError,
     state::AccountType,
@@ -19,8 +21,24 @@ use solana_program::{
 use super::{
     CumulativeIndex, MiningWeightedStakeDiffs, PoolWeightedStakeDiffs, WrappedMining, PRECISION,
 };
+pub trait RewardPoolRef<'a> {}
+impl<'a> RewardPoolRef<'a> for &'a RewardPool {}
+impl<'a> RewardPoolRef<'a> for &'a mut RewardPool {}
 
-pub struct WrappedRewardPool<P, W, C> {
+pub trait WeightedStakeDiffsRef<'a> {}
+
+impl<'a> WeightedStakeDiffsRef<'a> for &'a PoolWeightedStakeDiffs {}
+impl<'a> WeightedStakeDiffsRef<'a> for &'a mut PoolWeightedStakeDiffs {}
+
+pub trait CumulativeIndexRef<'a> {}
+
+impl<'a> CumulativeIndexRef<'a> for &'a CumulativeIndex {}
+impl<'a> CumulativeIndexRef<'a> for &'a mut CumulativeIndex {}
+
+pub struct WrappedRewardPool<'a, P, W, C>
+where
+    P: RewardPoolRef<'a>,
+{
     pub pool: P,
     /// Weighted stake diffs data structure is used to represent in time
     /// when total_share (which represents sum of all stakers' weighted stake) must change
@@ -29,9 +47,10 @@ pub struct WrappedRewardPool<P, W, C> {
     /// This cumulative "index" increases on each distribution. It represents both the last time when
     /// the distribution happened and the number which is used in distribution calculations. <Date, index>
     pub cumulative_index: C,
+    _marker: PhantomData<&'a ()>,
 }
 
-impl<'a> WrappedRewardPool<&'a RewardPool, &'a PoolWeightedStakeDiffs, &'a CumulativeIndex> {
+impl<'a> WrappedRewardPool<'a, &'a RewardPool, &'a PoolWeightedStakeDiffs, &'a CumulativeIndex> {
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, ProgramError> {
         let (pool, trees) = bytes.split_at(RewardPool::LEN);
         let (weighted_stake_diffs, cumulative_index) =
@@ -50,12 +69,13 @@ impl<'a> WrappedRewardPool<&'a RewardPool, &'a PoolWeightedStakeDiffs, &'a Cumul
             pool,
             weighted_stake_diffs,
             cumulative_index,
+            _marker: PhantomData,
         })
     }
 }
 
 impl<'a>
-    WrappedRewardPool<&'a mut RewardPool, &'a mut PoolWeightedStakeDiffs, &'a mut CumulativeIndex>
+    WrappedRewardPool<'a, &'a mut RewardPool, &'a mut PoolWeightedStakeDiffs, &'a mut CumulativeIndex>
 {
     pub const LEN: usize = RewardPool::LEN
         + std::mem::size_of::<PoolWeightedStakeDiffs>()
@@ -79,6 +99,7 @@ impl<'a>
             pool,
             weighted_stake_diffs,
             cumulative_index,
+            _marker: PhantomData,
         })
     }
 
