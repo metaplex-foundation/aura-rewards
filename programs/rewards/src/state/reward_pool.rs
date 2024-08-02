@@ -20,18 +20,43 @@ use super::{
     CumulativeIndex, MiningWeightedStakeDiffs, PoolWeightedStakeDiffs, WrappedMining, PRECISION,
 };
 
-pub struct WrappedRewardPool<'a> {
-    pub pool: &'a mut RewardPool,
+pub struct WrappedRewardPool<P, W, C> {
+    pub pool: P,
     /// Weighted stake diffs data structure is used to represent in time
     /// when total_share (which represents sum of all stakers' weighted stake) must change
     /// accordingly to the changes in the staking contract.
-    pub weighted_stake_diffs: &'a mut PoolWeightedStakeDiffs,
+    pub weighted_stake_diffs: W,
     /// This cumulative "index" increases on each distribution. It represents both the last time when
     /// the distribution happened and the number which is used in distribution calculations. <Date, index>
-    pub cumulative_index: &'a mut CumulativeIndex,
+    pub cumulative_index: C,
 }
 
-impl<'a> WrappedRewardPool<'a> {
+impl<'a> WrappedRewardPool<&'a RewardPool, &'a PoolWeightedStakeDiffs, &'a CumulativeIndex> {
+    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, ProgramError> {
+        let (pool, trees) = bytes.split_at(RewardPool::LEN);
+        let (weighted_stake_diffs, cumulative_index) =
+            trees.split_at(std::mem::size_of::<PoolWeightedStakeDiffs>());
+
+        let pool = RewardPool::load_bytes(pool)
+            .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
+
+        let weighted_stake_diffs = PoolWeightedStakeDiffs::load_bytes(weighted_stake_diffs)
+            .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
+
+        let cumulative_index = CumulativeIndex::load_bytes(cumulative_index)
+            .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
+
+        Ok(Self {
+            pool,
+            weighted_stake_diffs,
+            cumulative_index,
+        })
+    }
+}
+
+impl<'a>
+    WrappedRewardPool<&'a mut RewardPool, &'a mut PoolWeightedStakeDiffs, &'a mut CumulativeIndex>
+{
     pub const LEN: usize = RewardPool::LEN
         + std::mem::size_of::<PoolWeightedStakeDiffs>()
         + std::mem::size_of::<CumulativeIndex>();
