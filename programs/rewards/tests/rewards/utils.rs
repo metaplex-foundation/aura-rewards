@@ -7,7 +7,7 @@ use solana_sdk::{
     account::Account,
     program_pack::Pack,
     signature::{Keypair, Signer},
-    system_instruction::{self, create_account_with_seed},
+    system_instruction::{self, create_account},
     transaction::{Transaction, TransactionError},
 };
 use spl_token::state::Account as SplTokenAccount;
@@ -22,7 +22,7 @@ pub struct TestRewards {
     pub deposit_authority: Keypair,
     pub distribution_authority: Keypair,
     pub fill_authority: Keypair,
-    pub reward_pool: Pubkey,
+    pub reward_pool: Keypair,
     pub vault_pubkey: Pubkey,
 }
 
@@ -31,18 +31,12 @@ impl TestRewards {
         let deposit_authority = Keypair::new();
         let fill_authority = Keypair::new();
         let distribution_authority = Keypair::new();
-
-        let reward_pool = Pubkey::create_with_seed(
-            &deposit_authority.pubkey(),
-            "reward_pool",
-            &mplx_rewards::id(),
-        )
-        .unwrap();
+        let reward_pool = Keypair::new();
 
         let (vault_pubkey, _vault_bump) = Pubkey::find_program_address(
             &[
                 b"vault".as_ref(),
-                &reward_pool.to_bytes(),
+                &reward_pool.pubkey().to_bytes(),
                 &token_mint_pubkey.to_bytes(),
             ],
             &mplx_rewards::id(),
@@ -60,24 +54,23 @@ impl TestRewards {
 
     pub async fn initialize_pool(&self, context: &mut ProgramTestContext) -> BanksClientResult<()> {
         let rent = context.banks_client.get_rent().await.unwrap();
-
-        let create_pool_ix = create_account_with_seed(
+        let lamports = rent.minimum_balance(WrappedRewardPool::LEN);
+        let space = WrappedRewardPool::LEN as u64;
+        let create_reward_pool_ix = create_account(
             &context.payer.pubkey(),
-            &self.reward_pool,
-            &self.deposit_authority.pubkey(),
-            "reward_pool",
-            rent.minimum_balance(WrappedRewardPool::LEN),
-            WrappedRewardPool::LEN as u64,
+            &self.reward_pool.pubkey(),
+            lamports,
+            space,
             &mplx_rewards::id(),
         );
 
         // Initialize mining pool
         let tx = Transaction::new_signed_with_payer(
             &[
-                create_pool_ix,
+                create_reward_pool_ix,
                 mplx_rewards::instruction::initialize_pool(
                     &mplx_rewards::id(),
-                    &self.reward_pool,
+                    &self.reward_pool.pubkey(),
                     &self.token_mint_pubkey,
                     &self.vault_pubkey,
                     &context.payer.pubkey(),
@@ -87,7 +80,7 @@ impl TestRewards {
                 ),
             ],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority],
+            &[&context.payer, &self.deposit_authority, &self.reward_pool],
             context.last_blockhash,
         );
 
@@ -103,7 +96,7 @@ impl TestRewards {
             &[
                 b"mining".as_ref(),
                 mining_owner.pubkey().as_ref(),
-                self.reward_pool.as_ref(),
+                self.reward_pool.pubkey().as_ref(),
             ],
             &mplx_rewards::id(),
         );
@@ -111,7 +104,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::initialize_mining(
                 &mplx_rewards::id(),
-                &self.reward_pool,
+                &self.reward_pool.pubkey(),
                 &mining_account,
                 &context.payer.pubkey(),
                 &mining_owner.pubkey(),
@@ -138,7 +131,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::change_delegate(
                 &mplx_rewards::id(),
-                &self.reward_pool,
+                &self.reward_pool.pubkey(),
                 mining,
                 &self.deposit_authority.pubkey(),
                 &mining_owner.pubkey(),
@@ -166,7 +159,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
                 &mplx_rewards::id(),
-                &self.reward_pool,
+                &self.reward_pool.pubkey(),
                 mining_account,
                 &self.deposit_authority.pubkey(),
                 delegate_mining,
@@ -193,7 +186,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::withdraw_mining(
                 &mplx_rewards::id(),
-                &self.reward_pool,
+                &self.reward_pool.pubkey(),
                 mining_account,
                 &self.deposit_authority.pubkey(),
                 delegate_mining,
@@ -218,7 +211,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::fill_vault(
                 &mplx_rewards::id(),
-                &self.reward_pool,
+                &self.reward_pool.pubkey(),
                 &self.token_mint_pubkey,
                 &self.vault_pubkey,
                 &self.fill_authority.pubkey(),
@@ -244,7 +237,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::claim(
                 &mplx_rewards::id(),
-                &self.reward_pool,
+                &self.reward_pool.pubkey(),
                 &self.token_mint_pubkey,
                 &self.vault_pubkey,
                 mining_account,
@@ -267,7 +260,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::distribute_rewards(
                 &mplx_rewards::id(),
-                &self.reward_pool,
+                &self.reward_pool.pubkey(),
                 &self.distribution_authority.pubkey(),
             )],
             Some(&context.payer.pubkey()),
@@ -294,7 +287,7 @@ impl TestRewards {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::extend_stake(
                 &mplx_rewards::id(),
-                &self.reward_pool,
+                &self.reward_pool.pubkey(),
                 mining_account,
                 &self.deposit_authority.pubkey(),
                 delegate_mining,
@@ -327,7 +320,7 @@ impl TestRewards {
                 &mining_owner.pubkey(),
                 target_account,
                 &self.deposit_authority.pubkey(),
-                &self.reward_pool,
+                &self.reward_pool.pubkey(),
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority, mining_owner],

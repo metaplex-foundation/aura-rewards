@@ -33,6 +33,9 @@ async fn success() {
     let mining_data = &mut mining_account.data.borrow_mut();
     let wrapped_mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
 
-    assert_eq!(wrapped_mining.mining.reward_pool, test_rewards.reward_pool);
+    assert_eq!(
+        wrapped_mining.mining.reward_pool,
+        test_rewards.reward_pool.pubkey()
+    );
     assert_eq!(wrapped_mining.mining.owner, user.pubkey());
 }

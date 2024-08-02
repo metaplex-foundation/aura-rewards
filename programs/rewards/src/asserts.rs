@@ -85,6 +85,19 @@ pub fn assert_account_len(account: &AccountInfo, len: usize) -> ProgramResult {
     }
 }
 
+pub fn assert_account_owner(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
+    if account.owner == owner {
+        Ok(())
+    } else {
+        msg!(
+            "Assert account owner error. Got {} Expected {}",
+            account.owner,
+            owner
+        );
+        Err(ProgramError::InvalidArgument)
+    }
+}
+
 pub fn assert_and_get_pool_and_mining<'a>(
     program_id: &Pubkey,
     mining_owner: &Pubkey,

@@ -41,7 +41,8 @@ async fn success() {
         .await
         .unwrap();
 
-    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
     let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
     let reward_pool = wrapped_reward_pool.pool;
@@ -78,7 +79,8 @@ async fn success_with_5kkk_after_expiring() {
         .await
         .unwrap();
 
-    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
     let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
     let reward_pool = wrapped_reward_pool.pool;

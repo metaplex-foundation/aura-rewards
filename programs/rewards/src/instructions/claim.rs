@@ -1,5 +1,5 @@
 use crate::{
-    asserts::assert_account_key,
+    asserts::{assert_account_key, assert_account_owner},
     state::{WrappedMining, WrappedRewardPool},
     utils::{spl_transfer, AccountLoader},
 };
@@ -41,13 +41,10 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
         let amount = {
             let mining_data = &mut mining.data.borrow_mut();
             let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
-            let reward_pool_pubkey =
-                Pubkey::create_with_seed(deposit_authority.key, "reward_pool", program_id)?;
 
+            assert_account_owner(reward_pool, program_id)?;
             assert_account_key(mining_owner, &wrapped_mining.mining.owner)?;
             assert_account_key(reward_pool, &wrapped_mining.mining.reward_pool)?;
-
-            assert_account_key(reward_pool, &reward_pool_pubkey)?;
 
             let vault_seeds = &[
                 b"vault".as_ref(),
