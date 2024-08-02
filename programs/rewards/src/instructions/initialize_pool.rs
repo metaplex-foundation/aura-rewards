@@ -1,8 +1,10 @@
 use crate::{
     asserts::{assert_account_key, assert_account_len, assert_account_owner},
+    error::MplxRewardsError,
     state::{RewardPool, WrappedRewardPool},
     utils::{create_account, find_vault_program_address, initialize_account, AccountLoader},
 };
+use solana_program::program_pack::IsInitialized;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey, rent::Rent,
     system_program, sysvar::SysvarId,
@@ -17,7 +19,7 @@ pub fn process_initialize_pool<'a>(
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter().enumerate();
 
-    let reward_pool = AccountLoader::next_uninitialized(account_info_iter)?;
+    let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
     let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
     let reward_vault = AccountLoader::next_uninitialized(account_info_iter)?;
     let payer = AccountLoader::next_signer(account_info_iter)?;
@@ -28,6 +30,12 @@ pub fn process_initialize_pool<'a>(
 
     assert_account_owner(reward_pool, program_id)?;
     assert_account_len(reward_pool, WrappedRewardPool::LEN)?;
+
+    let reward_pool_data = &mut reward_pool.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
+    if wrapped_reward_pool.pool.is_initialized() {
+        return Err(MplxRewardsError::AlreadyInitialized.into());
+    }
 
     let (vault_pubkey, token_account_bump) =
         find_vault_program_address(program_id, reward_pool.key, reward_mint.key);
@@ -59,9 +67,6 @@ pub fn process_initialize_pool<'a>(
         fill_authority,
         *reward_mint.key,
     );
-
-    let reward_pool_data = &mut reward_pool.data.borrow_mut();
-    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
     *wrapped_reward_pool.pool = pool;
     wrapped_reward_pool.weighted_stake_diffs.initialize();
