@@ -38,6 +38,8 @@ impl<'a> CumulativeIndexRef<'a> for &'a mut CumulativeIndex {}
 pub struct WrappedRewardPool<'a, P, W, C>
 where
     P: RewardPoolRef<'a>,
+    W: WeightedStakeDiffsRef<'a>,
+    C: CumulativeIndexRef<'a>,
 {
     pub pool: P,
     /// Weighted stake diffs data structure is used to represent in time
@@ -75,7 +77,12 @@ impl<'a> WrappedRewardPool<'a, &'a RewardPool, &'a PoolWeightedStakeDiffs, &'a C
 }
 
 impl<'a>
-    WrappedRewardPool<'a, &'a mut RewardPool, &'a mut PoolWeightedStakeDiffs, &'a mut CumulativeIndex>
+    WrappedRewardPool<
+        'a,
+        &'a mut RewardPool,
+        &'a mut PoolWeightedStakeDiffs,
+        &'a mut CumulativeIndex,
+    >
 {
     pub const LEN: usize = RewardPool::LEN
         + std::mem::size_of::<PoolWeightedStakeDiffs>()
