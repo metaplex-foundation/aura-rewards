@@ -76,6 +76,12 @@ pub struct ExtendStakeInstructionData {
     discriminator: u8,
 }
 
+impl Default for ExtendStakeInstructionData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExtendStakeInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 6 }

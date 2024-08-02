@@ -69,6 +69,12 @@ pub struct WithdrawMiningInstructionData {
     discriminator: u8,
 }
 
+impl Default for WithdrawMiningInstructionData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WithdrawMiningInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 4 }

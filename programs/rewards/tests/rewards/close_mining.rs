@@ -1,20 +1,16 @@
-use std::borrow::Borrow;
+use std::borrow::BorrowMut;
 
 use crate::utils::*;
 use assert_custom_on_chain_error::AssertCustomOnChainErr;
-use mplx_rewards::{error::MplxRewardsError, state::Mining, utils::LockupPeriod};
+use mplx_rewards::{error::MplxRewardsError, state::WrappedMining, utils::LockupPeriod};
 use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
-use solana_sdk::{clock::SECONDS_PER_DAY, program_pack::Pack, signature::Keypair, signer::Signer};
+use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
 
 async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
-    let test = ProgramTest::new(
-        "mplx_rewards",
-        mplx_rewards::id(),
-        processor!(mplx_rewards::processor::process_instruction),
-    );
-
+    let test = ProgramTest::new("mplx_rewards", mplx_rewards::ID, None);
     let mut context = test.start_with_context().await;
+
     let deposit_token_mint = Keypair::new();
     let payer = &context.payer.pubkey();
     create_mint(&mut context, &deposit_token_mint, payer)
@@ -30,7 +26,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
 
     let mining_owner = Keypair::new();
     let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &mining_owner.pubkey())
+        .initialize_mining(&mut context, &mining_owner)
         .await;
 
     (context, test_reward_pool, mining_owner, user_mining)
@@ -76,7 +72,7 @@ async fn close_when_has_stake_from_others() {
 
     let delegate = Keypair::new();
     let delegate_mining = test_rewards
-        .initialize_mining(&mut context, &delegate.pubkey())
+        .initialize_mining(&mut context, &delegate)
         .await;
     test_rewards
         .deposit_mining(
@@ -89,10 +85,11 @@ async fn close_when_has_stake_from_others() {
         )
         .await
         .unwrap();
-    let delegate_mining_account = get_account(&mut context, &delegate_mining).await;
-    let d_mining = Mining::unpack(delegate_mining_account.data.borrow()).unwrap();
-    assert_eq!(d_mining.share, 18_000_000);
-    assert_eq!(d_mining.stake_from_others, 0);
+    let mut delegate_mining_account = get_account(&mut context, &delegate_mining).await;
+    let d_mining_data = &mut delegate_mining_account.data.borrow_mut();
+    let d_wrapped_mining = WrappedMining::from_bytes_mut(d_mining_data).unwrap();
+    assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
+    assert_eq!(d_wrapped_mining.mining.stake_from_others, 0);
 
     let mining_owner_before = context
         .banks_client

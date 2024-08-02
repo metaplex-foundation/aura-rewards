@@ -7,13 +7,9 @@ use spl_token::state::Account;
 use std::borrow::Borrow;
 
 async fn setup() -> (ProgramTestContext, TestRewards) {
-    let test = ProgramTest::new(
-        "mplx_rewards",
-        mplx_rewards::id(),
-        processor!(mplx_rewards::processor::process_instruction),
-    );
-
+    let test = ProgramTest::new("mplx_rewards", mplx_rewards::ID, None);
     let mut context = test.start_with_context().await;
+
     let owner = &context.payer.pubkey();
 
     let mint = Keypair::new();
@@ -27,7 +23,7 @@ async fn setup() -> (ProgramTestContext, TestRewards) {
 
     let user = Keypair::new();
     let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &user.pubkey())
+        .initialize_mining(&mut context, &user)
         .await;
     test_reward_pool
         .deposit_mining(

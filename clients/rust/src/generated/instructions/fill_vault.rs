@@ -79,6 +79,12 @@ pub struct FillVaultInstructionData {
     discriminator: u8,
 }
 
+impl Default for FillVaultInstructionData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FillVaultInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 1 }
