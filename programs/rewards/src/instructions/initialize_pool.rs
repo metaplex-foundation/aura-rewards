@@ -4,10 +4,9 @@ use crate::{
     state::{RewardPool, WrappedRewardPool},
     utils::{create_account, find_vault_program_address, initialize_account, AccountLoader},
 };
-use solana_program::program_pack::IsInitialized;
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey, rent::Rent,
-    system_program, sysvar::SysvarId,
+    account_info::AccountInfo, entrypoint::ProgramResult, program_pack::IsInitialized,
+    pubkey::Pubkey, rent::Rent, system_program, sysvar::SysvarId,
 };
 use spl_token::state::Account as SplTokenAccount;
 
