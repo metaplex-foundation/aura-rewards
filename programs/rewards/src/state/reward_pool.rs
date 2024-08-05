@@ -22,18 +22,16 @@ use super::{
     CumulativeIndex, MiningWeightedStakeDiffs, PoolWeightedStakeDiffs, WrappedMining, PRECISION,
 };
 pub trait RewardPoolRef<'a> {}
-impl<'a> RewardPoolRef<'a> for &'a RewardPool {}
-impl<'a> RewardPoolRef<'a> for &'a mut RewardPool {}
+impl RewardPoolRef<'_> for &'_ RewardPool {}
+impl RewardPoolRef<'_> for &'_ mut RewardPool {}
 
 pub trait WeightedStakeDiffsRef<'a> {}
-
-impl<'a> WeightedStakeDiffsRef<'a> for &'a PoolWeightedStakeDiffs {}
-impl<'a> WeightedStakeDiffsRef<'a> for &'a mut PoolWeightedStakeDiffs {}
+impl WeightedStakeDiffsRef<'_> for &'_ PoolWeightedStakeDiffs {}
+impl WeightedStakeDiffsRef<'_> for &'_ mut PoolWeightedStakeDiffs {}
 
 pub trait CumulativeIndexRef<'a> {}
-
-impl<'a> CumulativeIndexRef<'a> for &'a CumulativeIndex {}
-impl<'a> CumulativeIndexRef<'a> for &'a mut CumulativeIndex {}
+impl CumulativeIndexRef<'_> for &'_ CumulativeIndex {}
+impl CumulativeIndexRef<'_> for &'_ mut CumulativeIndex {}
 
 pub struct WrappedRewardPool<'a, P, W, C>
 where
