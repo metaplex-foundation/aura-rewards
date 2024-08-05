@@ -1,6 +1,6 @@
 use crate::{
-    asserts::{assert_account_key, assert_uninitialized},
-    state::{Mining, WeightedStakeDiffs, WrappedMining},
+    asserts::assert_account_key,
+    state::{Mining, WrappedMining},
     utils::{find_mining_program_address, AccountLoader},
 };
 use solana_program::{
@@ -20,13 +20,8 @@ pub fn process_initialize_mining<'a>(
     let payer = AccountLoader::next_signer(account_info_iter)?;
     let _system_program = AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
 
-    assert_uninitialized(mining)?;
-
-    let bump = {
-        let (pubkey, bump) = find_mining_program_address(program_id, mining_owner, reward_pool.key);
-        assert_account_key(mining, &pubkey)?;
-        bump
-    };
+    let (pubkey, bump) = find_mining_program_address(program_id, mining_owner, reward_pool.key);
+    assert_account_key(mining, &pubkey)?;
 
     let signers_seeds = &[
         "mining".as_bytes(),
@@ -35,21 +30,19 @@ pub fn process_initialize_mining<'a>(
         &[bump],
     ];
 
-    // TODO: refactor account creation
-    let mining_acc_size = Mining::LEN + std::mem::size_of::<WeightedStakeDiffs>();
     let rent = Rent::get()?;
     let ix = system_instruction::create_account(
-        &payer.key,
-        &mining.key,
-        rent.minimum_balance(mining_acc_size),
-        (mining_acc_size) as u64,
+        payer.key,
+        mining.key,
+        rent.minimum_balance(WrappedMining::LEN),
+        WrappedMining::LEN as u64,
         program_id,
     );
     invoke_signed(&ix, &[payer.clone(), mining.clone()], &[signers_seeds])?;
 
     let mining_data = &mut mining.data.borrow_mut();
     let wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
-    let mining = Mining::initialize(*reward_pool.key, bump, *mining_owner);
+    let mining = Mining::initialize(*reward_pool.key, *mining_owner, bump);
     *wrapped_mining.mining = mining;
     wrapped_mining.weighted_stake_diffs.initialize();
 

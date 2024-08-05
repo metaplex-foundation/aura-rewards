@@ -1,17 +1,13 @@
 use crate::{
-    asserts::{assert_account_key, assert_uninitialized},
-    state::{CumulativeIndex, RewardPool, WeightedStakeDiffs, WrappedRewardPool},
-    utils::{
-        create_account, find_reward_pool_program_address, find_vault_program_address,
-        initialize_account, AccountLoader,
-    },
+    asserts::{assert_account_key, assert_account_len, assert_account_owner},
+    error::MplxRewardsError,
+    state::{RewardPool, WrappedRewardPool},
+    utils::{create_account, find_vault_program_address, initialize_account, AccountLoader},
 };
-use solana_program::sysvar::Sysvar;
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey, rent::Rent,
-    system_program, sysvar::SysvarId,
+    account_info::AccountInfo, entrypoint::ProgramResult, program_pack::IsInitialized,
+    pubkey::Pubkey, rent::Rent, system_program, sysvar::SysvarId,
 };
-use solana_program::{program::invoke_signed, system_instruction};
 use spl_token::state::Account as SplTokenAccount;
 
 pub fn process_initialize_pool<'a>(
@@ -22,7 +18,7 @@ pub fn process_initialize_pool<'a>(
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter().enumerate();
 
-    let reward_pool = AccountLoader::next_uninitialized(account_info_iter)?;
+    let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
     let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
     let reward_vault = AccountLoader::next_uninitialized(account_info_iter)?;
     let payer = AccountLoader::next_signer(account_info_iter)?;
@@ -31,18 +27,14 @@ pub fn process_initialize_pool<'a>(
     let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
     let _system_program = AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
 
-    assert_uninitialized(reward_pool)?;
-    assert_uninitialized(reward_vault)?;
+    assert_account_owner(reward_pool, program_id)?;
+    assert_account_len(reward_pool, WrappedRewardPool::LEN)?;
 
-    let (reward_pool_pubkey, pool_bump) =
-        find_reward_pool_program_address(program_id, deposit_authority.key);
-    assert_account_key(reward_pool, &reward_pool_pubkey)?;
-
-    let reward_pool_seeds = &[
-        "reward_pool".as_bytes(),
-        &deposit_authority.key.to_bytes(),
-        &[pool_bump],
-    ];
+    let reward_pool_data = &mut reward_pool.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
+    if wrapped_reward_pool.pool.is_initialized() {
+        return Err(MplxRewardsError::AlreadyInitialized.into());
+    }
 
     let (vault_pubkey, token_account_bump) =
         find_vault_program_address(program_id, reward_pool.key, reward_mint.key);
@@ -54,24 +46,6 @@ pub fn process_initialize_pool<'a>(
         &[token_account_bump],
     ];
 
-    // TODO: refactor account creation
-    let mining_acc_size = RewardPool::LEN
-        + std::mem::size_of::<WeightedStakeDiffs>()
-        + std::mem::size_of::<CumulativeIndex>();
-    let rent_sysvar = Rent::get()?;
-    let ix = system_instruction::create_account(
-        &payer.key,
-        &reward_pool.key,
-        rent_sysvar.minimum_balance(mining_acc_size),
-        (mining_acc_size) as u64,
-        program_id,
-    );
-    invoke_signed(
-        &ix,
-        &[payer.clone(), reward_pool.clone()],
-        &[reward_pool_seeds],
-    )?;
-
     create_account::<SplTokenAccount>(
         &spl_token::id(),
         payer.clone(),
@@ -81,21 +55,17 @@ pub fn process_initialize_pool<'a>(
     initialize_account(
         reward_vault.clone(),
         reward_mint.clone(),
-        reward_pool.clone(),
+        deposit_authority.clone(),
         rent.clone(),
     )?;
 
     let pool = RewardPool::initialize(
-        pool_bump,
         token_account_bump,
         *deposit_authority.key,
         distribute_authority,
         fill_authority,
         *reward_mint.key,
     );
-
-    let reward_pool_data = &mut reward_pool.data.borrow_mut();
-    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
     *wrapped_reward_pool.pool = pool;
     wrapped_reward_pool.weighted_stake_diffs.initialize();

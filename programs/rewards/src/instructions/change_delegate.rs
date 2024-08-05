@@ -28,7 +28,7 @@ pub fn process_change_delegate<'a>(
 
     let (mut wrapped_reward_pool, mut wrapped_mining) = assert_and_get_pool_and_mining(
         program_id,
-        &mining_owner.key,
+        mining_owner.key,
         mining,
         reward_pool,
         deposit_authority,

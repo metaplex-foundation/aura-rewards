@@ -921,7 +921,8 @@ async fn claim_with_delegate() {
     assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
     assert_eq!(d_wrapped_mining.mining.stake_from_others, 1_000_000);
 
-    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
     let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
     let reward_pool = wrapped_reward_pool.pool;

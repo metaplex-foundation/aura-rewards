@@ -18,22 +18,6 @@ pub fn assert_signer(account: &AccountInfo) -> ProgramResult {
     Err(ProgramError::MissingRequiredSignature)
 }
 
-/// Assert unitilialized
-pub fn assert_uninitialized(account: &AccountInfo) -> ProgramResult {
-    let AccountInfo {
-        lamports,
-        data,
-        owner,
-        ..
-    } = account;
-
-    if **lamports.borrow() == 0 && data.borrow().is_empty() && *owner == &Pubkey::default() {
-        return Ok(());
-    }
-
-    Err(ProgramError::AccountAlreadyInitialized)
-}
-
 /// Assert owned by
 pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
     if account.owner == owner {
@@ -83,6 +67,32 @@ pub fn assert_pubkey_eq(given: &Pubkey, expected: &Pubkey) -> ProgramResult {
             "Assert account error. Got {} Expected {}",
             *given,
             *expected
+        );
+        Err(ProgramError::InvalidArgument)
+    }
+}
+
+pub fn assert_account_len(account: &AccountInfo, len: usize) -> ProgramResult {
+    if account.data_len() == len {
+        Ok(())
+    } else {
+        msg!(
+            "Assert account len error. Got {} Expected {}",
+            account.data_len(),
+            len
+        );
+        Err(ProgramError::InvalidArgument)
+    }
+}
+
+pub fn assert_account_owner(account: &AccountInfo, owner: &Pubkey) -> ProgramResult {
+    if account.owner == owner {
+        Ok(())
+    } else {
+        msg!(
+            "Assert account owner error. Got {} Expected {}",
+            account.owner,
+            owner
         );
         Err(ProgramError::InvalidArgument)
     }

@@ -26,7 +26,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Keypair, Pubkey) {
 
     let mining_owner = Keypair::new();
     let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &mining_owner.pubkey())
+        .initialize_mining(&mut context, &mining_owner)
         .await;
 
     (context, test_reward_pool, mining_owner, user_mining)
@@ -72,7 +72,7 @@ async fn close_when_has_stake_from_others() {
 
     let delegate = Keypair::new();
     let delegate_mining = test_rewards
-        .initialize_mining(&mut context, &delegate.pubkey())
+        .initialize_mining(&mut context, &delegate)
         .await;
     test_rewards
         .deposit_mining(

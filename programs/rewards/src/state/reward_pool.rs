@@ -16,29 +16,33 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use super::{CumulativeIndex, WeightedStakeDiffs, WrappedMining, PRECISION};
+use super::{
+    CumulativeIndex, MiningWeightedStakeDiffs, PoolWeightedStakeDiffs, WrappedMining, PRECISION,
+};
 
 pub struct WrappedRewardPool<'a> {
     pub pool: &'a mut RewardPool,
     /// Weighted stake diffs data structure is used to represent in time
     /// when total_share (which represents sum of all stakers' weighted stake) must change
     /// accordingly to the changes in the staking contract.
-    pub weighted_stake_diffs: &'a mut WeightedStakeDiffs,
+    pub weighted_stake_diffs: &'a mut PoolWeightedStakeDiffs,
     /// This cumulative "index" increases on each distribution. It represents both the last time when
     /// the distribution happened and the number which is used in distribution calculations. <Date, index>
     pub cumulative_index: &'a mut CumulativeIndex,
 }
 
 impl<'a> WrappedRewardPool<'a> {
+    pub const LEN: usize = 64480;
+
     pub fn from_bytes_mut(bytes: &'a mut [u8]) -> Result<Self, ProgramError> {
         let (pool, trees) = bytes.split_at_mut(RewardPool::LEN);
         let (weighted_stake_diffs, cumulative_index) =
-            trees.split_at_mut(std::mem::size_of::<WeightedStakeDiffs>());
+            trees.split_at_mut(std::mem::size_of::<PoolWeightedStakeDiffs>());
 
         let pool = RewardPool::load_mut_bytes(pool)
             .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
 
-        let weighted_stake_diffs = WeightedStakeDiffs::load_mut_bytes(weighted_stake_diffs)
+        let weighted_stake_diffs = PoolWeightedStakeDiffs::load_mut_bytes(weighted_stake_diffs)
             .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
 
         let cumulative_index = CumulativeIndex::load_mut_bytes(cumulative_index)
@@ -49,12 +53,6 @@ impl<'a> WrappedRewardPool<'a> {
             weighted_stake_diffs,
             cumulative_index,
         })
-    }
-
-    pub fn data_len(&self) -> usize {
-        RewardPool::LEN
-            + std::mem::size_of::<WeightedStakeDiffs>()
-            + std::mem::size_of::<CumulativeIndex>()
     }
 
     /// Consuming old total share modifiers in order to change the total share for the current date
@@ -114,7 +112,7 @@ impl<'a> WrappedRewardPool<'a> {
         }
 
         WrappedRewardPool::update_index(
-            &mut self.cumulative_index,
+            self.cumulative_index,
             &mut self.pool.index_with_precision,
             rewards,
             self.pool.total_share,
@@ -136,7 +134,7 @@ impl<'a> WrappedRewardPool<'a> {
         old_delegate_mining: Option<&AccountInfo>,
         staked_amount: u64,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.cumulative_index)?;
+        mining.refresh_rewards(self.cumulative_index)?;
 
         if let Some(old_delegate_info) = old_delegate_mining {
             let old_delegate_mining_data = &mut old_delegate_info.data.borrow_mut();
@@ -147,7 +145,7 @@ impl<'a> WrappedRewardPool<'a> {
                 .stake_from_others
                 .safe_sub(staked_amount)?;
             self.pool.total_share = self.pool.total_share.safe_sub(staked_amount)?;
-            old_delegate_mining.refresh_rewards(&self.cumulative_index)?;
+            old_delegate_mining.refresh_rewards(self.cumulative_index)?;
         }
 
         if let Some(new_delegate_info) = new_delegate_mining {
@@ -159,7 +157,7 @@ impl<'a> WrappedRewardPool<'a> {
                 .stake_from_others
                 .safe_add(staked_amount)?;
             self.pool.total_share = self.pool.total_share.safe_add(staked_amount)?;
-            new_delegate_mining.refresh_rewards(&self.cumulative_index)?;
+            new_delegate_mining.refresh_rewards(self.cumulative_index)?;
         }
 
         Ok(())
@@ -173,7 +171,7 @@ impl<'a> WrappedRewardPool<'a> {
         lockup_period: LockupPeriod,
         delegate_mining: Option<&AccountInfo>,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.cumulative_index)?;
+        mining.refresh_rewards(self.cumulative_index)?;
 
         // regular weighted stake which will be used in rewards distribution
         let weighted_stake = amount.safe_mul(lockup_period.multiplier())?;
@@ -217,7 +215,7 @@ impl<'a> WrappedRewardPool<'a> {
                 delegate_mining.mining.stake_from_others.safe_add(amount)?;
 
             self.pool.total_share = self.pool.total_share.safe_add(amount)?;
-            delegate_mining.refresh_rewards(&self.cumulative_index)?;
+            delegate_mining.refresh_rewards(self.cumulative_index)?;
         }
 
         Ok(())
@@ -230,7 +228,7 @@ impl<'a> WrappedRewardPool<'a> {
         amount: u64,
         delegate_mining: Option<&AccountInfo>,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.cumulative_index)?;
+        mining.refresh_rewards(self.cumulative_index)?;
 
         self.pool.total_share = self.pool.total_share.safe_sub(amount)?;
         mining.mining.share = mining.mining.share.safe_sub(amount)?;
@@ -248,7 +246,7 @@ impl<'a> WrappedRewardPool<'a> {
                 delegate_mining.mining.stake_from_others.safe_sub(amount)?;
 
             self.pool.total_share = self.pool.total_share.safe_sub(amount)?;
-            delegate_mining.refresh_rewards(&self.cumulative_index)?;
+            delegate_mining.refresh_rewards(self.cumulative_index)?;
         }
 
         Ok(())
@@ -266,7 +264,7 @@ impl<'a> WrappedRewardPool<'a> {
         additional_amount: u64,
         delegate_mining: Option<&AccountInfo>,
     ) -> ProgramResult {
-        mining.refresh_rewards(&self.cumulative_index)?;
+        mining.refresh_rewards(self.cumulative_index)?;
 
         let curr_ts = get_curr_unix_ts();
 
@@ -330,7 +328,7 @@ impl<'a> WrappedRewardPool<'a> {
                     .stake_from_others
                     .safe_sub(base_amount)?;
                 self.pool.total_share = self.pool.total_share.safe_sub(base_amount)?;
-                delegate_mining.refresh_rewards(&self.cumulative_index)?;
+                delegate_mining.refresh_rewards(self.cumulative_index)?;
 
                 Some(delegate_mining_acc)
             }
@@ -375,14 +373,12 @@ pub struct RewardPool {
     pub distribution_ends_at: u64,
     /// Shows the amount of tokens are ready to be distributed
     pub tokens_available_for_distribution: u64, // default: 0, increased on each fill, decreased on each user claim
-    /// Saved bump for reward pool account
-    pub bump: u8,
     pub token_account_bump: u8,
     /// Account type - Mining. This discriminator should exist in order to prevent
     /// shenanigans with customly modified accounts and their fields.
     /// 1: account type
     /// 2-7: unused
-    pub data: [u8; 6],
+    pub data: [u8; 7],
 }
 
 impl ZeroCopy for RewardPool {}
@@ -392,7 +388,6 @@ impl RewardPool {
 
     /// Init reward pool
     pub fn initialize(
-        bump: u8,
         token_account_bump: u8,
         deposit_authority: Pubkey,
         distribute_authority: Pubkey,
@@ -400,11 +395,10 @@ impl RewardPool {
         reward_mint: Pubkey,
     ) -> RewardPool {
         let account_type = AccountType::RewardPool.into();
-        let mut data = [0; 6];
+        let mut data = [0; 7];
         data[0] = account_type;
         RewardPool {
             data,
-            bump,
             token_account_bump,
             deposit_authority,
             distribute_authority,
@@ -435,7 +429,7 @@ impl RewardPool {
     }
 
     fn modify_weighted_stake_diffs(
-        diffs: &mut WeightedStakeDiffs,
+        diffs: &mut MiningWeightedStakeDiffs,
         timestamp: u64,
         weighted_stake_diff: u64,
     ) -> Result<(), MplxRewardsError> {

@@ -24,3 +24,6 @@ crate-type = ["cdylib", "lib"]
 [[test]]
 name = "integration_tests"
 path = "tests/rewards/tests.rs"
+
+[features]
+no-entrypoint = []

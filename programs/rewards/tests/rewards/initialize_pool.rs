@@ -7,7 +7,6 @@ use std::borrow::BorrowMut;
 async fn setup() -> (ProgramTestContext, TestRewards) {
     let test = ProgramTest::new("mplx_rewards", mplx_rewards::ID, None);
     let mut context = test.start_with_context().await;
-
     let mint_owner = &context.payer.pubkey();
     let reward_mint = Keypair::new();
     create_mint(&mut context, &reward_mint, mint_owner)
@@ -25,7 +24,8 @@ async fn success() {
 
     test_rewards.initialize_pool(&mut context).await.unwrap();
 
-    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
     let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
     let reward_pool = wrapped_reward_pool.pool;

@@ -1,5 +1,5 @@
 use crate::{
-    asserts::assert_account_key,
+    asserts::{assert_account_key, assert_account_owner},
     state::{WrappedMining, WrappedRewardPool},
     utils::{spl_transfer, AccountLoader},
 };
@@ -29,7 +29,7 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
         assert_account_key(mining_owner, &mining_user_rewards.owner)?;
     }
 
-    let (amount, pool_seeds_constructor) = {
+    let amount = {
         let reward_pool_data = &mut reward_pool.data.borrow_mut();
         let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
@@ -38,22 +38,13 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
             &wrapped_reward_pool.pool.deposit_authority,
         )?;
 
-        let pool_seeds_constructor = PoolSeedsConstructor::new(
-            "reward_pool",
-            wrapped_reward_pool.pool.deposit_authority,
-            wrapped_reward_pool.pool.bump,
-        );
-
         let amount = {
             let mining_data = &mut mining.data.borrow_mut();
             let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
 
+            assert_account_owner(reward_pool, program_id)?;
             assert_account_key(mining_owner, &wrapped_mining.mining.owner)?;
             assert_account_key(reward_pool, &wrapped_mining.mining.reward_pool)?;
-            assert_account_key(
-                reward_pool,
-                &Pubkey::create_program_address(&pool_seeds_constructor.seeds(), program_id)?,
-            )?;
 
             let vault_seeds = &[
                 b"vault".as_ref(),
@@ -72,16 +63,16 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
             amount
         };
 
-        (amount, pool_seeds_constructor)
+        amount
     };
 
     if amount > 0 {
         spl_transfer(
             vault.to_owned(),
             mining_owner_reward_token_account.to_owned(),
-            reward_pool.to_owned(),
+            deposit_authority.to_owned(),
             amount,
-            &[&pool_seeds_constructor.seeds()[..]],
+            &[],
         )?;
     }
 
@@ -90,28 +81,4 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
     set_return_data(&amount_writer);
 
     Ok(())
-}
-
-pub struct PoolSeedsConstructor {
-    word: &'static str,
-    authority: Pubkey,
-    bump: Vec<u8>,
-}
-
-impl PoolSeedsConstructor {
-    pub fn new(word: &'static str, authority: Pubkey, bump: u8) -> Self {
-        Self {
-            word,
-            authority,
-            bump: vec![bump],
-        }
-    }
-
-    pub fn seeds(&self) -> Vec<&[u8]> {
-        vec![
-            self.word.as_bytes(),
-            self.authority.as_ref(),
-            self.bump.as_slice(),
-        ]
-    }
 }

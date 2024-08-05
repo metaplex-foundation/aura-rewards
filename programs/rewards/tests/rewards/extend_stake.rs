@@ -28,7 +28,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
 
     let user = Keypair::new();
     let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &user.pubkey())
+        .initialize_mining(&mut context, &user)
         .await;
 
     (context, test_reward_pool, user.pubkey(), user_mining)
@@ -334,7 +334,7 @@ async fn prolong_with_delegate() {
 
     let delegate = Keypair::new();
     let delegate_mining = test_rewards
-        .initialize_mining(&mut context, &delegate.pubkey())
+        .initialize_mining(&mut context, &delegate)
         .await;
     test_rewards
         .deposit_mining(
@@ -388,7 +388,8 @@ async fn prolong_with_delegate() {
     assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
     assert_eq!(d_wrapped_mining.mining.stake_from_others, 100);
 
-    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
     let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
     let reward_pool = wrapped_reward_pool.pool;
@@ -442,12 +443,12 @@ pub async fn check_weighted_stake(
 }
 
 pub async fn check_modifier_at_a_day(
-    mut context: &mut ProgramTestContext,
+    context: &mut ProgramTestContext,
     mining_account: Pubkey,
     expected_modifier: u64,
     day_to_check: u64,
 ) {
-    let mut mining_account = get_account(&mut context, &mining_account).await;
+    let mut mining_account = get_account(context, &mining_account).await;
     let mining_data = &mut mining_account.data.borrow_mut();
     let wrapped_mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
 

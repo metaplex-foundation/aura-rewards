@@ -26,7 +26,7 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
 
     let user = Keypair::new();
     let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &user.pubkey())
+        .initialize_mining(&mut context, &user)
         .await;
 
     (context, test_reward_pool, user.pubkey(), user_mining)
@@ -48,7 +48,8 @@ async fn success() {
         .await
         .unwrap();
 
-    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
     let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
     let reward_pool = wrapped_reward_pool.pool;
@@ -77,7 +78,8 @@ async fn success_with_flex() {
         .await
         .unwrap();
 
-    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
     let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
     let reward_pool = wrapped_reward_pool.pool;
@@ -96,7 +98,7 @@ async fn delegating_success() {
 
     let delegate = Keypair::new();
     let delegate_mining = test_rewards
-        .initialize_mining(&mut context, &delegate.pubkey())
+        .initialize_mining(&mut context, &delegate)
         .await;
     test_rewards
         .deposit_mining(
@@ -133,7 +135,8 @@ async fn delegating_success() {
     assert_eq!(d_wrapped_mining.mining.share, 18_000_000);
     assert_eq!(d_wrapped_mining.mining.stake_from_others, 100);
 
-    let mut reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
     let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
     let reward_pool = wrapped_reward_pool.pool;
