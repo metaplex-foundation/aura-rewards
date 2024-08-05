@@ -24,7 +24,7 @@ pub struct WrappedMining<'a> {
 }
 
 impl<'a> WrappedMining<'a> {
-    pub const LEN: usize = Mining::LEN + std::mem::size_of::<MiningWeightedStakeDiffs>();
+    pub const LEN: usize = 1776;
 
     pub fn from_bytes_mut(bytes: &'a mut [u8]) -> Result<Self, ProgramError> {
         let (mining, weighted_stake_diffs) = bytes.split_at_mut(Mining::LEN);

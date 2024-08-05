@@ -32,9 +32,7 @@ pub struct WrappedRewardPool<'a> {
 }
 
 impl<'a> WrappedRewardPool<'a> {
-    pub const LEN: usize = RewardPool::LEN
-        + std::mem::size_of::<PoolWeightedStakeDiffs>()
-        + std::mem::size_of::<CumulativeIndex>();
+    pub const LEN: usize = 64480;
 
     pub fn from_bytes_mut(bytes: &'a mut [u8]) -> Result<Self, ProgramError> {
         let (pool, trees) = bytes.split_at_mut(RewardPool::LEN);
