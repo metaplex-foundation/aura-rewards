@@ -70,6 +70,12 @@ pub struct DepositMiningInstructionData {
     discriminator: u8,
 }
 
+impl Default for DepositMiningInstructionData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DepositMiningInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 3 }

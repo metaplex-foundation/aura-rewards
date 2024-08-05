@@ -85,6 +85,12 @@ pub struct ClaimInstructionData {
     discriminator: u8,
 }
 
+impl Default for ClaimInstructionData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ClaimInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 5 }

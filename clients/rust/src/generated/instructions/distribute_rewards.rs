@@ -52,6 +52,12 @@ pub struct DistributeRewardsInstructionData {
     discriminator: u8,
 }
 
+impl Default for DistributeRewardsInstructionData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DistributeRewardsInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 7 }

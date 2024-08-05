@@ -1,38 +1,29 @@
 use crate::utils::*;
 use mplx_rewards::{
-    state::{Mining, RewardPool},
+    state::{WrappedMining, WrappedRewardPool},
     utils::LockupPeriod,
 };
-use solana_program::{program_pack::Pack, pubkey::Pubkey};
+use solana_program::pubkey::Pubkey;
 use solana_program_test::*;
 use solana_sdk::{clock::SECONDS_PER_DAY, signature::Keypair, signer::Signer};
-use std::borrow::Borrow;
+use std::borrow::BorrowMut;
 
 async fn setup() -> (ProgramTestContext, TestRewards, Pubkey, Pubkey) {
-    let test = ProgramTest::new(
-        "mplx_rewards",
-        mplx_rewards::id(),
-        processor!(mplx_rewards::processor::process_instruction),
-    );
-
+    let test = ProgramTest::new("mplx_rewards", mplx_rewards::ID, None);
     let mut context = test.start_with_context().await;
+
     let owner = &context.payer.pubkey();
 
     let mint = Keypair::new();
     create_mint(&mut context, &mint, owner).await.unwrap();
 
-    let test_reward_pool = TestRewards::new(mint.pubkey());
-    test_reward_pool
-        .initialize_pool(&mut context)
-        .await
-        .unwrap();
+    let test_rewards = TestRewards::new(mint.pubkey());
+    test_rewards.initialize_pool(&mut context).await.unwrap();
 
     let user = Keypair::new();
-    let user_mining = test_reward_pool
-        .initialize_mining(&mut context, &user.pubkey())
-        .await;
+    let user_mining = test_rewards.initialize_mining(&mut context, &user).await;
 
-    (context, test_reward_pool, user.pubkey(), user_mining)
+    (context, test_rewards, user.pubkey(), user_mining)
 }
 
 #[tokio::test]
@@ -50,14 +41,18 @@ async fn success() {
         .await
         .unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
 
     assert_eq!(reward_pool.total_share, 170);
 
-    let mining_account = get_account(&mut context, &mining).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining.share, 170);
+    let mut mining_account = get_account(&mut context, &mining).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
+    assert_eq!(mining.mining.share, 170);
 }
 
 #[tokio::test]
@@ -84,12 +79,16 @@ async fn success_with_5kkk_after_expiring() {
         .await
         .unwrap();
 
-    let reward_pool_account = get_account(&mut context, &test_rewards.reward_pool).await;
-    let reward_pool = RewardPool::unpack(reward_pool_account.data.borrow()).unwrap();
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
 
     assert_eq!(reward_pool.total_share, 0);
 
-    let mining_account = get_account(&mut context, &mining).await;
-    let mining = Mining::unpack(mining_account.data.borrow()).unwrap();
-    assert_eq!(mining.share, 0);
+    let mut mining_account = get_account(&mut context, &mining).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let wrapped_mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
+    assert_eq!(wrapped_mining.mining.share, 0);
 }
