@@ -35,6 +35,14 @@
           "isSigner": true
         },
         {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Account responsible for charging mining owners"
+          ]
+        },
+        {
           "name": "rent",
           "isMut": false,
           "isSigner": false,
@@ -60,10 +68,6 @@
         }
       ],
       "args": [
-        {
-          "name": "depositAuthority",
-          "type": "publicKey"
-        },
         {
           "name": "fillAuthority",
           "type": "publicKey"
@@ -132,7 +136,7 @@
       ],
       "args": [
         {
-          "name": "amount",
+          "name": "rewards",
           "type": "u64"
         },
         {
@@ -209,19 +213,19 @@
           ]
         },
         {
-          "name": "rewardMint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The address of the reward mint"
-          ]
-        },
-        {
           "name": "depositAuthority",
           "isMut": false,
           "isSigner": true,
           "docs": [
             "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        },
+        {
+          "name": "delegateMining",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of Mining Account that might be used as a delegate in delegated staking model"
           ]
         }
       ],
@@ -237,7 +241,7 @@
           }
         },
         {
-          "name": "owner",
+          "name": "miningOwner",
           "type": "publicKey"
         }
       ],
@@ -272,6 +276,14 @@
           "docs": [
             "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
           ]
+        },
+        {
+          "name": "delegateMining",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of Mining Account that might be used as a delegate in delegated staking model"
+          ]
         }
       ],
       "args": [
@@ -280,7 +292,7 @@
           "type": "u64"
         },
         {
-          "name": "owner",
+          "name": "miningOwner",
           "type": "publicKey"
         }
       ],
@@ -397,6 +409,14 @@
           "docs": [
             "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
           ]
+        },
+        {
+          "name": "delegateMining",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The address of Mining Account that might be used as a delegate in delegated staking model"
+          ]
         }
       ],
       "args": [
@@ -506,54 +526,85 @@
         "type": "u8",
         "value": 8
       }
+    },
+    {
+      "name": "ChangeDelegate",
+      "accounts": [
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "mining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the mining account which belongs to the user and stores info about user's rewards"
+          ]
+        },
+        {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        },
+        {
+          "name": "miningOwner",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The end user the mining accounts belongs to"
+          ]
+        },
+        {
+          "name": "oldDelegateMining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the old delegate mining account"
+          ]
+        },
+        {
+          "name": "newDelegateMining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the new delegate mining account"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "stakedAmount",
+          "type": "u64"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 9
+      }
     }
   ],
-  "types": [
+  "accounts": [
     {
       "name": "Mining",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "accountType",
-            "type": {
-              "defined": "AccountType"
-            }
-          },
-          {
             "name": "rewardPool",
             "type": "publicKey"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "share",
-            "type": "u64"
           },
           {
             "name": "owner",
             "type": "publicKey"
           },
-          {
-            "name": "index",
-            "type": {
-              "defined": "RewardIndex"
-            }
-          },
-          {
-            "name": "delegate",
-            "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RewardIndex",
-      "type": {
-        "kind": "struct",
-        "fields": [
           {
             "name": "rewardMint",
             "type": "publicKey"
@@ -563,15 +614,27 @@
             "type": "u128"
           },
           {
+            "name": "share",
+            "type": "u64"
+          },
+          {
             "name": "unclaimedRewards",
             "type": "u64"
           },
           {
-            "name": "weightedStakeDiffs",
+            "name": "stakeFromOthers",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "data",
             "type": {
-              "bTreeMap": [
-                "u64",
-                "u64"
+              "array": [
+                "u8",
+                7
               ]
             }
           }
@@ -584,26 +647,6 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "accountType",
-            "type": {
-              "defined": "AccountType"
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "totalShare",
-            "type": "u64"
-          },
-          {
-            "name": "calculator",
-            "type": {
-              "defined": "RewardCalculator"
-            }
-          },
-          {
             "name": "depositAuthority",
             "type": "publicKey"
           },
@@ -614,18 +657,6 @@
           {
             "name": "fillAuthority",
             "type": "publicKey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RewardCalculator",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "tokenAccountBump",
-            "type": "u8"
           },
           {
             "name": "rewardMint",
@@ -636,22 +667,8 @@
             "type": "u128"
           },
           {
-            "name": "weightedStakeDiffs",
-            "type": {
-              "bTreeMap": [
-                "u64",
-                "u64"
-              ]
-            }
-          },
-          {
-            "name": "cumulativeIndex",
-            "type": {
-              "bTreeMap": [
-                "u64",
-                "u128"
-              ]
-            }
+            "name": "totalShare",
+            "type": "u64"
           },
           {
             "name": "distributionEndsAt",
@@ -660,10 +677,25 @@
           {
             "name": "tokensAvailableForDistribution",
             "type": "u64"
+          },
+          {
+            "name": "tokenAccountBump",
+            "type": "u8"
+          },
+          {
+            "name": "data",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
           }
         ]
       }
-    },
+    }
+  ],
+  "types": [
     {
       "name": "AccountType",
       "type": {
@@ -690,6 +722,9 @@
             "name": "None"
           },
           {
+            "name": "Flex"
+          },
+          {
             "name": "ThreeMonths"
           },
           {
@@ -697,9 +732,6 @@
           },
           {
             "name": "OneYear"
-          },
-          {
-            "name": "Flex"
           }
         ]
       }
@@ -729,23 +761,58 @@
     {
       "code": 4,
       "name": "DistributionInThePast",
-      "msg": "Rewards: distribution_ends_at date is lower than current date "
+      "msg": "Rewards: distribution_ends_at date is lower than current date"
     },
     {
       "code": 5,
       "name": "InvalidPrimitiveTypesConversion",
-      "msg": "Rewards: distribution_ends_at date is lower than current date "
+      "msg": "Rewards: distribution_ends_at date is lower than current date"
+    },
+    {
+      "code": 6,
+      "name": "RewardsMustBeClaimed",
+      "msg": "Rewards: unclaimed rewards must be claimed"
+    },
+    {
+      "code": 7,
+      "name": "RewardsMustBeGreaterThanZero",
+      "msg": "Rewards: rewards amount must be positive"
+    },
+    {
+      "code": 8,
+      "name": "InsufficientWeightedStake",
+      "msg": "Rewards: Delegate must have at least 15_000_000 of own weighted stake"
+    },
+    {
+      "code": 9,
+      "name": "StakeFromOthersMustBeZero",
+      "msg": "Rewards: Stake from others must be zero"
+    },
+    {
+      "code": 10,
+      "name": "NoWeightedStakeModifiersAtADate",
+      "msg": "No changes at the date in weighted stake modifiers while they're expected"
     },
     {
       "code": 11,
-      "name": "RewardsMustBeClaimed",
-      "msg": "Rewards: unclaimed rewards must be claimed"
+      "name": "DelegatesAreTheSame",
+      "msg": "Passed delegates are the same"
+    },
+    {
+      "code": 12,
+      "name": "RetreivingZeroCopyAccountFailire",
+      "msg": "Getting pointer to the data of the zero-copy account has failed"
+    },
+    {
+      "code": 13,
+      "name": "AlreadyInitialized",
+      "msg": "Account is already initialized"
     }
   ],
   "metadata": {
     "origin": "shank",
     "address": "BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR",
     "binaryVersion": "0.4.2",
-    "libVersion": "0.4.2"
+    "libVersion": "0.4"
   }
 }

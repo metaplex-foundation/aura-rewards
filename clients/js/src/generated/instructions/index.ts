@@ -6,6 +6,7 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+export * from './changeDelegate';
 export * from './claim';
 export * from './closeMining';
 export * from './depositMining';

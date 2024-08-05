@@ -79,12 +79,6 @@ pub struct FillVaultInstructionData {
     discriminator: u8,
 }
 
-impl Default for FillVaultInstructionData {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl FillVaultInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 1 }
@@ -94,7 +88,7 @@ impl FillVaultInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FillVaultInstructionArgs {
-    pub amount: u64,
+    pub rewards: u64,
     pub distribution_ends_at: u64,
 }
 
@@ -116,7 +110,7 @@ pub struct FillVaultBuilder {
     fill_authority: Option<solana_program::pubkey::Pubkey>,
     source_token_account: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
-    amount: Option<u64>,
+    rewards: Option<u64>,
     distribution_ends_at: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -166,8 +160,8 @@ impl FillVaultBuilder {
         self
     }
     #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.amount = Some(amount);
+    pub fn rewards(&mut self, rewards: u64) -> &mut Self {
+        self.rewards = Some(rewards);
         self
     }
     #[inline(always)]
@@ -208,7 +202,7 @@ impl FillVaultBuilder {
             )),
         };
         let args = FillVaultInstructionArgs {
-            amount: self.amount.clone().expect("amount is not set"),
+            rewards: self.rewards.clone().expect("rewards is not set"),
             distribution_ends_at: self
                 .distribution_ends_at
                 .clone()
@@ -390,7 +384,7 @@ impl<'a, 'b> FillVaultCpiBuilder<'a, 'b> {
             fill_authority: None,
             source_token_account: None,
             token_program: None,
-            amount: None,
+            rewards: None,
             distribution_ends_at: None,
             __remaining_accounts: Vec::new(),
         });
@@ -448,8 +442,8 @@ impl<'a, 'b> FillVaultCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.instruction.amount = Some(amount);
+    pub fn rewards(&mut self, rewards: u64) -> &mut Self {
+        self.instruction.rewards = Some(rewards);
         self
     }
     #[inline(always)]
@@ -499,7 +493,11 @@ impl<'a, 'b> FillVaultCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = FillVaultInstructionArgs {
-            amount: self.instruction.amount.clone().expect("amount is not set"),
+            rewards: self
+                .instruction
+                .rewards
+                .clone()
+                .expect("rewards is not set"),
             distribution_ends_at: self
                 .instruction
                 .distribution_ends_at
@@ -552,7 +550,7 @@ struct FillVaultCpiBuilderInstruction<'a, 'b> {
     fill_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     source_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    amount: Option<u64>,
+    rewards: Option<u64>,
     distribution_ends_at: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

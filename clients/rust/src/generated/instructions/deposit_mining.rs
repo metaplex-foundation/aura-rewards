@@ -16,10 +16,10 @@ pub struct DepositMining {
     pub reward_pool: solana_program::pubkey::Pubkey,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
     pub mining: solana_program::pubkey::Pubkey,
-    /// The address of the reward mint
-    pub reward_mint: solana_program::pubkey::Pubkey,
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     pub deposit_authority: solana_program::pubkey::Pubkey,
+    /// The address of Mining Account that might be used as a delegate in delegated staking model
+    pub delegate_mining: solana_program::pubkey::Pubkey,
 }
 
 impl DepositMining {
@@ -45,12 +45,12 @@ impl DepositMining {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.reward_mint,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.deposit_authority,
             true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.delegate_mining,
+            false,
         ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = DepositMiningInstructionData::new().try_to_vec().unwrap();
@@ -70,12 +70,6 @@ pub struct DepositMiningInstructionData {
     discriminator: u8,
 }
 
-impl Default for DepositMiningInstructionData {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl DepositMiningInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 3 }
@@ -87,7 +81,7 @@ impl DepositMiningInstructionData {
 pub struct DepositMiningInstructionArgs {
     pub amount: u64,
     pub lockup_period: LockupPeriod,
-    pub owner: Pubkey,
+    pub mining_owner: Pubkey,
 }
 
 /// Instruction builder for `DepositMining`.
@@ -96,17 +90,17 @@ pub struct DepositMiningInstructionArgs {
 ///
 ///   0. `[writable]` reward_pool
 ///   1. `[writable]` mining
-///   2. `[]` reward_mint
-///   3. `[signer]` deposit_authority
+///   2. `[signer]` deposit_authority
+///   3. `[]` delegate_mining
 #[derive(Default)]
 pub struct DepositMiningBuilder {
     reward_pool: Option<solana_program::pubkey::Pubkey>,
     mining: Option<solana_program::pubkey::Pubkey>,
-    reward_mint: Option<solana_program::pubkey::Pubkey>,
     deposit_authority: Option<solana_program::pubkey::Pubkey>,
+    delegate_mining: Option<solana_program::pubkey::Pubkey>,
     amount: Option<u64>,
     lockup_period: Option<LockupPeriod>,
-    owner: Option<Pubkey>,
+    mining_owner: Option<Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -126,12 +120,6 @@ impl DepositMiningBuilder {
         self.mining = Some(mining);
         self
     }
-    /// The address of the reward mint
-    #[inline(always)]
-    pub fn reward_mint(&mut self, reward_mint: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.reward_mint = Some(reward_mint);
-        self
-    }
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     #[inline(always)]
     pub fn deposit_authority(
@@ -139,6 +127,15 @@ impl DepositMiningBuilder {
         deposit_authority: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
         self.deposit_authority = Some(deposit_authority);
+        self
+    }
+    /// The address of Mining Account that might be used as a delegate in delegated staking model
+    #[inline(always)]
+    pub fn delegate_mining(
+        &mut self,
+        delegate_mining: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.delegate_mining = Some(delegate_mining);
         self
     }
     #[inline(always)]
@@ -152,8 +149,8 @@ impl DepositMiningBuilder {
         self
     }
     #[inline(always)]
-    pub fn owner(&mut self, owner: Pubkey) -> &mut Self {
-        self.owner = Some(owner);
+    pub fn mining_owner(&mut self, mining_owner: Pubkey) -> &mut Self {
+        self.mining_owner = Some(mining_owner);
         self
     }
     /// Add an aditional account to the instruction.
@@ -179,10 +176,10 @@ impl DepositMiningBuilder {
         let accounts = DepositMining {
             reward_pool: self.reward_pool.expect("reward_pool is not set"),
             mining: self.mining.expect("mining is not set"),
-            reward_mint: self.reward_mint.expect("reward_mint is not set"),
             deposit_authority: self
                 .deposit_authority
                 .expect("deposit_authority is not set"),
+            delegate_mining: self.delegate_mining.expect("delegate_mining is not set"),
         };
         let args = DepositMiningInstructionArgs {
             amount: self.amount.clone().expect("amount is not set"),
@@ -190,7 +187,7 @@ impl DepositMiningBuilder {
                 .lockup_period
                 .clone()
                 .expect("lockup_period is not set"),
-            owner: self.owner.clone().expect("owner is not set"),
+            mining_owner: self.mining_owner.clone().expect("mining_owner is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -203,10 +200,10 @@ pub struct DepositMiningCpiAccounts<'a, 'b> {
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the reward mint
-    pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The address of Mining Account that might be used as a delegate in delegated staking model
+    pub delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `deposit_mining` CPI instruction.
@@ -217,10 +214,10 @@ pub struct DepositMiningCpi<'a, 'b> {
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the reward mint
-    pub reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The address of Mining Account that might be used as a delegate in delegated staking model
+    pub delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: DepositMiningInstructionArgs,
 }
@@ -235,8 +232,8 @@ impl<'a, 'b> DepositMiningCpi<'a, 'b> {
             __program: program,
             reward_pool: accounts.reward_pool,
             mining: accounts.mining,
-            reward_mint: accounts.reward_mint,
             deposit_authority: accounts.deposit_authority,
+            delegate_mining: accounts.delegate_mining,
             __args: args,
         }
     }
@@ -283,12 +280,12 @@ impl<'a, 'b> DepositMiningCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.reward_mint.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.deposit_authority.key,
             true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.delegate_mining.key,
+            false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
@@ -310,8 +307,8 @@ impl<'a, 'b> DepositMiningCpi<'a, 'b> {
         account_infos.push(self.__program.clone());
         account_infos.push(self.reward_pool.clone());
         account_infos.push(self.mining.clone());
-        account_infos.push(self.reward_mint.clone());
         account_infos.push(self.deposit_authority.clone());
+        account_infos.push(self.delegate_mining.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -330,8 +327,8 @@ impl<'a, 'b> DepositMiningCpi<'a, 'b> {
 ///
 ///   0. `[writable]` reward_pool
 ///   1. `[writable]` mining
-///   2. `[]` reward_mint
-///   3. `[signer]` deposit_authority
+///   2. `[signer]` deposit_authority
+///   3. `[]` delegate_mining
 pub struct DepositMiningCpiBuilder<'a, 'b> {
     instruction: Box<DepositMiningCpiBuilderInstruction<'a, 'b>>,
 }
@@ -342,11 +339,11 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
             __program: program,
             reward_pool: None,
             mining: None,
-            reward_mint: None,
             deposit_authority: None,
+            delegate_mining: None,
             amount: None,
             lockup_period: None,
-            owner: None,
+            mining_owner: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -369,15 +366,6 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
         self.instruction.mining = Some(mining);
         self
     }
-    /// The address of the reward mint
-    #[inline(always)]
-    pub fn reward_mint(
-        &mut self,
-        reward_mint: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.reward_mint = Some(reward_mint);
-        self
-    }
     /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
     #[inline(always)]
     pub fn deposit_authority(
@@ -385,6 +373,15 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
         deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.deposit_authority = Some(deposit_authority);
+        self
+    }
+    /// The address of Mining Account that might be used as a delegate in delegated staking model
+    #[inline(always)]
+    pub fn delegate_mining(
+        &mut self,
+        delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.delegate_mining = Some(delegate_mining);
         self
     }
     #[inline(always)]
@@ -398,8 +395,8 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn owner(&mut self, owner: Pubkey) -> &mut Self {
-        self.instruction.owner = Some(owner);
+    pub fn mining_owner(&mut self, mining_owner: Pubkey) -> &mut Self {
+        self.instruction.mining_owner = Some(mining_owner);
         self
     }
     /// Add an additional account to the instruction.
@@ -450,7 +447,11 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
                 .lockup_period
                 .clone()
                 .expect("lockup_period is not set"),
-            owner: self.instruction.owner.clone().expect("owner is not set"),
+            mining_owner: self
+                .instruction
+                .mining_owner
+                .clone()
+                .expect("mining_owner is not set"),
         };
         let instruction = DepositMiningCpi {
             __program: self.instruction.__program,
@@ -462,15 +463,15 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
 
             mining: self.instruction.mining.expect("mining is not set"),
 
-            reward_mint: self
-                .instruction
-                .reward_mint
-                .expect("reward_mint is not set"),
-
             deposit_authority: self
                 .instruction
                 .deposit_authority
                 .expect("deposit_authority is not set"),
+
+            delegate_mining: self
+                .instruction
+                .delegate_mining
+                .expect("delegate_mining is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -484,11 +485,11 @@ struct DepositMiningCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     reward_pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    reward_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     deposit_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    delegate_mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amount: Option<u64>,
     lockup_period: Option<LockupPeriod>,
-    owner: Option<Pubkey>,
+    mining_owner: Option<Pubkey>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

@@ -68,12 +68,6 @@ pub struct CloseMiningInstructionData {
     discriminator: u8,
 }
 
-impl Default for CloseMiningInstructionData {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl CloseMiningInstructionData {
     pub fn new() -> Self {
         Self { discriminator: 8 }

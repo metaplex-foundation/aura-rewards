@@ -46,12 +46,12 @@ export type FillVaultInstructionAccounts = {
 // Data.
 export type FillVaultInstructionData = {
   discriminator: number;
-  amount: bigint;
+  rewards: bigint;
   distributionEndsAt: bigint;
 };
 
 export type FillVaultInstructionDataArgs = {
-  amount: number | bigint;
+  rewards: number | bigint;
   distributionEndsAt: number | bigint;
 };
 
@@ -67,7 +67,7 @@ export function getFillVaultInstructionDataSerializer(): Serializer<
     struct<FillVaultInstructionData>(
       [
         ['discriminator', u8()],
-        ['amount', u64()],
+        ['rewards', u64()],
         ['distributionEndsAt', u64()],
       ],
       { description: 'FillVaultInstructionData' }

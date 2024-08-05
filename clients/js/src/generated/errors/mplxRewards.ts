@@ -67,7 +67,7 @@ export class InvalidLockupPeriodError extends ProgramError {
 codeToErrorMap.set(0x3, InvalidLockupPeriodError);
 nameToErrorMap.set('InvalidLockupPeriod', InvalidLockupPeriodError);
 
-/** DistributionInThePast: Rewards: distribution_ends_at date is lower than current date  */
+/** DistributionInThePast: Rewards: distribution_ends_at date is lower than current date */
 export class DistributionInThePastError extends ProgramError {
   override readonly name: string = 'DistributionInThePast';
 
@@ -75,7 +75,7 @@ export class DistributionInThePastError extends ProgramError {
 
   constructor(program: Program, cause?: Error) {
     super(
-      'Rewards: distribution_ends_at date is lower than current date ',
+      'Rewards: distribution_ends_at date is lower than current date',
       program,
       cause
     );
@@ -84,7 +84,7 @@ export class DistributionInThePastError extends ProgramError {
 codeToErrorMap.set(0x4, DistributionInThePastError);
 nameToErrorMap.set('DistributionInThePast', DistributionInThePastError);
 
-/** InvalidPrimitiveTypesConversion: Rewards: distribution_ends_at date is lower than current date  */
+/** InvalidPrimitiveTypesConversion: Rewards: distribution_ends_at date is lower than current date */
 export class InvalidPrimitiveTypesConversionError extends ProgramError {
   override readonly name: string = 'InvalidPrimitiveTypesConversion';
 
@@ -92,7 +92,7 @@ export class InvalidPrimitiveTypesConversionError extends ProgramError {
 
   constructor(program: Program, cause?: Error) {
     super(
-      'Rewards: distribution_ends_at date is lower than current date ',
+      'Rewards: distribution_ends_at date is lower than current date',
       program,
       cause
     );
@@ -108,14 +108,126 @@ nameToErrorMap.set(
 export class RewardsMustBeClaimedError extends ProgramError {
   override readonly name: string = 'RewardsMustBeClaimed';
 
-  readonly code: number = 0xb; // 11
+  readonly code: number = 0x6; // 6
 
   constructor(program: Program, cause?: Error) {
     super('Rewards: unclaimed rewards must be claimed', program, cause);
   }
 }
-codeToErrorMap.set(0xb, RewardsMustBeClaimedError);
+codeToErrorMap.set(0x6, RewardsMustBeClaimedError);
 nameToErrorMap.set('RewardsMustBeClaimed', RewardsMustBeClaimedError);
+
+/** RewardsMustBeGreaterThanZero: Rewards: rewards amount must be positive */
+export class RewardsMustBeGreaterThanZeroError extends ProgramError {
+  override readonly name: string = 'RewardsMustBeGreaterThanZero';
+
+  readonly code: number = 0x7; // 7
+
+  constructor(program: Program, cause?: Error) {
+    super('Rewards: rewards amount must be positive', program, cause);
+  }
+}
+codeToErrorMap.set(0x7, RewardsMustBeGreaterThanZeroError);
+nameToErrorMap.set(
+  'RewardsMustBeGreaterThanZero',
+  RewardsMustBeGreaterThanZeroError
+);
+
+/** InsufficientWeightedStake: Rewards: Delegate must have at least 15_000_000 of own weighted stake */
+export class InsufficientWeightedStakeError extends ProgramError {
+  override readonly name: string = 'InsufficientWeightedStake';
+
+  readonly code: number = 0x8; // 8
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Rewards: Delegate must have at least 15_000_000 of own weighted stake',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x8, InsufficientWeightedStakeError);
+nameToErrorMap.set('InsufficientWeightedStake', InsufficientWeightedStakeError);
+
+/** StakeFromOthersMustBeZero: Rewards: Stake from others must be zero */
+export class StakeFromOthersMustBeZeroError extends ProgramError {
+  override readonly name: string = 'StakeFromOthersMustBeZero';
+
+  readonly code: number = 0x9; // 9
+
+  constructor(program: Program, cause?: Error) {
+    super('Rewards: Stake from others must be zero', program, cause);
+  }
+}
+codeToErrorMap.set(0x9, StakeFromOthersMustBeZeroError);
+nameToErrorMap.set('StakeFromOthersMustBeZero', StakeFromOthersMustBeZeroError);
+
+/** NoWeightedStakeModifiersAtADate: No changes at the date in weighted stake modifiers while they're expected */
+export class NoWeightedStakeModifiersAtADateError extends ProgramError {
+  override readonly name: string = 'NoWeightedStakeModifiersAtADate';
+
+  readonly code: number = 0xa; // 10
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      "No changes at the date in weighted stake modifiers while they're expected",
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0xa, NoWeightedStakeModifiersAtADateError);
+nameToErrorMap.set(
+  'NoWeightedStakeModifiersAtADate',
+  NoWeightedStakeModifiersAtADateError
+);
+
+/** DelegatesAreTheSame: Passed delegates are the same */
+export class DelegatesAreTheSameError extends ProgramError {
+  override readonly name: string = 'DelegatesAreTheSame';
+
+  readonly code: number = 0xb; // 11
+
+  constructor(program: Program, cause?: Error) {
+    super('Passed delegates are the same', program, cause);
+  }
+}
+codeToErrorMap.set(0xb, DelegatesAreTheSameError);
+nameToErrorMap.set('DelegatesAreTheSame', DelegatesAreTheSameError);
+
+/** RetreivingZeroCopyAccountFailire: Getting pointer to the data of the zero-copy account has failed */
+export class RetreivingZeroCopyAccountFailireError extends ProgramError {
+  override readonly name: string = 'RetreivingZeroCopyAccountFailire';
+
+  readonly code: number = 0xc; // 12
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'Getting pointer to the data of the zero-copy account has failed',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0xc, RetreivingZeroCopyAccountFailireError);
+nameToErrorMap.set(
+  'RetreivingZeroCopyAccountFailire',
+  RetreivingZeroCopyAccountFailireError
+);
+
+/** AlreadyInitialized: Account is already initialized */
+export class AlreadyInitializedError extends ProgramError {
+  override readonly name: string = 'AlreadyInitialized';
+
+  readonly code: number = 0xd; // 13
+
+  constructor(program: Program, cause?: Error) {
+    super('Account is already initialized', program, cause);
+  }
+}
+codeToErrorMap.set(0xd, AlreadyInitializedError);
+nameToErrorMap.set('AlreadyInitialized', AlreadyInitializedError);
 
 /**
  * Attempts to resolve a custom program error from the provided error code.

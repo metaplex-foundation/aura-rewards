@@ -39,10 +39,10 @@ export type DepositMiningInstructionAccounts = {
   rewardPool: PublicKey | Pda;
   /** The address of the mining account which belongs to the user and stores info about user's rewards */
   mining: PublicKey | Pda;
-  /** The address of the reward mint */
-  rewardMint: PublicKey | Pda;
   /** The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs */
   depositAuthority: Signer;
+  /** The address of Mining Account that might be used as a delegate in delegated staking model */
+  delegateMining: PublicKey | Pda;
 };
 
 // Data.
@@ -50,13 +50,13 @@ export type DepositMiningInstructionData = {
   discriminator: number;
   amount: bigint;
   lockupPeriod: LockupPeriod;
-  owner: PublicKey;
+  miningOwner: PublicKey;
 };
 
 export type DepositMiningInstructionDataArgs = {
   amount: number | bigint;
   lockupPeriod: LockupPeriodArgs;
-  owner: PublicKey;
+  miningOwner: PublicKey;
 };
 
 export function getDepositMiningInstructionDataSerializer(): Serializer<
@@ -73,7 +73,7 @@ export function getDepositMiningInstructionDataSerializer(): Serializer<
         ['discriminator', u8()],
         ['amount', u64()],
         ['lockupPeriod', getLockupPeriodSerializer()],
-        ['owner', publicKeySerializer()],
+        ['miningOwner', publicKeySerializer()],
       ],
       { description: 'DepositMiningInstructionData' }
     ),
@@ -110,15 +110,15 @@ export function depositMining(
       isWritable: true as boolean,
       value: input.mining ?? null,
     },
-    rewardMint: {
+    depositAuthority: {
       index: 2,
       isWritable: false as boolean,
-      value: input.rewardMint ?? null,
+      value: input.depositAuthority ?? null,
     },
-    depositAuthority: {
+    delegateMining: {
       index: 3,
       isWritable: false as boolean,
-      value: input.depositAuthority ?? null,
+      value: input.delegateMining ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
