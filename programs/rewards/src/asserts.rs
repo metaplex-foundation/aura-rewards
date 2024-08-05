@@ -73,7 +73,7 @@ pub fn assert_pubkey_eq(given: &Pubkey, expected: &Pubkey) -> ProgramResult {
 }
 
 pub fn assert_account_len(account: &AccountInfo, len: usize) -> ProgramResult {
-    if account.data_len() >= len {
+    if account.data_len() == len {
         Ok(())
     } else {
         msg!(
