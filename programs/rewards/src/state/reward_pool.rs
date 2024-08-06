@@ -31,6 +31,40 @@ pub struct WrappedRewardPool<'a> {
     pub cumulative_index: &'a mut CumulativeIndex,
 }
 
+pub struct WrappedImmutableRewardPool<'a> {
+    pub pool: &'a RewardPool,
+    /// Weighted stake diffs data structure is used to represent in time
+    /// when total_share (which represents sum of all stakers' weighted stake) must change
+    /// accordingly to the changes in the staking contract.
+    pub weighted_stake_diffs: &'a PoolWeightedStakeDiffs,
+    /// This cumulative "index" increases on each distribution. It represents both the last time when
+    /// the distribution happened and the number which is used in distribution calculations. <Date, index>
+    pub cumulative_index: &'a CumulativeIndex,
+}
+
+impl<'a> WrappedImmutableRewardPool<'a> {
+    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, ProgramError> {
+        let (pool, trees) = bytes.split_at(RewardPool::LEN);
+        let (weighted_stake_diffs, cumulative_index) =
+            trees.split_at(std::mem::size_of::<PoolWeightedStakeDiffs>());
+
+        let pool = RewardPool::load_bytes(pool)
+            .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
+
+        let weighted_stake_diffs = PoolWeightedStakeDiffs::load_bytes(weighted_stake_diffs)
+            .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
+
+        let cumulative_index = CumulativeIndex::load_bytes(cumulative_index)
+            .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
+
+        Ok(Self {
+            pool,
+            weighted_stake_diffs,
+            cumulative_index,
+        })
+    }
+}
+
 impl<'a> WrappedRewardPool<'a> {
     pub const LEN: usize = 64480;
 
@@ -446,5 +480,76 @@ impl RewardPool {
 impl IsInitialized for RewardPool {
     fn is_initialized(&self) -> bool {
         self.data[0] == <u8>::from(AccountType::RewardPool)
+    }
+}
+
+mod test {
+    #[test]
+    fn test_wrapped_immutable_reward_pool_is_same_size_as_wrapped_reward_pool() {
+        assert_eq!(
+            std::mem::size_of::<super::WrappedImmutableRewardPool>(),
+            std::mem::size_of::<super::WrappedRewardPool>()
+        );
+    }
+
+    #[test]
+    fn test_can_deserialize_wrapped_immutable_reward_pool_from_bytes_initialized_with_wrapped_reward_pool(
+    ) {
+        let mut bytes = vec![0; super::WrappedRewardPool::LEN];
+        let wrapped_reward_pool = super::WrappedRewardPool::from_bytes_mut(&mut bytes).unwrap();
+        let deposit_authority = solana_program::pubkey::Pubkey::new_unique();
+        let distribute_authority = solana_program::pubkey::Pubkey::new_unique();
+        let fill_authority = solana_program::pubkey::Pubkey::new_unique();
+        let reward_mint = solana_program::pubkey::Pubkey::new_unique();
+        wrapped_reward_pool.pool.deposit_authority = deposit_authority;
+        wrapped_reward_pool.pool.distribute_authority = distribute_authority;
+        wrapped_reward_pool.pool.fill_authority = fill_authority;
+        wrapped_reward_pool.pool.reward_mint = reward_mint;
+        let index_with_precision = 12345;
+        let total_share = 65432;
+        let distribution_ends_at = 54321;
+        let tokens_available_for_distribution = 23456;
+        let token_account_bump = 12;
+        wrapped_reward_pool.pool.index_with_precision = index_with_precision;
+        wrapped_reward_pool.pool.total_share = total_share;
+        wrapped_reward_pool.pool.distribution_ends_at = distribution_ends_at;
+        wrapped_reward_pool.pool.tokens_available_for_distribution =
+            tokens_available_for_distribution;
+        wrapped_reward_pool.pool.token_account_bump = token_account_bump;
+
+        let wrapped_immutable_reward_pool =
+            super::WrappedImmutableRewardPool::from_bytes(&bytes).unwrap();
+        assert_eq!(
+            wrapped_immutable_reward_pool.pool.deposit_authority,
+            deposit_authority
+        );
+        assert_eq!(
+            wrapped_immutable_reward_pool.pool.distribute_authority,
+            distribute_authority
+        );
+        assert_eq!(
+            wrapped_immutable_reward_pool.pool.fill_authority,
+            fill_authority
+        );
+        assert_eq!(wrapped_immutable_reward_pool.pool.reward_mint, reward_mint);
+        assert_eq!(
+            wrapped_immutable_reward_pool.pool.index_with_precision,
+            index_with_precision
+        );
+        assert_eq!(wrapped_immutable_reward_pool.pool.total_share, total_share);
+        assert_eq!(
+            wrapped_immutable_reward_pool.pool.distribution_ends_at,
+            distribution_ends_at
+        );
+        assert_eq!(
+            wrapped_immutable_reward_pool
+                .pool
+                .tokens_available_for_distribution,
+            tokens_available_for_distribution
+        );
+        assert_eq!(
+            wrapped_immutable_reward_pool.pool.token_account_bump,
+            token_account_bump
+        );
     }
 }
