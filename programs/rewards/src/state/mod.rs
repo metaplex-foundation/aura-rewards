@@ -4,9 +4,11 @@ mod mining;
 mod reward_pool;
 
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use bytemuck::Pod;
 pub use mining::*;
 pub use reward_pool::*;
 use sokoban::RedBlackTree;
+use std::fmt::Debug;
 
 pub const MINING_MODIFIERS_TREE_CAPACITY: usize = 50;
 pub const POOL_MODIFIERS_TREE_CAPACITY: usize = 365;
@@ -48,5 +50,53 @@ impl From<AccountType> for u8 {
             AccountType::RewardPool => 1,
             AccountType::Mining => 2,
         }
+    }
+}
+
+fn find_max_value_limited_by_key<
+    K: Ord + Default + Pod + Debug,
+    V: Default + Pod,
+    const CAP: usize,
+>(
+    tree: &RedBlackTree<K, V, CAP>,
+    key: K,
+) -> V {
+    let mut current_id = tree.root; // Start at the root node
+    let mut result: V = Default::default();
+
+    while current_id != 0 {
+        let node = tree.get_node(current_id); // Get the current node
+        if node.key < key {
+            // Update result to the current key if it's a valid candidate
+            result = node.value;
+            // Move to the right subtree to potentially find a larger valid key
+            current_id = tree.get_right(current_id);
+        } else {
+            // Move to the left subtree to find a smaller key
+            current_id = tree.get_left(current_id);
+        }
+    }
+
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use sokoban::NodeAllocatorMap;
+
+    use super::*;
+
+    #[test]
+    fn test_find_max_value_limited_by_key() {
+        let mut tree = RedBlackTree::<u64, u64, 300>::new();
+        tree.insert(1, 10);
+        tree.insert(2, 20);
+        tree.insert(3, 30);
+        tree.insert(4, 40);
+        tree.insert(5, 50);
+
+        assert_eq!(find_max_value_limited_by_key(&tree, 3), 20);
+        assert_eq!(find_max_value_limited_by_key(&tree, 6), 50);
+        assert_eq!(find_max_value_limited_by_key(&tree, 0), 0);
     }
 }

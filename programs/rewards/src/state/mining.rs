@@ -13,7 +13,9 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use super::{AccountType, CumulativeIndex, MiningWeightedStakeDiffs};
+use super::{
+    find_max_value_limited_by_key, AccountType, CumulativeIndex, MiningWeightedStakeDiffs,
+};
 
 pub struct WrappedMining<'a> {
     pub mining: &'a mut Mining,
@@ -165,7 +167,7 @@ impl Mining {
         unclaimed_rewards: &mut u64,
         index_with_precision: &mut u128,
     ) -> ProgramResult {
-        let vault_index_for_date = Mining::vault_index_for_date(cumulative_index, date);
+        let vault_index_for_date = find_max_value_limited_by_key(cumulative_index, date);
 
         let rewards = u64::try_from(
             vault_index_for_date
@@ -182,26 +184,6 @@ impl Mining {
         *index_with_precision = vault_index_for_date;
 
         Ok(())
-    }
-
-    fn vault_index_for_date(tree: &CumulativeIndex, value: u64) -> u128 {
-        let mut current_id = tree.root; // Start at the root node
-        let mut result = 0;
-
-        while current_id != 0 {
-            let node = tree.get_node(current_id); // Get the current node
-            if node.key < value {
-                // Update result to the current key if it's a valid candidate
-                result = node.value;
-                // Move to the right subtree to potentially find a larger valid key
-                current_id = tree.get_right(current_id);
-            } else {
-                // Move to the left subtree to find a smaller key
-                current_id = tree.get_left(current_id);
-            }
-        }
-
-        result
     }
 }
 
