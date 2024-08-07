@@ -7,7 +7,7 @@ use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use bytemuck::Pod;
 pub use mining::*;
 pub use reward_pool::*;
-use sokoban::RedBlackTree;
+use sokoban::{RedBlackTree, SENTINEL};
 use std::fmt::Debug;
 
 pub const MINING_MODIFIERS_TREE_CAPACITY: usize = 50;
@@ -60,15 +60,15 @@ fn find_max_value_limited_by_key<
 >(
     tree: &RedBlackTree<K, V, CAP>,
     key: K,
-) -> V {
+) -> Option<V> {
     let mut current_id = tree.root; // Start at the root node
-    let mut result: V = Default::default();
+    let mut result = None;
 
-    while current_id != 0 {
+    while current_id != SENTINEL {
         let node = tree.get_node(current_id); // Get the current node
         if node.key < key {
             // Update result to the current key if it's a valid candidate
-            result = node.value;
+            result = Some(node.value);
             // Move to the right subtree to potentially find a larger valid key
             current_id = tree.get_right(current_id);
         } else {
@@ -95,8 +95,8 @@ mod tests {
         tree.insert(4, 40);
         tree.insert(5, 50);
 
-        assert_eq!(find_max_value_limited_by_key(&tree, 3), 20);
-        assert_eq!(find_max_value_limited_by_key(&tree, 6), 50);
-        assert_eq!(find_max_value_limited_by_key(&tree, 0), 0);
+        assert_eq!(find_max_value_limited_by_key(&tree, 3).unwrap(), 20);
+        assert_eq!(find_max_value_limited_by_key(&tree, 6).unwrap(), 50);
+        assert_eq!(find_max_value_limited_by_key(&tree, 0), None);
     }
 }

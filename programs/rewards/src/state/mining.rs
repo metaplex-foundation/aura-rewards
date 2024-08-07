@@ -167,7 +167,8 @@ impl Mining {
         unclaimed_rewards: &mut u64,
         index_with_precision: &mut u128,
     ) -> ProgramResult {
-        let vault_index_for_date = find_max_value_limited_by_key(cumulative_index, date);
+        let vault_index_for_date =
+            find_max_value_limited_by_key(cumulative_index, date).unwrap_or(0);
 
         let rewards = u64::try_from(
             vault_index_for_date
