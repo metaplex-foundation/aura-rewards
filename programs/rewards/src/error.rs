@@ -80,6 +80,11 @@ pub enum MplxRewardsError {
     /// Account is already initialized
     #[error("Account is already initialized")]
     AlreadyInitialized,
+
+    /// 19
+    /// No keys smaller than given
+    #[error("No keys smaller than given")]
+    NoKeysSmallerThanGiven,
 }
 
 impl PrintProgramError for MplxRewardsError {
