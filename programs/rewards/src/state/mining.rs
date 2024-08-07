@@ -22,6 +22,13 @@ pub struct WrappedMining<'a> {
     /// so that rewards distribution will change. BTreeMap<unix_timestamp, modifier diff>
     pub weighted_stake_diffs: &'a mut MiningWeightedStakeDiffs,
 }
+pub struct WrappedImmutableMining<'a> {
+    pub mining: &'a Mining,
+    /// This structures stores the weighted stake modifiers on the date,
+    /// where staking ends. This modifier will be applied on the specified date to the global stake,
+    /// so that rewards distribution will change. BTreeMap<unix_timestamp, modifier diff>
+    pub weighted_stake_diffs: &'a MiningWeightedStakeDiffs,
+}
 
 impl<'a> WrappedMining<'a> {
     pub const LEN: usize = 1776;
@@ -208,5 +215,70 @@ impl Mining {
 impl IsInitialized for Mining {
     fn is_initialized(&self) -> bool {
         self.data[0] == <u8>::from(AccountType::Mining)
+    }
+}
+
+impl<'a> WrappedImmutableMining<'a> {
+    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, ProgramError> {
+        let (mining, weighted_stake_diffs) = bytes.split_at(Mining::LEN);
+        let mining =
+            Mining::load_bytes(mining).ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
+
+        let weighted_stake_diffs = MiningWeightedStakeDiffs::load_bytes(weighted_stake_diffs)
+            .ok_or(MplxRewardsError::RetreivingZeroCopyAccountFailire)?;
+
+        Ok(Self {
+            mining,
+            weighted_stake_diffs,
+        })
+    }
+}
+mod test {
+    #[test]
+    fn test_wrapped_immutable_mining_is_same_size_as_wrapped_mining() {
+        assert_eq!(
+            std::mem::size_of::<super::WrappedImmutableMining>(),
+            std::mem::size_of::<super::WrappedMining>()
+        );
+    }
+
+    #[test]
+    fn test_can_deserialize_wrapped_immutable_mining_from_bytes_initialized_with_wrapped_mining() {
+        let mut bytes = vec![0; super::WrappedMining::LEN];
+        let wrapped_mining = super::WrappedMining::from_bytes_mut(&mut bytes).unwrap();
+        let reward_pool = solana_program::pubkey::Pubkey::new_unique();
+        let mining_owner = solana_program::pubkey::Pubkey::new_unique();
+        let reward_mint = solana_program::pubkey::Pubkey::new_unique();
+        let index_with_precision = 1234;
+        let share = 23456;
+        let unclaimed_rewards = 34567;
+        let stake_from_others = 45678;
+        let bump = 1;
+        wrapped_mining.mining.reward_pool = reward_pool;
+        wrapped_mining.mining.owner = mining_owner;
+        wrapped_mining.mining.reward_mint = reward_mint;
+        wrapped_mining.mining.index_with_precision = index_with_precision;
+        wrapped_mining.mining.share = share;
+        wrapped_mining.mining.unclaimed_rewards = unclaimed_rewards;
+        wrapped_mining.mining.stake_from_others = stake_from_others;
+        wrapped_mining.mining.bump = bump;
+        let wrapped_immutable_mining = super::WrappedImmutableMining::from_bytes(&bytes).unwrap();
+        assert_eq!(wrapped_immutable_mining.mining.reward_pool, reward_pool);
+        assert_eq!(wrapped_immutable_mining.mining.owner, mining_owner);
+        assert_eq!(wrapped_immutable_mining.mining.reward_mint, reward_mint);
+        assert_eq!(
+            wrapped_immutable_mining.mining.index_with_precision,
+            index_with_precision
+        );
+        assert_eq!(wrapped_immutable_mining.mining.share, share);
+        assert_eq!(
+            wrapped_immutable_mining.mining.unclaimed_rewards,
+            unclaimed_rewards
+        );
+        assert_eq!(
+            wrapped_immutable_mining.mining.stake_from_others,
+            stake_from_others
+        );
+        assert_eq!(wrapped_immutable_mining.mining.bump, bump);
     }
 }
