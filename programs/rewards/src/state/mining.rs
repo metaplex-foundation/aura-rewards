@@ -234,8 +234,6 @@ impl<'a> WrappedImmutableMining<'a> {
     }
 }
 mod test {
-    use solana_program::pubkey::Pubkey;
-
     #[test]
     fn test_wrapped_immutable_mining_is_same_size_as_wrapped_mining() {
         assert_eq!(
@@ -248,9 +246,9 @@ mod test {
     fn test_can_deserialize_wrapped_immutable_mining_from_bytes_initialized_with_wrapped_mining() {
         let mut bytes = vec![0; super::WrappedMining::LEN];
         let wrapped_mining = super::WrappedMining::from_bytes_mut(&mut bytes).unwrap();
-        let reward_pool = Pubkey::new_unique();
-        let mining_owner = Pubkey::new_unique();
-        let reward_mint = Pubkey::new_unique();
+        let reward_pool = solana_program::pubkey::Pubkey::new_unique();
+        let mining_owner = solana_program::pubkey::Pubkey::new_unique();
+        let reward_mint = solana_program::pubkey::Pubkey::new_unique();
         let index_with_precision = 1234;
         let share = 23456;
         let unclaimed_rewards = 34567;
