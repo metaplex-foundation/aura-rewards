@@ -147,6 +147,7 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn deposit_mining(
         &self,
         context: &mut ProgramTestContext,

@@ -266,6 +266,7 @@ pub fn deposit_mining(
 }
 
 /// Creates 'WithdrawMining' instruction.
+#[allow(clippy::too_many_arguments)]
 pub fn withdraw_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
