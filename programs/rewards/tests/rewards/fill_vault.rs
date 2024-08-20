@@ -33,6 +33,7 @@ async fn setup() -> (ProgramTestContext, TestRewards) {
             LockupPeriod::ThreeMonths,
             &user.pubkey(),
             &user_mining,
+            &user.pubkey()
         )
         .await
         .unwrap();

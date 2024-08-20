@@ -80,6 +80,16 @@ pub enum MplxRewardsError {
     /// Account is already initialized
     #[error("Account is already initialized")]
     AlreadyInitialized,
+
+    /// 19
+    /// TODO: Add description.
+    #[error("Invalid mining")]
+    InvalidMining,
+
+    /// 19
+    /// TODO: Add description.
+    #[error("DerivationError")]
+    DerivationError
 }
 
 impl PrintProgramError for MplxRewardsError {

@@ -155,6 +155,7 @@ impl TestRewards {
         lockup_period: LockupPeriod,
         owner: &Pubkey,
         delegate_mining: &Pubkey,
+        delegate_wallet_addr: &Pubkey
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
@@ -166,6 +167,7 @@ impl TestRewards {
                 amount,
                 lockup_period,
                 owner,
+                delegate_wallet_addr
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -182,6 +184,7 @@ impl TestRewards {
         delegate_mining: &Pubkey,
         amount: u64,
         owner: &Pubkey,
+        delegate_wallet_addr: &Pubkey
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::withdraw_mining(
@@ -192,6 +195,7 @@ impl TestRewards {
                 delegate_mining,
                 amount,
                 owner,
+                delegate_wallet_addr
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -283,6 +287,7 @@ impl TestRewards {
         base_amount: u64,
         additional_amount: u64,
         mining_owner: &Pubkey,
+        delegate_wallet_addr: &Pubkey
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::extend_stake(
@@ -297,6 +302,7 @@ impl TestRewards {
                 base_amount,
                 additional_amount,
                 mining_owner,
+                delegate_wallet_addr
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],

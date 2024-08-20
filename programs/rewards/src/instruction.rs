@@ -65,6 +65,7 @@ pub enum RewardsInstruction {
         lockup_period: LockupPeriod,
         /// Specifies the owner of the Mining Account
         mining_owner: Pubkey,
+        delegate_wallet_addr: Pubkey,
     },
 
     /// Withdraws amount of supply to the mining account
@@ -77,6 +78,7 @@ pub enum RewardsInstruction {
         amount: u64,
         /// Specifies the owner of the Mining Account
         mining_owner: Pubkey,
+        delegate_wallet_addr: Pubkey,
     },
 
     /// Claims amount of rewards
@@ -113,6 +115,8 @@ pub enum RewardsInstruction {
         additional_amount: u64,
         /// The wallet who owns the mining account
         mining_owner: Pubkey,
+        /// Wallet addres of delegate
+        delegate_wallet_addr: Pubkey,
     },
 
     /// Distributes tokens among mining owners
@@ -240,6 +244,7 @@ pub fn deposit_mining(
     amount: u64,
     lockup_period: LockupPeriod,
     mining_owner: &Pubkey,
+    delegate_wallet_addr: &Pubkey
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -254,6 +259,7 @@ pub fn deposit_mining(
             amount,
             lockup_period,
             mining_owner: *mining_owner,
+            delegate_wallet_addr: *delegate_wallet_addr,
         },
         accounts,
     )
@@ -268,6 +274,7 @@ pub fn withdraw_mining(
     delegate_mining: &Pubkey,
     amount: u64,
     mining_owner: &Pubkey,
+    delegate_wallet_addr: &Pubkey
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -281,6 +288,7 @@ pub fn withdraw_mining(
         &RewardsInstruction::WithdrawMining {
             amount,
             mining_owner: *mining_owner,
+            delegate_wallet_addr: *delegate_wallet_addr,
         },
         accounts,
     )
@@ -326,6 +334,7 @@ pub fn extend_stake(
     base_amount: u64,
     additional_amount: u64,
     mining_owner: &Pubkey,
+    delegate_wallet_addr: &Pubkey
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -343,6 +352,7 @@ pub fn extend_stake(
             base_amount,
             additional_amount,
             mining_owner: *mining_owner,
+            delegate_wallet_addr: *delegate_wallet_addr,
         },
         accounts,
     )

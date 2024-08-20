@@ -16,6 +16,7 @@ use solana_program::{
     system_instruction,
     sysvar::Sysvar,
 };
+use solana_program::pubkey::PubkeyError;
 
 /// Generates mining address
 pub fn find_mining_program_address(
@@ -320,4 +321,21 @@ impl SafeArithmeticOperations for u128 {
         self.checked_div(amount)
             .ok_or(MplxRewardsError::MathOverflow)
     }
+}
+
+pub fn verify_mining_address(
+    program_id: &Pubkey,
+    mining_owner: &Pubkey,
+    reward_pool: &Pubkey,
+    bump: u8,
+) -> Result<Pubkey, PubkeyError> {
+    Pubkey::create_program_address(
+        &[
+            "mining".as_bytes(),
+            &mining_owner.to_bytes(),
+            &reward_pool.to_bytes(),
+            &[bump],
+        ],
+        program_id,
+    )
 }
