@@ -89,7 +89,7 @@ pub enum MplxRewardsError {
     /// 19
     /// TODO: Add description.
     #[error("DerivationError")]
-    DerivationError
+    DerivationError,
 }
 
 impl PrintProgramError for MplxRewardsError {

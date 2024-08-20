@@ -58,7 +58,14 @@ pub fn process_instruction<'a>(
             delegate_wallet_addr,
         } => {
             msg!("RewardsInstruction: DepositMining");
-            process_deposit_mining(program_id, accounts, amount, lockup_period, &mining_owner, &delegate_wallet_addr)
+            process_deposit_mining(
+                program_id,
+                accounts,
+                amount,
+                lockup_period,
+                &mining_owner,
+                &delegate_wallet_addr,
+            )
         }
         RewardsInstruction::WithdrawMining {
             amount,
@@ -66,7 +73,13 @@ pub fn process_instruction<'a>(
             delegate_wallet_addr,
         } => {
             msg!("RewardsInstruction: WithdrawMining");
-            process_withdraw_mining(program_id, accounts, amount, &mining_owner, &delegate_wallet_addr)
+            process_withdraw_mining(
+                program_id,
+                accounts,
+                amount,
+                &mining_owner,
+                &delegate_wallet_addr,
+            )
         }
         RewardsInstruction::Claim => {
             msg!("RewardsInstruction: Claim");
@@ -91,7 +104,7 @@ pub fn process_instruction<'a>(
                 base_amount,
                 additional_amount,
                 &mining_owner,
-                &delegate_wallet_addr
+                &delegate_wallet_addr,
             )
         }
         RewardsInstruction::DistributeRewards => {

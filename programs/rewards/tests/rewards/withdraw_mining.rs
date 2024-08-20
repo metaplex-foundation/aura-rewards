@@ -32,7 +32,15 @@ async fn success() {
 
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, lockup_period, &user, &mining, &user)
+        .deposit_mining(
+            &mut context,
+            &mining,
+            100,
+            lockup_period,
+            &user,
+            &mining,
+            &user,
+        )
         .await
         .unwrap();
 

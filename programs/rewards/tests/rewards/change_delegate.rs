@@ -59,7 +59,7 @@ async fn change_delegate_to_the_same() {
             LockupPeriod::OneYear,
             &user_a.pubkey(),
             &user_mining_a,
-            &user_a.pubkey()
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -90,7 +90,7 @@ async fn change_delegate_then_claim() {
             LockupPeriod::OneYear,
             &delegate.pubkey(),
             &delegate_mining,
-            &delegate.pubkey()
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -110,7 +110,7 @@ async fn change_delegate_then_claim() {
             LockupPeriod::OneYear,
             &user_a.pubkey(),
             &user_mining_a,
-            &user_a.pubkey()
+            &user_a.pubkey(),
         )
         .await
         .unwrap();

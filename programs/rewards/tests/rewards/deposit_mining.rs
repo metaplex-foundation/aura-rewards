@@ -128,7 +128,7 @@ async fn delegating_success() {
             LockupPeriod::Flex,
             &user,
             &delegate_mining,
-            &delegate.pubkey()
+            &delegate.pubkey(),
         )
         .await
         .unwrap();

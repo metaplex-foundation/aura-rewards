@@ -52,7 +52,7 @@ async fn happy_path() {
             LockupPeriod::ThreeMonths,
             &user.pubkey(),
             &user_mining_addr,
-            &user.pubkey()
+            &user.pubkey(),
         )
         .await
         .unwrap();
@@ -100,7 +100,7 @@ async fn happy_path_with_flex() {
             LockupPeriod::Flex,
             &user.pubkey(),
             &user_mining_addr,
-            &user.pubkey()
+            &user.pubkey(),
         )
         .await
         .unwrap();
@@ -148,7 +148,7 @@ async fn happy_path_with_flex_continious_distribution() {
             LockupPeriod::Flex,
             &user.pubkey(),
             &user_mining_addr,
-            &user.pubkey()
+            &user.pubkey(),
         )
         .await
         .unwrap();
@@ -200,7 +200,7 @@ async fn happy_path_with_flex_continious_distribution_with_two_users() {
             LockupPeriod::Flex,
             &alice.pubkey(),
             &alice_mining_addr,
-            &alice.pubkey()
+            &alice.pubkey(),
         )
         .await
         .unwrap();
@@ -214,7 +214,7 @@ async fn happy_path_with_flex_continious_distribution_with_two_users() {
             LockupPeriod::Flex,
             &bob.pubkey(),
             &bob_mining_addr,
-            &bob.pubkey()
+            &bob.pubkey(),
         )
         .await
         .unwrap();

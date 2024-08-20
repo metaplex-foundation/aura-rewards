@@ -11,12 +11,11 @@ use solana_program::{
     program::{invoke, invoke_signed},
     program_error::ProgramError,
     program_pack::Pack,
-    pubkey::Pubkey,
+    pubkey::{Pubkey, PubkeyError},
     rent::Rent,
     system_instruction,
     sysvar::Sysvar,
 };
-use solana_program::pubkey::PubkeyError;
 
 /// Generates mining address
 pub fn find_mining_program_address(

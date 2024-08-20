@@ -1,11 +1,10 @@
 use crate::{
     asserts::assert_and_get_pool_and_mining,
+    error::MplxRewardsError,
+    state::WrappedMining,
     utils::{get_delegate_mining, AccountLoader, LockupPeriod},
 };
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
-use crate::error::MplxRewardsError;
-use crate::state::WrappedMining;
-use crate::utils::verify_mining_address;
 
 #[allow(clippy::too_many_arguments)]
 pub fn process_extend_stake<'a>(
@@ -42,13 +41,23 @@ pub fn process_extend_stake<'a>(
     let delegate_mining = get_delegate_mining(delegate_mining, mining)?;
 
     if let Some(delegate_mining) = delegate_mining {
-        if *delegate_mining.key != verify_mining_address(
-            program_id,
-            delegate_wallet_addr,
-            reward_pool.key,
-            WrappedMining::from_bytes_mut(&mut delegate_mining.data.borrow_mut())?.mining.bump
-        ).map_err(|_| MplxRewardsError::DerivationError)? {
-            return Err(MplxRewardsError::InvalidMining.into())
+        if *delegate_mining.key
+            != Pubkey::create_program_address(
+                &[
+                    "mining".as_bytes(),
+                    &delegate_wallet_addr.to_bytes(),
+                    &reward_pool.key.to_bytes(),
+                    &[
+                        WrappedMining::from_bytes_mut(&mut delegate_mining.data.borrow_mut())?
+                            .mining
+                            .bump,
+                    ],
+                ],
+                program_id,
+            )
+            .map_err(|_| MplxRewardsError::DerivationError)?
+        {
+            return Err(MplxRewardsError::InvalidMining.into());
         };
     }
 

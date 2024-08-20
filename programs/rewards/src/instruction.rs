@@ -244,7 +244,7 @@ pub fn deposit_mining(
     amount: u64,
     lockup_period: LockupPeriod,
     mining_owner: &Pubkey,
-    delegate_wallet_addr: &Pubkey
+    delegate_wallet_addr: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -274,7 +274,7 @@ pub fn withdraw_mining(
     delegate_mining: &Pubkey,
     amount: u64,
     mining_owner: &Pubkey,
-    delegate_wallet_addr: &Pubkey
+    delegate_wallet_addr: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -334,7 +334,7 @@ pub fn extend_stake(
     base_amount: u64,
     additional_amount: u64,
     mining_owner: &Pubkey,
-    delegate_wallet_addr: &Pubkey
+    delegate_wallet_addr: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
