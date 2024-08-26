@@ -1,7 +1,7 @@
 use crate::{
     asserts::assert_and_get_pool_and_mining,
     error::MplxRewardsError,
-    utils::{get_delegate_mining, AccountLoader},
+    utils::{get_delegate_mining, verify_delegate_mining_address, AccountLoader},
 };
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 
@@ -9,6 +9,7 @@ pub fn process_change_delegate<'a>(
     program_id: &Pubkey,
     accounts: &'a [AccountInfo<'a>],
     staked_amount: u64,
+    new_delegate: &Pubkey
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter().enumerate();
 
@@ -37,6 +38,15 @@ pub fn process_change_delegate<'a>(
     )?;
 
     let new_delegate_mining = get_delegate_mining(new_delegate_mining, mining)?;
+    if let Some(new_delegate_mining) = new_delegate_mining {
+        verify_delegate_mining_address(
+            program_id,
+            new_delegate_mining,
+            new_delegate,
+            reward_pool.key,
+        )?
+    }
+
     let old_delegate_mining = get_delegate_mining(old_delegate_mining, mining)?;
 
     wrapped_reward_pool.change_delegate(
