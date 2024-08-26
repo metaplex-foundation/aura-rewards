@@ -82,13 +82,13 @@ pub enum MplxRewardsError {
     AlreadyInitialized,
 
     /// 19
-    /// TODO: Add description.
+    /// Incorrect mining address.
     #[error("Invalid mining")]
     InvalidMining,
 
-    /// 19
-    /// TODO: Add description.
-    #[error("DerivationError")]
+    /// 20
+    /// Failed to derive PDA.
+    #[error("Failed to derive PDA")]
     DerivationError,
 }
 
