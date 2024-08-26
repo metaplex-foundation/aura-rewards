@@ -119,6 +119,7 @@ impl TestRewards {
         mining_account
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn change_delegate(
         &self,
         context: &mut ProgramTestContext,

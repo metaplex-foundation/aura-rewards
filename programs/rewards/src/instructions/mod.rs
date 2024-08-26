@@ -114,12 +114,7 @@ pub fn process_instruction<'a>(
             new_delegate,
         } => {
             msg!("RewardsInstruction: ChangeDelegate");
-            process_change_delegate(
-                program_id,
-                accounts,
-                staked_amount,
-                &new_delegate,
-            )
+            process_change_delegate(program_id, accounts, staked_amount, &new_delegate)
         }
     }
 }

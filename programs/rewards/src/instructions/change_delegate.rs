@@ -9,7 +9,7 @@ pub fn process_change_delegate<'a>(
     program_id: &Pubkey,
     accounts: &'a [AccountInfo<'a>],
     staked_amount: u64,
-    new_delegate: &Pubkey
+    new_delegate: &Pubkey,
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter().enumerate();
 
