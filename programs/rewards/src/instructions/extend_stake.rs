@@ -1,8 +1,6 @@
 use crate::{
     asserts::assert_and_get_pool_and_mining,
-    error::MplxRewardsError,
-    state::WrappedMining,
-    utils::{get_delegate_mining, AccountLoader, LockupPeriod},
+    utils::{get_delegate_mining, verify_delegate_mining_address, AccountLoader, LockupPeriod},
 };
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 
@@ -16,7 +14,7 @@ pub fn process_extend_stake<'a>(
     base_amount: u64,
     additional_amount: u64,
     mining_owner: &Pubkey,
-    delegate_wallet_addr: &Pubkey,
+    delegate: &Pubkey,
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter().enumerate();
 
@@ -41,24 +39,7 @@ pub fn process_extend_stake<'a>(
     let delegate_mining = get_delegate_mining(delegate_mining, mining)?;
 
     if let Some(delegate_mining) = delegate_mining {
-        if *delegate_mining.key
-            != Pubkey::create_program_address(
-                &[
-                    "mining".as_bytes(),
-                    &delegate_wallet_addr.to_bytes(),
-                    &reward_pool.key.to_bytes(),
-                    &[
-                        WrappedMining::from_bytes_mut(&mut delegate_mining.data.borrow_mut())?
-                            .mining
-                            .bump,
-                    ],
-                ],
-                program_id,
-            )
-            .map_err(|_| MplxRewardsError::DerivationError)?
-        {
-            return Err(MplxRewardsError::InvalidMining.into());
-        };
+        verify_delegate_mining_address(program_id, delegate_mining, delegate, reward_pool.key)?
     }
 
     wrapped_reward_pool.extend(
