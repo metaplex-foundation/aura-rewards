@@ -12,6 +12,7 @@ mod extend_stake;
 mod fill_vault;
 mod initialize_mining;
 mod initialize_pool;
+mod penalties;
 mod withdraw_mining;
 
 pub(crate) use change_delegate::*;
@@ -23,6 +24,7 @@ pub(crate) use extend_stake::*;
 pub(crate) use fill_vault::*;
 pub(crate) use initialize_mining::*;
 pub(crate) use initialize_pool::*;
+pub(crate) use penalties::*;
 pub(crate) use withdraw_mining::*;
 
 pub fn process_instruction<'a>(
@@ -115,6 +117,14 @@ pub fn process_instruction<'a>(
         } => {
             msg!("RewardsInstruction: ChangeDelegate");
             process_change_delegate(program_id, accounts, staked_amount, &new_delegate)
+        }
+        RewardsInstruction::RestrictClaiming {} => {
+            msg!("RewardsInstruction: RestrictClaiming");
+            process_restrict_claiming(program_id, accounts)
+        }
+        RewardsInstruction::AllowClaiming {} => {
+            msg!("RewardsInstruction: RestrictClaiming");
+            process_allow_claiming(program_id, accounts)
         }
     }
 }

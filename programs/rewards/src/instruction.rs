@@ -144,6 +144,17 @@ pub enum RewardsInstruction {
         staked_amount: u64,
         new_delegate: Pubkey,
     },
+
+    /// Prevents the mining account from rewards withdrawing
+    #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(1, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    RestrictClaiming {},
+
+    #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(1, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    AllowClaiming {},
 }
 
 /// Creates 'InitializePool' instruction.
@@ -430,4 +441,38 @@ pub fn change_delegate(
         },
         accounts,
     )
+}
+
+pub fn restrict_claiming(
+    program_id: &Pubkey,
+    deposit_authority: &Pubkey,
+    reward_pool: &Pubkey,
+    mining: &Pubkey,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new(*reward_pool, false),
+        AccountMeta::new(*mining, false),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::RestrictClaiming {},
+        accounts,
+    )
+}
+
+pub fn allow_claiming(
+    program_id: &Pubkey,
+    deposit_authority: &Pubkey,
+    reward_pool: &Pubkey,
+    mining: &Pubkey,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new(*reward_pool, false),
+        AccountMeta::new(*mining, false),
+    ];
+
+    Instruction::new_with_borsh(*program_id, &RewardsInstruction::AllowClaiming {}, accounts)
 }

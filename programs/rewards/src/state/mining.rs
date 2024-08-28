@@ -32,6 +32,8 @@ pub struct WrappedImmutableMining<'a> {
     pub weighted_stake_diffs: &'a MiningWeightedStakeDiffs,
 }
 
+pub const CLAIMING_RESTRICTION_BIT: usize = 1;
+
 impl<'a> WrappedMining<'a> {
     pub const LEN: usize = 1776;
 
@@ -100,6 +102,7 @@ pub struct Mining {
     /// Account type - Mining. This discriminator should exist in order to prevent
     /// shenanigans with customly modified accounts and their fields.
     /// 1: account type
+    /// 2: claim is restricted
     /// 2-7: unused
     pub data: [u8; 7],
 }
@@ -192,6 +195,30 @@ impl Mining {
         *index_with_precision = vault_index_for_date;
 
         Ok(())
+    }
+
+    pub fn restrict_claiming(&mut self) -> ProgramResult {
+        if self.data[CLAIMING_RESTRICTION_BIT] == 1 {
+            return Err(MplxRewardsError::MiningAlreadyRestricted.into());
+        }
+
+        self.data[CLAIMING_RESTRICTION_BIT] = 1;
+
+        Ok(())
+    }
+
+    pub fn allow_claiming(&mut self) -> ProgramResult {
+        if self.data[CLAIMING_RESTRICTION_BIT] == 0 {
+            return Err(MplxRewardsError::MiningNotRestricted.into());
+        }
+
+        self.data[CLAIMING_RESTRICTION_BIT] = 0;
+
+        Ok(())
+    }
+
+    pub fn is_claiming_restricted(&self) -> bool {
+        self.data[CLAIMING_RESTRICTION_BIT] == 1
     }
 }
 
