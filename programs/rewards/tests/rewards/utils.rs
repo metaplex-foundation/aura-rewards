@@ -119,6 +119,7 @@ impl TestRewards {
         mining_account
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn change_delegate(
         &self,
         context: &mut ProgramTestContext,
@@ -126,6 +127,7 @@ impl TestRewards {
         mining_owner: &Keypair,
         new_delegate_mining: &Pubkey,
         old_delegate_mining: &Pubkey,
+        new_delegate: &Pubkey,
         amount: u64,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
@@ -137,6 +139,7 @@ impl TestRewards {
                 &mining_owner.pubkey(),
                 old_delegate_mining,
                 new_delegate_mining,
+                new_delegate,
                 amount,
             )],
             Some(&context.payer.pubkey()),
@@ -147,6 +150,7 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn deposit_mining(
         &self,
         context: &mut ProgramTestContext,
@@ -155,6 +159,7 @@ impl TestRewards {
         lockup_period: LockupPeriod,
         owner: &Pubkey,
         delegate_mining: &Pubkey,
+        delegate_wallet_addr: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
@@ -166,6 +171,7 @@ impl TestRewards {
                 amount,
                 lockup_period,
                 owner,
+                delegate_wallet_addr,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -182,6 +188,7 @@ impl TestRewards {
         delegate_mining: &Pubkey,
         amount: u64,
         owner: &Pubkey,
+        delegate_wallet_addr: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::withdraw_mining(
@@ -192,6 +199,7 @@ impl TestRewards {
                 delegate_mining,
                 amount,
                 owner,
+                delegate_wallet_addr,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -283,6 +291,7 @@ impl TestRewards {
         base_amount: u64,
         additional_amount: u64,
         mining_owner: &Pubkey,
+        delegate_wallet_addr: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::extend_stake(
@@ -297,6 +306,7 @@ impl TestRewards {
                 base_amount,
                 additional_amount,
                 mining_owner,
+                delegate_wallet_addr,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],

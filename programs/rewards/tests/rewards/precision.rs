@@ -53,6 +53,7 @@ async fn precision_distribution() {
             LockupPeriod::Flex,
             &rich_user.pubkey(),
             &rich_user_mining_addr,
+            &rich_user.pubkey(),
         )
         .await
         .unwrap();
@@ -66,6 +67,7 @@ async fn precision_distribution() {
             LockupPeriod::Flex,
             &user.pubkey(),
             &user_mining_addr,
+            &user.pubkey(),
         )
         .await
         .unwrap();

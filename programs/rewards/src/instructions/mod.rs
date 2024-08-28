@@ -55,16 +55,25 @@ pub fn process_instruction<'a>(
             amount,
             lockup_period,
             mining_owner,
+            delegate,
         } => {
             msg!("RewardsInstruction: DepositMining");
-            process_deposit_mining(program_id, accounts, amount, lockup_period, &mining_owner)
+            process_deposit_mining(
+                program_id,
+                accounts,
+                amount,
+                lockup_period,
+                &mining_owner,
+                &delegate,
+            )
         }
         RewardsInstruction::WithdrawMining {
             amount,
             mining_owner,
+            delegate,
         } => {
             msg!("RewardsInstruction: WithdrawMining");
-            process_withdraw_mining(program_id, accounts, amount, &mining_owner)
+            process_withdraw_mining(program_id, accounts, amount, &mining_owner, &delegate)
         }
         RewardsInstruction::Claim => {
             msg!("RewardsInstruction: Claim");
@@ -77,6 +86,7 @@ pub fn process_instruction<'a>(
             base_amount,
             additional_amount,
             mining_owner,
+            delegate,
         } => {
             msg!("RewardsInstruction: ExtendStake");
             process_extend_stake(
@@ -88,6 +98,7 @@ pub fn process_instruction<'a>(
                 base_amount,
                 additional_amount,
                 &mining_owner,
+                &delegate,
             )
         }
         RewardsInstruction::DistributeRewards => {
@@ -98,9 +109,12 @@ pub fn process_instruction<'a>(
             msg!("RewardsInstruction: CloseAccount");
             process_close_mining(program_id, accounts)
         }
-        RewardsInstruction::ChangeDelegate { staked_amount } => {
+        RewardsInstruction::ChangeDelegate {
+            staked_amount,
+            new_delegate,
+        } => {
             msg!("RewardsInstruction: ChangeDelegate");
-            process_change_delegate(program_id, accounts, staked_amount)
+            process_change_delegate(program_id, accounts, staked_amount, &new_delegate)
         }
     }
 }

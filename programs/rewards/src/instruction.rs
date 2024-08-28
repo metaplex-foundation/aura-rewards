@@ -65,6 +65,7 @@ pub enum RewardsInstruction {
         lockup_period: LockupPeriod,
         /// Specifies the owner of the Mining Account
         mining_owner: Pubkey,
+        delegate: Pubkey,
     },
 
     /// Withdraws amount of supply to the mining account
@@ -77,6 +78,7 @@ pub enum RewardsInstruction {
         amount: u64,
         /// Specifies the owner of the Mining Account
         mining_owner: Pubkey,
+        delegate: Pubkey,
     },
 
     /// Claims amount of rewards
@@ -113,6 +115,8 @@ pub enum RewardsInstruction {
         additional_amount: u64,
         /// The wallet who owns the mining account
         mining_owner: Pubkey,
+        /// Wallet addres of delegate
+        delegate: Pubkey,
     },
 
     /// Distributes tokens among mining owners
@@ -138,6 +142,7 @@ pub enum RewardsInstruction {
     ChangeDelegate {
         /// Amount of staked tokens
         staked_amount: u64,
+        new_delegate: Pubkey,
     },
 }
 
@@ -240,6 +245,7 @@ pub fn deposit_mining(
     amount: u64,
     lockup_period: LockupPeriod,
     mining_owner: &Pubkey,
+    delegate: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -254,12 +260,14 @@ pub fn deposit_mining(
             amount,
             lockup_period,
             mining_owner: *mining_owner,
+            delegate: *delegate,
         },
         accounts,
     )
 }
 
 /// Creates 'WithdrawMining' instruction.
+#[allow(clippy::too_many_arguments)]
 pub fn withdraw_mining(
     program_id: &Pubkey,
     reward_pool: &Pubkey,
@@ -268,6 +276,7 @@ pub fn withdraw_mining(
     delegate_mining: &Pubkey,
     amount: u64,
     mining_owner: &Pubkey,
+    delegate: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -281,6 +290,7 @@ pub fn withdraw_mining(
         &RewardsInstruction::WithdrawMining {
             amount,
             mining_owner: *mining_owner,
+            delegate: *delegate,
         },
         accounts,
     )
@@ -326,6 +336,7 @@ pub fn extend_stake(
     base_amount: u64,
     additional_amount: u64,
     mining_owner: &Pubkey,
+    delegate: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
@@ -343,6 +354,7 @@ pub fn extend_stake(
             base_amount,
             additional_amount,
             mining_owner: *mining_owner,
+            delegate: *delegate,
         },
         accounts,
     )
@@ -398,6 +410,7 @@ pub fn change_delegate(
     mining_owner: &Pubkey,
     old_delegate_mining: &Pubkey,
     new_delegate_mining: &Pubkey,
+    new_delegate: &Pubkey,
     staked_amount: u64,
 ) -> Instruction {
     let accounts = vec![
@@ -411,7 +424,10 @@ pub fn change_delegate(
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::ChangeDelegate { staked_amount },
+        &RewardsInstruction::ChangeDelegate {
+            staked_amount,
+            new_delegate: *new_delegate,
+        },
         accounts,
     )
 }

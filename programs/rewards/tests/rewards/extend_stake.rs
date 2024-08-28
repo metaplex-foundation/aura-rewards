@@ -57,6 +57,7 @@ async fn restake_before_its_expired() {
             old_lockup_period,
             &mining_owner,
             &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -75,6 +76,7 @@ async fn restake_before_its_expired() {
             deposit_start_ts,
             base_amount,
             additional_amount,
+            &mining_owner,
             &mining_owner,
         )
         .await
@@ -117,6 +119,7 @@ async fn restake_for_another_period_after_old_is_expired() {
             LockupPeriod::ThreeMonths,
             &mining_owner,
             &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -138,6 +141,7 @@ async fn restake_for_another_period_after_old_is_expired() {
             deposit_start_ts,
             base_amount,
             additional_amount,
+            &mining_owner,
             &mining_owner,
         )
         .await
@@ -175,6 +179,7 @@ async fn just_prolong_without_adding_tokes() {
             old_lockup_period,
             &mining_owner,
             &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -193,6 +198,7 @@ async fn just_prolong_without_adding_tokes() {
             deposit_start_ts,
             base_amount,
             additional_amount,
+            &mining_owner,
             &mining_owner,
         )
         .await
@@ -235,6 +241,7 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
             LockupPeriod::ThreeMonths,
             &mining_owner,
             &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -256,6 +263,7 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
             deposit_start_ts,
             base_amount,
             additional_amount,
+            &mining_owner,
             &mining_owner,
         )
         .await
@@ -292,6 +300,7 @@ async fn restake_in_expiration_day() {
             LockupPeriod::ThreeMonths,
             &mining_owner,
             &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -313,6 +322,7 @@ async fn restake_in_expiration_day() {
             deposit_start_ts,
             base_amount,
             additional_amount,
+            &mining_owner,
             &mining_owner,
         )
         .await
@@ -344,6 +354,7 @@ async fn prolong_with_delegate() {
             LockupPeriod::OneYear,
             &delegate.pubkey(),
             &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -373,6 +384,7 @@ async fn prolong_with_delegate() {
             old_lockup_period,
             &mining_owner,
             &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -411,6 +423,7 @@ async fn prolong_with_delegate() {
             base_amount,
             additional_amount,
             &mining_owner,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();

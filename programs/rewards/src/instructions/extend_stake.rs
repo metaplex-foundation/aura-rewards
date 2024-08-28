@@ -1,6 +1,6 @@
 use crate::{
     asserts::assert_and_get_pool_and_mining,
-    utils::{get_delegate_mining, AccountLoader, LockupPeriod},
+    utils::{get_delegate_mining, verify_delegate_mining_address, AccountLoader, LockupPeriod},
 };
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 
@@ -14,6 +14,7 @@ pub fn process_extend_stake<'a>(
     base_amount: u64,
     additional_amount: u64,
     mining_owner: &Pubkey,
+    delegate: &Pubkey,
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter().enumerate();
 
@@ -36,6 +37,10 @@ pub fn process_extend_stake<'a>(
     )?;
 
     let delegate_mining = get_delegate_mining(delegate_mining, mining)?;
+
+    if let Some(delegate_mining) = delegate_mining {
+        verify_delegate_mining_address(program_id, delegate_mining, delegate, reward_pool.key)?
+    }
 
     wrapped_reward_pool.extend(
         &mut wrapped_mining,

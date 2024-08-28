@@ -1,7 +1,7 @@
 //! Arbitrary auxilliary functions
 use std::iter::Enumerate;
 
-use crate::error::MplxRewardsError;
+use crate::{error::MplxRewardsError, state::WrappedImmutableMining};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::AccountInfo,
@@ -11,7 +11,7 @@ use solana_program::{
     program::{invoke, invoke_signed},
     program_error::ProgramError,
     program_pack::Pack,
-    pubkey::Pubkey,
+    pubkey::{Pubkey, PubkeyError},
     rent::Rent,
     system_instruction,
     sysvar::Sysvar,
@@ -116,6 +116,29 @@ pub fn get_delegate_mining<'a, 'b>(
         // None means delegate_mining is the same as mining
         Ok(None)
     }
+}
+
+pub fn verify_delegate_mining_address(
+    program_id: &Pubkey,
+    delegate_mining: &AccountInfo<'_>,
+    delegate: &Pubkey,
+    reward_pool_key: &Pubkey,
+) -> Result<(), ProgramError> {
+    if *delegate_mining.key
+        != create_mining_address(
+            program_id,
+            delegate,
+            reward_pool_key,
+            WrappedImmutableMining::from_bytes(&delegate_mining.data.borrow())?
+                .mining
+                .bump,
+        )
+        .map_err(|_| MplxRewardsError::DerivationError)?
+    {
+        return Err(MplxRewardsError::InvalidMining.into());
+    }
+
+    Ok(())
 }
 
 /// Helper for parsing accounts with arbitrary input conditions
@@ -320,4 +343,21 @@ impl SafeArithmeticOperations for u128 {
         self.checked_div(amount)
             .ok_or(MplxRewardsError::MathOverflow)
     }
+}
+
+pub fn create_mining_address(
+    program_id: &Pubkey,
+    mining_owner: &Pubkey,
+    reward_pool: &Pubkey,
+    bump: u8,
+) -> Result<Pubkey, PubkeyError> {
+    Pubkey::create_program_address(
+        &[
+            "mining".as_bytes(),
+            &mining_owner.to_bytes(),
+            &reward_pool.to_bytes(),
+            &[bump],
+        ],
+        program_id,
+    )
 }

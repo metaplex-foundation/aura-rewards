@@ -80,6 +80,16 @@ pub enum MplxRewardsError {
     /// Account is already initialized
     #[error("Account is already initialized")]
     AlreadyInitialized,
+
+    /// 19
+    /// Incorrect mining address.
+    #[error("Invalid mining")]
+    InvalidMining,
+
+    /// 20
+    /// Failed to derive PDA.
+    #[error("Failed to derive PDA")]
+    DerivationError,
 }
 
 impl PrintProgramError for MplxRewardsError {

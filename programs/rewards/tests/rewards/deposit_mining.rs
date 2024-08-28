@@ -44,6 +44,7 @@ async fn success() {
             LockupPeriod::ThreeMonths,
             &user,
             &mining,
+            &user,
         )
         .await
         .unwrap();
@@ -74,6 +75,7 @@ async fn success_with_flex() {
             LockupPeriod::Flex,
             &user,
             &mining,
+            &user,
         )
         .await
         .unwrap();
@@ -108,6 +110,7 @@ async fn delegating_success() {
             LockupPeriod::OneYear,
             &delegate.pubkey(),
             &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -125,6 +128,7 @@ async fn delegating_success() {
             LockupPeriod::Flex,
             &user,
             &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();

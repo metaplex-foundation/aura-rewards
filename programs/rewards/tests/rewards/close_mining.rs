@@ -50,6 +50,7 @@ async fn success() {
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
             &mining,
+            &mining_owner.pubkey(),
         )
         .await
         .unwrap();
@@ -82,6 +83,7 @@ async fn close_when_has_stake_from_others() {
             LockupPeriod::OneYear,
             &delegate.pubkey(),
             &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -106,6 +108,7 @@ async fn close_when_has_stake_from_others() {
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
             &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -133,6 +136,7 @@ async fn close_when_has_unclaimed_rewards() {
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
             &mining,
+            &mining_owner.pubkey(),
         )
         .await
         .unwrap();
