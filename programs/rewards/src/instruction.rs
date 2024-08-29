@@ -147,12 +147,12 @@ pub enum RewardsInstruction {
 
     /// Prevents the mining account from rewards withdrawing
     #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(1, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     RestrictClaiming {},
 
     #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(1, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     AllowClaiming {},
 }
@@ -451,7 +451,7 @@ pub fn restrict_claiming(
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new(*reward_pool, false),
+        AccountMeta::new_readonly(*reward_pool, false),
         AccountMeta::new(*mining, false),
     ];
 
@@ -470,7 +470,7 @@ pub fn allow_claiming(
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new(*reward_pool, false),
+        AccountMeta::new_readonly(*reward_pool, false),
         AccountMeta::new(*mining, false),
     ];
 
