@@ -339,6 +339,46 @@ impl TestRewards {
 
         context.banks_client.process_transaction(tx).await
     }
+
+    pub async fn restrict_claiming(
+        &self,
+        context: &mut ProgramTestContext,
+        mining_account: &Pubkey,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::restrict_claiming(
+                &mplx_rewards::id(),
+                &self.deposit_authority.pubkey(),
+                &self.reward_pool.pubkey(),
+                mining_account,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, &self.deposit_authority],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
+    pub async fn allow_claiming(
+        &self,
+        context: &mut ProgramTestContext,
+        mining_account: &Pubkey,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::allow_claiming(
+                &mplx_rewards::id(),
+                &self.deposit_authority.pubkey(),
+                &self.reward_pool.pubkey(),
+                mining_account,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, &self.deposit_authority],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
 }
 
 pub async fn create_token_account(

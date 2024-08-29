@@ -32,6 +32,7 @@ pub struct WrappedImmutableMining<'a> {
     pub weighted_stake_diffs: &'a MiningWeightedStakeDiffs,
 }
 
+pub const ACCOUNT_TYPE_BIT: usize = 0;
 pub const CLAIMING_RESTRICTION_BIT: usize = 1;
 
 impl<'a> WrappedMining<'a> {
@@ -101,9 +102,9 @@ pub struct Mining {
     pub bump: u8,
     /// Account type - Mining. This discriminator should exist in order to prevent
     /// shenanigans with customly modified accounts and their fields.
-    /// 1: account type
-    /// 2: claim is restricted
-    /// 2-7: unused
+    /// 0: account type
+    /// 1: claim is restricted
+    /// 2-6: unused
     pub data: [u8; 7],
 }
 
@@ -117,7 +118,7 @@ impl Mining {
     pub fn initialize(reward_pool: Pubkey, owner: Pubkey, bump: u8) -> Mining {
         let account_type = AccountType::Mining.into();
         let mut data = [0; 7];
-        data[0] = account_type;
+        data[ACCOUNT_TYPE_BIT] = account_type;
         Mining {
             data,
             reward_pool,
@@ -128,7 +129,7 @@ impl Mining {
     }
 
     pub fn account_type(&self) -> AccountType {
-        AccountType::from(self.data[0])
+        AccountType::from(self.data[ACCOUNT_TYPE_BIT])
     }
 
     /// Claim reward
@@ -200,21 +201,19 @@ impl Mining {
     pub fn restrict_claiming(&mut self) -> ProgramResult {
         if self.data[CLAIMING_RESTRICTION_BIT] == 1 {
             return Err(MplxRewardsError::MiningAlreadyRestricted.into());
+        } else {
+            self.data[CLAIMING_RESTRICTION_BIT] = 1;
+            Ok(())
         }
-
-        self.data[CLAIMING_RESTRICTION_BIT] = 1;
-
-        Ok(())
     }
 
     pub fn allow_claiming(&mut self) -> ProgramResult {
         if self.data[CLAIMING_RESTRICTION_BIT] == 0 {
             return Err(MplxRewardsError::MiningNotRestricted.into());
+        } else {
+            self.data[CLAIMING_RESTRICTION_BIT] = 0;
+            Ok(())
         }
-
-        self.data[CLAIMING_RESTRICTION_BIT] = 0;
-
-        Ok(())
     }
 
     pub fn is_claiming_restricted(&self) -> bool {
@@ -224,7 +223,7 @@ impl Mining {
 
 impl IsInitialized for Mining {
     fn is_initialized(&self) -> bool {
-        self.data[0] == <u8>::from(AccountType::Mining)
+        self.data[ACCOUNT_TYPE_BIT] == <u8>::from(AccountType::Mining)
     }
 }
 

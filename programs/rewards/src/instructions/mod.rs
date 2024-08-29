@@ -123,7 +123,7 @@ pub fn process_instruction<'a>(
             process_restrict_claiming(program_id, accounts)
         }
         RewardsInstruction::AllowClaiming {} => {
-            msg!("RewardsInstruction: RestrictClaiming");
+            msg!("RewardsInstruction: AllowClaiming");
             process_allow_claiming(program_id, accounts)
         }
     }
