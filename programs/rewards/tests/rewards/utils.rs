@@ -383,6 +383,28 @@ impl TestRewards {
 
         context.banks_client.process_transaction(tx).await
     }
+
+    pub async fn restrict_batch_minting(
+        &self,
+        context: &mut ProgramTestContext,
+        mining_account: &Pubkey,
+        restrict_batch_minting_until_ts: u64,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::restrict_batch_minting(
+                &mplx_rewards::id(),
+                &self.deposit_authority.pubkey(),
+                &self.reward_pool.pubkey(),
+                mining_account,
+                restrict_batch_minting_until_ts,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, &self.deposit_authority],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
 }
 
 pub async fn create_token_account(
