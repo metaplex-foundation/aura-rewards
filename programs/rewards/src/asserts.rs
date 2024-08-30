@@ -114,7 +114,7 @@ pub fn assert_and_get_pool_and_mining<'a>(
             b"mining".as_ref(),
             mining_owner.as_ref(),
             reward_pool.key.as_ref(),
-            &[wrapped_mining.mining.bump],
+            &[wrapped_mining.mining.bump()],
         ],
         program_id,
     )?;

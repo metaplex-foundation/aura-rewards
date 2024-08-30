@@ -34,9 +34,12 @@ pub struct WrappedImmutableMining<'a> {
 
 pub const ACCOUNT_TYPE_BYTE: usize = 0;
 pub const CLAIMING_RESTRICTION_BYTE: usize = 1;
+pub const CLAIMING_RESTRICTION_BIT: usize = 1;
+pub const BUMP_BYTE: usize = 2;
 
 impl<'a> WrappedMining<'a> {
-    pub const LEN: usize = 1776;
+    pub const LEN: usize =
+        std::mem::size_of::<Mining>() + std::mem::size_of::<MiningWeightedStakeDiffs>();
 
     pub fn from_bytes_mut(bytes: &'a mut [u8]) -> Result<Self, ProgramError> {
         let (mining, weighted_stake_diffs) = bytes.split_at_mut(Mining::LEN);
@@ -100,14 +103,13 @@ pub struct Mining {
     pub stake_from_others: u64,
     /// The date when batch minting is restricted until.
     pub batch_minting_restricted_until: u64,
-    /// Saved bump for mining account
-    pub bump: u8,
     /// Account type - Mining. This discriminator should exist in order to prevent
     /// shenanigans with customly modified accounts and their fields.
     /// 0: account type
     /// 1: claim is restricted
-    /// 2-15: unused
-    pub data: [u8; 15],
+    /// 2: bump
+    /// 3-15: unused
+    pub data: [u8; 16],
 }
 
 impl ZeroCopy for Mining {}
@@ -119,19 +121,25 @@ impl Mining {
     /// Initialize a Reward Pool
     pub fn initialize(reward_pool: Pubkey, owner: Pubkey, bump: u8) -> Mining {
         let account_type = AccountType::Mining.into();
-        let mut data = [0; 15];
+
+        let mut data = [0; 16];
         data[ACCOUNT_TYPE_BYTE] = account_type;
+        data[BUMP_BYTE] = bump;
+
         Mining {
             data,
             reward_pool,
             owner,
-            bump,
             ..Default::default()
         }
     }
 
     pub fn account_type(&self) -> AccountType {
         AccountType::from(self.data[ACCOUNT_TYPE_BYTE])
+    }
+
+    pub fn bump(&self) -> u8 {
+        self.data[BUMP_BYTE]
     }
 
     /// Claim reward
@@ -245,6 +253,9 @@ impl<'a> WrappedImmutableMining<'a> {
     }
 }
 mod test {
+    #[allow(unused_imports)]
+    use crate::state::BUMP_BYTE;
+
     #[test]
     fn test_wrapped_immutable_mining_is_same_size_as_wrapped_mining() {
         assert_eq!(
@@ -272,7 +283,7 @@ mod test {
         wrapped_mining.mining.share = share;
         wrapped_mining.mining.unclaimed_rewards = unclaimed_rewards;
         wrapped_mining.mining.stake_from_others = stake_from_others;
-        wrapped_mining.mining.bump = bump;
+        wrapped_mining.mining.data[BUMP_BIT] = bump;
         let wrapped_immutable_mining = super::WrappedImmutableMining::from_bytes(&bytes).unwrap();
         assert_eq!(wrapped_immutable_mining.mining.reward_pool, reward_pool);
         assert_eq!(wrapped_immutable_mining.mining.owner, mining_owner);
@@ -290,6 +301,6 @@ mod test {
             wrapped_immutable_mining.mining.stake_from_others,
             stake_from_others
         );
-        assert_eq!(wrapped_immutable_mining.mining.bump, bump);
+        assert_eq!(wrapped_immutable_mining.mining.bump(), bump);
     }
 }
