@@ -200,7 +200,7 @@ impl Mining {
 
     pub fn restrict_claiming(&mut self) -> ProgramResult {
         if self.data[CLAIMING_RESTRICTION_BIT] == 1 {
-            return Err(MplxRewardsError::MiningAlreadyRestricted.into());
+            Err(MplxRewardsError::MiningAlreadyRestricted.into())
         } else {
             self.data[CLAIMING_RESTRICTION_BIT] = 1;
             Ok(())
@@ -209,7 +209,7 @@ impl Mining {
 
     pub fn allow_claiming(&mut self) -> ProgramResult {
         if self.data[CLAIMING_RESTRICTION_BIT] == 0 {
-            return Err(MplxRewardsError::MiningNotRestricted.into());
+            Err(MplxRewardsError::MiningNotRestricted.into())
         } else {
             self.data[CLAIMING_RESTRICTION_BIT] = 0;
             Ok(())
