@@ -1,6 +1,6 @@
 use crate::{error::MplxRewardsError, state::PRECISION};
 
-use crate::utils::SafeArithmeticOperations;
+use crate::utils::{get_curr_unix_ts, SafeArithmeticOperations};
 use bytemuck::{Pod, Zeroable};
 use shank::ShankAccount;
 use sokoban::{NodeAllocatorMap, ZeroCopy};
@@ -228,6 +228,10 @@ impl Mining {
 
     pub fn is_tokenflow_restricted(&self) -> bool {
         self.data[CLAIMING_RESTRICTION_BYTE] == 1
+    }
+
+    pub fn is_batch_minting_restricted(&self) -> bool {
+        self.batch_minting_restricted_until > get_curr_unix_ts()
     }
 }
 
