@@ -128,9 +128,15 @@ pub fn process_instruction<'a>(
         }
         RewardsInstruction::RestrictBatchMinting {
             restrict_batch_minting_until_ts,
+            mining_owner,
         } => {
             msg!("RewardsInstruction: RestrictBatchMinting");
-            process_restrict_batch_minting(program_id, accounts, restrict_batch_minting_until_ts)
+            process_restrict_batch_minting(
+                program_id,
+                accounts,
+                restrict_batch_minting_until_ts,
+                &mining_owner,
+            )
         }
     }
 }

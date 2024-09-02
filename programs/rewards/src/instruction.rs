@@ -165,6 +165,7 @@ pub enum RewardsInstruction {
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     RestrictBatchMinting {
         restrict_batch_minting_until_ts: u64,
+        mining_owner: Pubkey,
     },
 }
 
@@ -503,6 +504,7 @@ pub fn restrict_batch_minting(
     deposit_authority: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
+    mining_owner: &Pubkey,
     restrict_batch_minting_until_ts: u64,
 ) -> Instruction {
     let accounts = vec![
@@ -515,6 +517,7 @@ pub fn restrict_batch_minting(
         *program_id,
         &RewardsInstruction::RestrictBatchMinting {
             restrict_batch_minting_until_ts,
+            mining_owner: *mining_owner,
         },
         accounts,
     )

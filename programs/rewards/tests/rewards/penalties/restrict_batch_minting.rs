@@ -44,10 +44,10 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey) {
 async fn batch_minting_restricted() {
     let (mut context, test_rewards, _) = setup().await;
 
-    let (_, _, user_mining_a) = create_end_user(&mut context, &test_rewards).await;
+    let (user_a, _, user_mining_a) = create_end_user(&mut context, &test_rewards).await;
 
     test_rewards
-        .restrict_batch_minting(&mut context, &user_mining_a, 100)
+        .restrict_batch_minting(&mut context, &user_mining_a, 100, &user_a.pubkey())
         .await
         .unwrap();
 

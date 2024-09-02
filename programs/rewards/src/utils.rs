@@ -131,7 +131,7 @@ pub fn verify_delegate_mining_address(
             reward_pool_key,
             WrappedImmutableMining::from_bytes(&delegate_mining.data.borrow())?
                 .mining
-                .bump(),
+                .bump,
         )
         .map_err(|_| MplxRewardsError::DerivationError)?
     {

@@ -33,9 +33,11 @@ pub struct WrappedImmutableMining<'a> {
 }
 
 pub const ACCOUNT_TYPE_BYTE: usize = 0;
-pub const CLAIMING_RESTRICTION_BYTE: usize = 1;
-pub const CLAIMING_RESTRICTION_BIT: usize = 1;
-pub const BUMP_BYTE: usize = 2;
+
+/// That byte represents the set of applicable penalties. The structure is follows:
+/// - 0: tokenflow
+/// - 1-7: reserved
+pub const PENALTIES_BYTE: usize = 1;
 
 impl<'a> WrappedMining<'a> {
     pub const LEN: usize =
@@ -103,13 +105,15 @@ pub struct Mining {
     pub stake_from_others: u64,
     /// The date when batch minting is restricted until.
     pub batch_minting_restricted_until: u64,
+    /// Bump of the mining account
+    pub bump: u8,
     /// Account type - Mining. This discriminator should exist in order to prevent
     /// shenanigans with customly modified accounts and their fields.
     /// 0: account type
     /// 1: claim is restricted
-    /// 2: bump
+    /// 2: penalties bitmap
     /// 3-15: unused
-    pub data: [u8; 16],
+    pub data: [u8; 15],
 }
 
 impl ZeroCopy for Mining {}
@@ -122,11 +126,11 @@ impl Mining {
     pub fn initialize(reward_pool: Pubkey, owner: Pubkey, bump: u8) -> Mining {
         let account_type = AccountType::Mining.into();
 
-        let mut data = [0; 16];
+        let mut data = [0; 15];
         data[ACCOUNT_TYPE_BYTE] = account_type;
-        data[BUMP_BYTE] = bump;
 
         Mining {
+            bump,
             data,
             reward_pool,
             owner,
@@ -136,10 +140,6 @@ impl Mining {
 
     pub fn account_type(&self) -> AccountType {
         AccountType::from(self.data[ACCOUNT_TYPE_BYTE])
-    }
-
-    pub fn bump(&self) -> u8 {
-        self.data[BUMP_BYTE]
     }
 
     /// Claim reward
@@ -209,25 +209,25 @@ impl Mining {
     }
 
     pub fn restrict_tokenflow(&mut self) -> ProgramResult {
-        if self.data[CLAIMING_RESTRICTION_BYTE] == 1 {
+        if self.is_tokenflow_restricted() {
             Err(MplxRewardsError::MiningAlreadyRestricted.into())
         } else {
-            self.data[CLAIMING_RESTRICTION_BYTE] = 1;
+            self.data[PENALTIES_BYTE] |= 1;
             Ok(())
         }
     }
 
     pub fn allow_tokenflow(&mut self) -> ProgramResult {
-        if self.data[CLAIMING_RESTRICTION_BYTE] == 0 {
-            Err(MplxRewardsError::MiningNotRestricted.into())
+        if !self.is_tokenflow_restricted() {
+            Err(MplxRewardsError::MiningAlreadyRestricted.into())
         } else {
-            self.data[CLAIMING_RESTRICTION_BYTE] = 0;
+            self.data[PENALTIES_BYTE] &= 0;
             Ok(())
         }
     }
 
     pub fn is_tokenflow_restricted(&self) -> bool {
-        self.data[CLAIMING_RESTRICTION_BYTE] == 1
+        self.data[PENALTIES_BYTE] & 1 > 0
     }
 
     pub fn is_batch_minting_restricted(&self) -> bool {
@@ -258,8 +258,6 @@ impl<'a> WrappedImmutableMining<'a> {
 }
 mod test {
     #[allow(unused_imports)]
-    use crate::state::BUMP_BYTE;
-
     #[test]
     fn test_wrapped_immutable_mining_is_same_size_as_wrapped_mining() {
         assert_eq!(
@@ -287,7 +285,7 @@ mod test {
         wrapped_mining.mining.share = share;
         wrapped_mining.mining.unclaimed_rewards = unclaimed_rewards;
         wrapped_mining.mining.stake_from_others = stake_from_others;
-        wrapped_mining.mining.data[BUMP_BIT] = bump;
+        wrapped_mining.mining.bump = bump;
         let wrapped_immutable_mining = super::WrappedImmutableMining::from_bytes(&bytes).unwrap();
         assert_eq!(wrapped_immutable_mining.mining.reward_pool, reward_pool);
         assert_eq!(wrapped_immutable_mining.mining.owner, mining_owner);
@@ -305,6 +303,6 @@ mod test {
             wrapped_immutable_mining.mining.stake_from_others,
             stake_from_others
         );
-        assert_eq!(wrapped_immutable_mining.mining.bump(), bump);
+        assert_eq!(wrapped_immutable_mining.mining.bump, bump);
     }
 }

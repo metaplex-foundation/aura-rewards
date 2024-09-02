@@ -1,2 +1,2 @@
-mod claim_restrictions;
 mod restrict_batch_minting;
+mod tokenflow_restrictions;

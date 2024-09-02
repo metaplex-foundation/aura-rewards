@@ -389,6 +389,7 @@ impl TestRewards {
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
         restrict_batch_minting_until_ts: u64,
+        mining_owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::restrict_batch_minting(
@@ -396,6 +397,7 @@ impl TestRewards {
                 &self.deposit_authority.pubkey(),
                 &self.reward_pool.pubkey(),
                 mining_account,
+                mining_owner,
                 restrict_batch_minting_until_ts,
             )],
             Some(&context.payer.pubkey()),
