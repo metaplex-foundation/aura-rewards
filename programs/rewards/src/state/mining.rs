@@ -33,6 +33,7 @@ pub struct WrappedImmutableMining<'a> {
 }
 
 pub const ACCOUNT_TYPE_BYTE: usize = 0;
+const IS_TOKENFLOW_RESTRICTED_MASK: u8 = 1 << 0;
 
 /// That byte represents the set of applicable penalties. The structure is follows:
 /// - 0: tokenflow
@@ -221,7 +222,7 @@ impl Mining {
         if !self.is_tokenflow_restricted() {
             Err(MplxRewardsError::MiningAlreadyRestricted.into())
         } else {
-            self.data[PENALTIES_BYTE] &= 0;
+            self.data[PENALTIES_BYTE] &= !(IS_TOKENFLOW_RESTRICTED_MASK);
             Ok(())
         }
     }
