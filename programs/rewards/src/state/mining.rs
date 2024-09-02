@@ -213,7 +213,7 @@ impl Mining {
         if self.is_tokenflow_restricted() {
             Err(MplxRewardsError::MiningAlreadyRestricted.into())
         } else {
-            self.data[PENALTIES_BYTE] |= 1;
+            self.data[PENALTIES_BYTE] |= IS_TOKENFLOW_RESTRICTED_MASK;
             Ok(())
         }
     }
@@ -228,7 +228,7 @@ impl Mining {
     }
 
     pub fn is_tokenflow_restricted(&self) -> bool {
-        self.data[PENALTIES_BYTE] & 1 > 0
+        self.data[PENALTIES_BYTE] & IS_TOKENFLOW_RESTRICTED_MASK > 0
     }
 
     pub fn is_batch_minting_restricted(&self) -> bool {
