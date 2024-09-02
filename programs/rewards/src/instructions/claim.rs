@@ -43,7 +43,7 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
             let mining_data = &mut mining.data.borrow_mut();
             let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
 
-            if wrapped_mining.mining.is_claiming_restricted() {
+            if wrapped_mining.mining.is_tokenflow_restricted() {
                 return Err(MplxRewardsError::ClaimingRestricted.into());
             }
 

@@ -1,5 +1,5 @@
-pub(crate) use allow_claiming::*;
-pub(crate) use restrict_claiming::*;
+pub(crate) use allow_tokenflow::*;
+pub(crate) use restrict_tokenflow::*;
 
-mod allow_claiming;
-mod restrict_claiming;
+mod allow_tokenflow;
+mod restrict_tokenflow;

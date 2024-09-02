@@ -340,17 +340,19 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
-    pub async fn restrict_claiming(
+    pub async fn restrict_tokenflow(
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
+        mining_owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::restrict_claiming(
+            &[mplx_rewards::instruction::restrict_tokenflow(
                 &mplx_rewards::id(),
                 &self.deposit_authority.pubkey(),
                 &self.reward_pool.pubkey(),
                 mining_account,
+                mining_owner,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -360,17 +362,19 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
-    pub async fn allow_claiming(
+    pub async fn allow_tokenflow(
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
+        mining_owner: &Pubkey,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::allow_claiming(
+            &[mplx_rewards::instruction::allow_tokenflow(
                 &mplx_rewards::id(),
                 &self.deposit_authority.pubkey(),
                 &self.reward_pool.pubkey(),
                 mining_account,
+                mining_owner,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],

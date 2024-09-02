@@ -118,13 +118,13 @@ pub fn process_instruction<'a>(
             msg!("RewardsInstruction: ChangeDelegate");
             process_change_delegate(program_id, accounts, staked_amount, &new_delegate)
         }
-        RewardsInstruction::RestrictClaiming {} => {
+        RewardsInstruction::RestrictTokenFlow { mining_owner } => {
             msg!("RewardsInstruction: RestrictClaiming");
-            process_restrict_claiming(program_id, accounts)
+            process_restrict_tokenflow(program_id, accounts, &mining_owner)
         }
-        RewardsInstruction::AllowClaiming {} => {
+        RewardsInstruction::AllowTokenFlow { mining_owner } => {
             msg!("RewardsInstruction: AllowClaiming");
-            process_allow_claiming(program_id, accounts)
+            process_allow_tokenflow(program_id, accounts, &mining_owner)
         }
     }
 }

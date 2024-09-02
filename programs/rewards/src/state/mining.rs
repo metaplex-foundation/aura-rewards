@@ -198,7 +198,7 @@ impl Mining {
         Ok(())
     }
 
-    pub fn restrict_claiming(&mut self) -> ProgramResult {
+    pub fn restrict_tokenflow(&mut self) -> ProgramResult {
         if self.data[CLAIMING_RESTRICTION_BYTE] == 1 {
             Err(MplxRewardsError::MiningAlreadyRestricted.into())
         } else {
@@ -207,7 +207,7 @@ impl Mining {
         }
     }
 
-    pub fn allow_claiming(&mut self) -> ProgramResult {
+    pub fn allow_tokenflow(&mut self) -> ProgramResult {
         if self.data[CLAIMING_RESTRICTION_BYTE] == 0 {
             Err(MplxRewardsError::MiningNotRestricted.into())
         } else {
@@ -216,7 +216,7 @@ impl Mining {
         }
     }
 
-    pub fn is_claiming_restricted(&self) -> bool {
+    pub fn is_tokenflow_restricted(&self) -> bool {
         self.data[CLAIMING_RESTRICTION_BYTE] == 1
     }
 }

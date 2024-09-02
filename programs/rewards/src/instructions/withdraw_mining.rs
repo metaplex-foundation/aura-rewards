@@ -34,7 +34,7 @@ pub fn process_withdraw_mining<'a>(
         mining_data,
     )?;
 
-    if wrapped_mining.mining.is_claiming_restricted() {
+    if wrapped_mining.mining.is_tokenflow_restricted() {
         return Err(MplxRewardsError::WithdrawalRestricted.into());
     }
 

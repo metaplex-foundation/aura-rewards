@@ -149,12 +149,16 @@ pub enum RewardsInstruction {
     #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
     #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
-    RestrictClaiming {},
+    RestrictTokenFlow {
+        mining_owner: Pubkey,
+    },
 
     #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
     #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
-    AllowClaiming {},
+    AllowTokenFlow {
+        mining_owner: Pubkey,
+    },
 }
 
 /// Creates 'InitializePool' instruction.
@@ -443,11 +447,12 @@ pub fn change_delegate(
     )
 }
 
-pub fn restrict_claiming(
+pub fn restrict_tokenflow(
     program_id: &Pubkey,
     deposit_authority: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
+    mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*deposit_authority, true),
@@ -457,16 +462,19 @@ pub fn restrict_claiming(
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::RestrictClaiming {},
+        &RewardsInstruction::RestrictTokenFlow {
+            mining_owner: *mining_owner,
+        },
         accounts,
     )
 }
 
-pub fn allow_claiming(
+pub fn allow_tokenflow(
     program_id: &Pubkey,
     deposit_authority: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
+    mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*deposit_authority, true),
@@ -474,5 +482,11 @@ pub fn allow_claiming(
         AccountMeta::new(*mining, false),
     ];
 
-    Instruction::new_with_borsh(*program_id, &RewardsInstruction::AllowClaiming {}, accounts)
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::AllowTokenFlow {
+            mining_owner: *mining_owner,
+        },
+        accounts,
+    )
 }
