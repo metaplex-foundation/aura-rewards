@@ -92,7 +92,7 @@ pub enum MplxRewardsError {
     DerivationError,
 
     /// 21
-    #[error("Failed to derive PDA")]
+    #[error("Mining already restricted")]
     MiningAlreadyRestricted,
 
     /// 22
