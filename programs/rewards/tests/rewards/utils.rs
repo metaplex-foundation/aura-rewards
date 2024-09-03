@@ -185,8 +185,10 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
-        owner: &Pubkey,
-        amount: u64,
+        mining_owner: &Pubkey,
+        slash_amount_in_native: u64,
+        slash_amount_multiplied_by_period: u64,
+        stake_expiration_date: Option<u64>,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::slash(
@@ -194,8 +196,10 @@ impl TestRewards {
                 &self.deposit_authority.pubkey(),
                 &self.reward_pool.pubkey(),
                 mining_account,
-                owner,
-                amount,
+                mining_owner,
+                slash_amount_in_native,
+                slash_amount_multiplied_by_period,
+                stake_expiration_date,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],

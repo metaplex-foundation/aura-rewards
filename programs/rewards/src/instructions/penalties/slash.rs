@@ -5,7 +5,9 @@ pub fn process_slash<'a>(
     program_id: &Pubkey,
     accounts: &'a [AccountInfo<'a>],
     mining_owner: &Pubkey,
-    amount: u64,
+    slash_amount_in_native: u64,
+    slash_amount_multiplied_by_period: u64,
+    stake_expiration_date: Option<u64>,
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter().enumerate();
 
@@ -26,9 +28,12 @@ pub fn process_slash<'a>(
         mining_data,
     )?;
 
-    wrapped_mining.refresh_rewards(&wrapped_reward_pool.cumulative_index)?;
-
-    wrapped_reward_pool.withdraw(&mut wrapped_mining, amount, None)?;
+    wrapped_reward_pool.slash(
+        &mut wrapped_mining,
+        slash_amount_in_native,
+        slash_amount_multiplied_by_period,
+        stake_expiration_date,
+    )?;
 
     Ok(())
 }

@@ -139,11 +139,20 @@ pub fn process_instruction<'a>(
             )
         }
         RewardsInstruction::Slash {
-            amount,
             mining_owner,
+            slash_amount_in_native,
+            slash_amount_multiplied_by_period,
+            stake_expiration_date,
         } => {
             msg!("RewardsInstruction: Slash");
-            process_slash(program_id, accounts, &mining_owner, amount)
+            process_slash(
+                program_id,
+                accounts,
+                &mining_owner,
+                slash_amount_in_native,
+                slash_amount_multiplied_by_period,
+                stake_expiration_date,
+            )
         }
     }
 }

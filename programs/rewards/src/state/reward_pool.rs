@@ -286,6 +286,37 @@ impl<'a> WrappedRewardPool<'a> {
         Ok(())
     }
 
+    /// Process slash for specified number of tokens
+    pub fn slash(
+        &mut self,
+        mining: &mut WrappedMining,
+        slash_amount_in_native: u64,
+        slash_amount_multiplied_by_period: u64,
+        stake_expiration_date: Option<u64>,
+    ) -> ProgramResult {
+        self.withdraw(mining, slash_amount_multiplied_by_period, None)?;
+
+        if stake_expiration_date.is_some() {
+            let stake_expiration_date = stake_expiration_date.unwrap();
+            let beginning_of_the_stake_expiration_date =
+                stake_expiration_date - (stake_expiration_date % SECONDS_PER_DAY);
+            let diff_by_expiration_date =
+                slash_amount_multiplied_by_period.safe_sub(slash_amount_in_native)?;
+            let diff_record = mining
+                .weighted_stake_diffs
+                .get_mut(&beginning_of_the_stake_expiration_date)
+                .ok_or(MplxRewardsError::NoWeightedStakeModifiersAtADate)?;
+            *diff_record = diff_record.safe_sub(diff_by_expiration_date)?;
+
+            let diff_record = self
+                .weighted_stake_diffs
+                .get_mut(&beginning_of_the_stake_expiration_date)
+                .ok_or(MplxRewardsError::NoWeightedStakeModifiersAtADate)?;
+            *diff_record = diff_record.safe_sub(diff_by_expiration_date)?;
+        }
+        Ok(())
+    }
+
     /// Process extend stake
     #[allow(clippy::too_many_arguments)]
     pub fn extend(

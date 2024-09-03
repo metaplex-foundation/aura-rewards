@@ -172,10 +172,13 @@ pub enum RewardsInstruction {
     #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     Slash {
-        /// Amount to withdraw
-        amount: u64,
-        /// Specifies the owner of the Mining Account
         mining_owner: Pubkey,
+        // number of tokens that had been slashed
+        slash_amount_in_native: u64,
+        // weighted stake part for the slashed number of tokens multiplied by the period
+        slash_amount_multiplied_by_period: u64,
+        // None if it's Flex period, because it's already expired
+        stake_expiration_date: Option<u64>,
     },
 }
 
@@ -540,7 +543,9 @@ pub fn slash(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     mining_owner: &Pubkey,
-    amount: u64,
+    slash_amount_in_native: u64,
+    slash_amount_multiplied_by_period: u64,
+    stake_expiration_date: Option<u64>,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*deposit_authority, true),
@@ -551,8 +556,10 @@ pub fn slash(
     Instruction::new_with_borsh(
         *program_id,
         &RewardsInstruction::Slash {
-            amount,
             mining_owner: *mining_owner,
+            slash_amount_in_native,
+            slash_amount_multiplied_by_period,
+            stake_expiration_date,
         },
         accounts,
     )
