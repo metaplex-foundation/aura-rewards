@@ -181,6 +181,30 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
+    pub async fn slash(
+        &self,
+        context: &mut ProgramTestContext,
+        mining_account: &Pubkey,
+        owner: &Pubkey,
+        amount: u64,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::slash(
+                &mplx_rewards::id(),
+                &self.deposit_authority.pubkey(),
+                &self.reward_pool.pubkey(),
+                mining_account,
+                owner,
+                amount,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, &self.deposit_authority],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
     pub async fn withdraw_mining(
         &self,
         context: &mut ProgramTestContext,

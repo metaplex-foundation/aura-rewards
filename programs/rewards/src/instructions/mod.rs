@@ -138,5 +138,12 @@ pub fn process_instruction<'a>(
                 &mining_owner,
             )
         }
+        RewardsInstruction::Slash {
+            amount,
+            mining_owner,
+        } => {
+            msg!("RewardsInstruction: Slash");
+            process_slash(program_id, accounts, &mining_owner, amount)
+        }
     }
 }
