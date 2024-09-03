@@ -90,6 +90,25 @@ pub enum MplxRewardsError {
     /// Failed to derive PDA.
     #[error("Failed to derive PDA")]
     DerivationError,
+
+    /// 21
+    #[error("Mining already restricted")]
+    MiningAlreadyRestricted,
+
+    /// 22
+    /// Mining is not restricted
+    #[error("Mining is not restricted")]
+    MiningNotRestricted,
+
+    /// 23
+    /// Claiming is restricted
+    #[error("Claiming is restricted")]
+    ClaimingRestricted,
+
+    /// 24
+    /// Withdrawal is restricted while claiming is restricted
+    #[error("Withdrawal is restricted while claiming is restricted")]
+    WithdrawalRestricted,
 }
 
 impl PrintProgramError for MplxRewardsError {

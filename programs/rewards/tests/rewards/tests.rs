@@ -11,4 +11,6 @@ mod precision;
 mod utils;
 mod withdraw_mining;
 
+mod tokenflow_restrictions;
+
 mod extend_stake;

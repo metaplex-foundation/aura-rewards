@@ -144,6 +144,21 @@ pub enum RewardsInstruction {
         staked_amount: u64,
         new_delegate: Pubkey,
     },
+
+    /// Prevents the mining account from rewards withdrawing
+    #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    RestrictTokenFlow {
+        mining_owner: Pubkey,
+    },
+
+    #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    AllowTokenFlow {
+        mining_owner: Pubkey,
+    },
 }
 
 /// Creates 'InitializePool' instruction.
@@ -427,6 +442,50 @@ pub fn change_delegate(
         &RewardsInstruction::ChangeDelegate {
             staked_amount,
             new_delegate: *new_delegate,
+        },
+        accounts,
+    )
+}
+
+pub fn restrict_tokenflow(
+    program_id: &Pubkey,
+    deposit_authority: &Pubkey,
+    reward_pool: &Pubkey,
+    mining: &Pubkey,
+    mining_owner: &Pubkey,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new_readonly(*reward_pool, false),
+        AccountMeta::new(*mining, false),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::RestrictTokenFlow {
+            mining_owner: *mining_owner,
+        },
+        accounts,
+    )
+}
+
+pub fn allow_tokenflow(
+    program_id: &Pubkey,
+    deposit_authority: &Pubkey,
+    reward_pool: &Pubkey,
+    mining: &Pubkey,
+    mining_owner: &Pubkey,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new_readonly(*reward_pool, false),
+        AccountMeta::new(*mining, false),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::AllowTokenFlow {
+            mining_owner: *mining_owner,
         },
         accounts,
     )
