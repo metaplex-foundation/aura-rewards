@@ -126,5 +126,17 @@ pub fn process_instruction<'a>(
             msg!("RewardsInstruction: AllowClaiming");
             process_allow_tokenflow(program_id, accounts, &mining_owner)
         }
+        RewardsInstruction::RestrictBatchMinting {
+            restrict_batch_minting_until_ts,
+            mining_owner,
+        } => {
+            msg!("RewardsInstruction: RestrictBatchMinting");
+            process_restrict_batch_minting(
+                program_id,
+                accounts,
+                restrict_batch_minting_until_ts,
+                &mining_owner,
+            )
+        }
     }
 }
