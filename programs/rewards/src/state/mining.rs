@@ -81,6 +81,35 @@ impl<'a> WrappedMining<'a> {
 
         Ok(())
     }
+
+    /// Decrease rewards
+    pub fn decrease_rewards(&mut self, mut decreased_weighted_stake_number: u64) -> ProgramResult {
+        if decreased_weighted_stake_number == 0 {
+            return Ok(());
+        }
+
+        if decreased_weighted_stake_number > self.mining.share {
+            return Err(MplxRewardsError::DecreaseRewardsTooBig.into());
+        }
+
+        self.mining.share = self
+            .mining
+            .share
+            .safe_sub(decreased_weighted_stake_number)?;
+
+        for (_, stake_diff) in self.weighted_stake_diffs.iter_mut().rev() {
+            if stake_diff > &mut decreased_weighted_stake_number {
+                *stake_diff = stake_diff.safe_sub(decreased_weighted_stake_number)?;
+                break;
+            } else {
+                decreased_weighted_stake_number =
+                    decreased_weighted_stake_number.safe_sub(*stake_diff)?;
+                *stake_diff = 0;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[repr(C)]
@@ -257,8 +286,11 @@ impl<'a> WrappedImmutableMining<'a> {
         })
     }
 }
+
+#[allow(unused_imports)]
 mod test {
-    #[allow(unused_imports)]
+    use super::*;
+
     #[test]
     fn test_wrapped_immutable_mining_is_same_size_as_wrapped_mining() {
         assert_eq!(
@@ -305,5 +337,74 @@ mod test {
             stake_from_others
         );
         assert_eq!(wrapped_immutable_mining.mining.bump, bump);
+    }
+
+    #[test]
+    fn slighly_decrease_rewards() {
+        let mut wrapped_mining = super::WrappedMining {
+            mining: &mut super::Mining {
+                share: 3600,
+                ..Default::default()
+            },
+            weighted_stake_diffs: &mut Default::default(),
+        };
+        // three stakes:
+        // - 500 x4 (six months)
+        // - 700 x2 (three months)
+        // - 200 x1 (flex)
+        wrapped_mining.weighted_stake_diffs.insert(365, 1500);
+        wrapped_mining.weighted_stake_diffs.insert(180, 700);
+
+        wrapped_mining.decrease_rewards(300).unwrap();
+
+        assert_eq!(wrapped_mining.mining.share, 3300);
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&365), Some(&1200));
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&180), Some(&700));
+    }
+
+    #[test]
+    fn moderate_decrease_rewards() {
+        let mut wrapped_mining = super::WrappedMining {
+            mining: &mut super::Mining {
+                share: 3600,
+                ..Default::default()
+            },
+            weighted_stake_diffs: &mut Default::default(),
+        };
+        // three stakes:
+        // - 500 x4 (six months)
+        // - 700 x2 (three months)
+        // - 200 x1 (flex)
+        wrapped_mining.weighted_stake_diffs.insert(365, 1500);
+        wrapped_mining.weighted_stake_diffs.insert(180, 700);
+
+        wrapped_mining.decrease_rewards(2200).unwrap();
+
+        assert_eq!(wrapped_mining.mining.share, 1400);
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&365), Some(&0));
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&180), Some(&0));
+    }
+
+    #[test]
+    fn severe_decrease_rewards() {
+        let mut wrapped_mining = super::WrappedMining {
+            mining: &mut super::Mining {
+                share: 3600,
+                ..Default::default()
+            },
+            weighted_stake_diffs: &mut Default::default(),
+        };
+        // three stakes:
+        // - 500 x4 (six months)
+        // - 700 x2 (three months)
+        // - 200 x1 (flex)
+        wrapped_mining.weighted_stake_diffs.insert(365, 1500);
+        wrapped_mining.weighted_stake_diffs.insert(180, 700);
+
+        wrapped_mining.decrease_rewards(3500).unwrap();
+
+        assert_eq!(wrapped_mining.mining.share, 100);
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&365), Some(&0));
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&180), Some(&0));
     }
 }

@@ -109,6 +109,12 @@ pub enum MplxRewardsError {
     /// Withdrawal is restricted while claiming is restricted
     #[error("Withdrawal is restricted while claiming is restricted")]
     WithdrawalRestricted,
+
+    /// 25
+    #[error(
+        "Rewards: Penalty is not apliable becase it's bigger than the mining's weighted stake"
+    )]
+    DecreaseRewardsTooBig,
 }
 
 impl PrintProgramError for MplxRewardsError {

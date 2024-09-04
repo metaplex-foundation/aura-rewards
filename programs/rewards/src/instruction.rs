@@ -180,6 +180,15 @@ pub enum RewardsInstruction {
         // None if it's Flex period, because it's already expired
         stake_expiration_date: Option<u64>,
     },
+
+    #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(1, writable, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
+    DecreaseRewards {
+        mining_owner: Pubkey,
+        // The number by which weighted stake should be decreased
+        decreased_weighted_stake_number: u64,
+    },
 }
 
 /// Creates 'InitializePool' instruction.
@@ -560,6 +569,30 @@ pub fn slash(
             slash_amount_in_native,
             slash_amount_multiplied_by_period,
             stake_expiration_date,
+        },
+        accounts,
+    )
+}
+
+pub fn decrease_rewards(
+    program_id: &Pubkey,
+    deposit_authority: &Pubkey,
+    reward_pool: &Pubkey,
+    mining: &Pubkey,
+    mining_owner: &Pubkey,
+    decreased_weighted_stake_number: u64,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new_readonly(*deposit_authority, true),
+        AccountMeta::new(*reward_pool, false),
+        AccountMeta::new(*mining, false),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &RewardsInstruction::DecreaseRewards {
+            mining_owner: *mining_owner,
+            decreased_weighted_stake_number,
         },
         accounts,
     )
