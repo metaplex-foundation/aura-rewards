@@ -169,7 +169,7 @@ pub enum RewardsInstruction {
     },
 
     #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     Slash {
         mining_owner: Pubkey,
