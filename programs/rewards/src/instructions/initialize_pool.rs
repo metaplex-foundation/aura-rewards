@@ -1,5 +1,5 @@
 use crate::{
-    asserts::{assert_account_key, assert_account_len, assert_account_owner},
+    asserts::{assert_account_key, assert_account_len},
     error::MplxRewardsError,
     state::{RewardPool, WrappedRewardPool},
     utils::{create_account, find_vault_program_address, initialize_account, AccountLoader},
@@ -27,7 +27,6 @@ pub fn process_initialize_pool<'a>(
     let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
     let _system_program = AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
 
-    assert_account_owner(reward_pool, program_id)?;
     assert_account_len(reward_pool, WrappedRewardPool::LEN)?;
 
     let reward_pool_data = &mut reward_pool.data.borrow_mut();
