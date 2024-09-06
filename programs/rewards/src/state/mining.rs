@@ -92,13 +92,17 @@ impl<'a> WrappedMining<'a> {
             return Err(MplxRewardsError::DecreaseRewardsTooBig.into());
         }
 
+        // apply penalty to the weighted stake
         self.mining.share = self
             .mining
             .share
             .safe_sub(decreased_weighted_stake_number)?;
 
+        // going through the weighted stake diffs backwards
+        // and decreasing the modifiers accordingly to the decreased share number.
+        // otherwise moddifier might decrease the share more then needed, even to negative value.
         for (_, stake_diff) in self.weighted_stake_diffs.iter_mut().rev() {
-            if stake_diff > &mut decreased_weighted_stake_number {
+            if stake_diff >= &mut decreased_weighted_stake_number {
                 *stake_diff = stake_diff.safe_sub(decreased_weighted_stake_number)?;
                 break;
             } else {
