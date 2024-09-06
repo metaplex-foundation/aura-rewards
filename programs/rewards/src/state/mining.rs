@@ -33,7 +33,8 @@ pub struct WrappedImmutableMining<'a> {
 }
 
 impl<'a> WrappedMining<'a> {
-    pub const LEN: usize = 1776;
+    pub const LEN: usize =
+        std::mem::size_of::<Mining>() + std::mem::size_of::<MiningWeightedStakeDiffs>();
 
     pub fn from_bytes_mut(bytes: &'a mut [u8]) -> Result<Self, ProgramError> {
         let (mining, weighted_stake_diffs) = bytes.split_at_mut(Mining::LEN);
@@ -95,13 +96,15 @@ pub struct Mining {
     pub unclaimed_rewards: u64,
     /// This field sums up each time somebody stakes to that account as a delegate.
     pub stake_from_others: u64,
+    /// reserved field
+    pub reserved: u64,
     /// Saved bump for mining account
     pub bump: u8,
     /// Account type - Mining. This discriminator should exist in order to prevent
     /// shenanigans with customly modified accounts and their fields.
     /// 1: account type
     /// 2-7: unused
-    pub data: [u8; 7],
+    pub data: [u8; 15],
 }
 
 impl ZeroCopy for Mining {}
@@ -113,7 +116,7 @@ impl Mining {
     /// Initialize a Reward Pool
     pub fn initialize(reward_pool: Pubkey, owner: Pubkey, bump: u8) -> Mining {
         let account_type = AccountType::Mining.into();
-        let mut data = [0; 7];
+        let mut data = [0; 15];
         data[0] = account_type;
         Mining {
             data,
