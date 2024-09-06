@@ -368,6 +368,31 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
+    #[allow(dead_code)]
+    pub async fn decrease_rewards(
+        &self,
+        context: &mut ProgramTestContext,
+        mining_account: &Pubkey,
+        mining_owner: &Pubkey,
+        decreased_weighted_stake_number: u64,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::decrease_rewards(
+                &mplx_rewards::id(),
+                &self.deposit_authority.pubkey(),
+                &self.reward_pool.pubkey(),
+                mining_account,
+                mining_owner,
+                decreased_weighted_stake_number,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, &self.deposit_authority],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
     pub async fn restrict_tokenflow(
         &self,
         context: &mut ProgramTestContext,

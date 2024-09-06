@@ -154,5 +154,17 @@ pub fn process_instruction<'a>(
                 stake_expiration_date,
             )
         }
+        RewardsInstruction::DecreaseRewards {
+            mining_owner,
+            decreased_weighted_stake_number,
+        } => {
+            msg!("RewardsInstruction: DecreaseRewards");
+            process_decrease_rewards(
+                program_id,
+                accounts,
+                &mining_owner,
+                decreased_weighted_stake_number,
+            )
+        }
     }
 }
