@@ -218,8 +218,8 @@ impl<'a> WrappedRewardPool<'a> {
         self.pool.total_share = self.pool.total_share.safe_add(weighted_stake)?;
         mining.mining.share = mining.mining.share.safe_add(weighted_stake)?;
 
-        let stake_expiraion_date = lockup_period.end_timestamp(get_curr_unix_ts())?;
-        let modifier = if let Some(modifier) = self.weighted_stake_diffs.get(&stake_expiraion_date)
+        let stake_expiration_date = lockup_period.end_timestamp(get_curr_unix_ts())?;
+        let modifier = if let Some(modifier) = self.weighted_stake_diffs.get(&stake_expiration_date)
         {
             *modifier
         } else {
@@ -227,18 +227,16 @@ impl<'a> WrappedRewardPool<'a> {
         };
 
         self.weighted_stake_diffs.insert(
-            lockup_period.end_timestamp(get_curr_unix_ts())?,
+            stake_expiration_date,
             modifier.safe_add(weighted_stake_diff)?,
         );
 
-        let date_to_insert = &lockup_period.end_timestamp(get_curr_unix_ts())?;
-        if mining.weighted_stake_diffs.get(date_to_insert).is_some() {
-            let modifier = mining.weighted_stake_diffs.get_mut(date_to_insert).unwrap();
+        if let Some(modifier) = mining.weighted_stake_diffs.get_mut(&stake_expiration_date) {
             *modifier = modifier.safe_add(weighted_stake_diff)?;
         } else {
             mining
                 .weighted_stake_diffs
-                .insert(*date_to_insert, weighted_stake_diff);
+                .insert(stake_expiration_date, weighted_stake_diff);
         }
 
         if let Some(delegate_mining_acc) = delegate_mining {
