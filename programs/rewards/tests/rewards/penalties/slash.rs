@@ -119,6 +119,97 @@ async fn one_stake_for_a_date() {
 }
 
 #[tokio::test]
+async fn another_one_stake_for_a_date() {
+    let (mut context, test_rewards, user, mining_addr) = setup().await;
+
+    let stake_expiration_date = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY * 30 * 3;
+    let stake_expiration_date = stake_expiration_date - stake_expiration_date % SECONDS_PER_DAY;
+
+    let lockup_period = LockupPeriod::ThreeMonths;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &mining_addr,
+            10_000,
+            lockup_period,
+            &user,
+            &mining_addr,
+            &user,
+        )
+        .await
+        .unwrap();
+
+    // just test both pool and mining states are correct
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
+    assert_eq!(reward_pool.total_share, 20_000);
+    assert_eq!(
+        *wrapped_reward_pool
+            .weighted_stake_diffs
+            .get(&stake_expiration_date)
+            .unwrap(),
+        10_000
+    );
+    let mut mining_account = get_account(&mut context, &mining_addr).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
+    assert_eq!(mining.mining.share, 20_000);
+    assert_eq!(
+        *mining
+            .weighted_stake_diffs
+            .get(&stake_expiration_date)
+            .unwrap(),
+        10_000
+    );
+
+    test_rewards
+        .slash(
+            &mut context,
+            &mining_addr,
+            &user,
+            5_000,
+            10_000,
+            Some(stake_expiration_date),
+        )
+        .await
+        .unwrap();
+
+    let mut reward_pool_account =
+        get_account(&mut context, &test_rewards.reward_pool.pubkey()).await;
+    let reward_pool_data = &mut reward_pool_account.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data).unwrap();
+    let reward_pool = wrapped_reward_pool.pool;
+    assert_eq!(reward_pool.total_share, 10_000);
+    assert_eq!(
+        *wrapped_reward_pool
+            .weighted_stake_diffs
+            .get(&stake_expiration_date)
+            .unwrap(),
+        5_000
+    );
+    let mut mining_account = get_account(&mut context, &mining_addr).await;
+    let mining_data = &mut mining_account.data.borrow_mut();
+    let mining = WrappedMining::from_bytes_mut(mining_data).unwrap();
+    assert_eq!(mining.mining.share, 10_000);
+    assert_eq!(
+        *mining
+            .weighted_stake_diffs
+            .get(&stake_expiration_date)
+            .unwrap(),
+        5_000
+    );
+}
+
+#[tokio::test]
 async fn multiple_stakes_for_a_date_but_one_slashed() {
     let (mut context, test_rewards, user, mining_addr) = setup().await;
 
