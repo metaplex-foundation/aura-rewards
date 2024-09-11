@@ -31,6 +31,16 @@ pub fn process_close_mining<'a>(
         let mining_data = &mut (*mining.data).borrow_mut();
         let mut wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
         assert_account_key(mining_owner, &wrapped_mining.mining.owner)?;
+        let mining_pubkey = Pubkey::create_program_address(
+            &[
+                b"mining".as_ref(),
+                wrapped_mining.mining.owner.as_ref(),
+                reward_pool.key.as_ref(),
+                &[wrapped_mining.mining.bump],
+            ],
+            program_id,
+        )?;
+        assert_account_key(mining, &mining_pubkey)?;
 
         wrapped_mining.refresh_rewards(wrapped_reward_pool.cumulative_index)?;
 
