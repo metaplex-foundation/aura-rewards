@@ -450,14 +450,11 @@ impl RewardPool {
             return Ok(self.tokens_available_for_distribution);
         }
 
-        // ((tokens_available_for_distribution * precision) / days_left) / precision
-        Ok(u64::try_from(
-            (u128::from(self.tokens_available_for_distribution))
-                .safe_mul(PRECISION)?
-                .safe_div(distribution_days_left)?
-                .safe_div(PRECISION)?,
-        )
-        .map_err(|_| MplxRewardsError::InvalidPrimitiveTypesConversion)?)
+        // (tokens_available_for_distribution * precision) ∕ (days_left * precision)”
+        let numerator = u128::from(self.tokens_available_for_distribution).safe_mul(PRECISION)?;
+        let denominator = distribution_days_left.safe_mul(PRECISION)?;
+        Ok(u64::try_from(numerator.safe_div(denominator)?)
+            .map_err(|_| MplxRewardsError::InvalidPrimitiveTypesConversion)?)
     }
 
     fn modify_weighted_stake_diffs(
