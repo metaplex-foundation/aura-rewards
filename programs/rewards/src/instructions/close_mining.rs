@@ -42,14 +42,14 @@ pub fn process_close_mining<'a>(
         }
     }
 
-    // Snippet from solana cookbook
-    // https://solanacookbook.com/references/accounts.html#how-to-close-accounts
+    // Snippet from
+    // https://github.com/coral-xyz/anchor/blob/master/lang/src/common.rs#L6-L15
     let dest_starting_lamports = target_account.lamports();
 
     **target_account.lamports.borrow_mut() = dest_starting_lamports.safe_add(mining.lamports())?;
     **mining.lamports.borrow_mut() = 0;
-    let mut source_data = mining.data.borrow_mut();
-    source_data.fill(0);
+    mining.assign(&system_program::ID);
+    mining.realloc(0, false)?;
 
     Ok(())
 }
