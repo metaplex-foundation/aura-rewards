@@ -126,6 +126,8 @@ impl TestRewards {
         mining_owner: &Keypair,
         new_delegate_mining: &Pubkey,
         old_delegate_mining: &Pubkey,
+        old_delegate: &Pubkey,
+        new_delegate: &Pubkey,
         amount: u64,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
@@ -137,6 +139,8 @@ impl TestRewards {
                 &mining_owner.pubkey(),
                 old_delegate_mining,
                 new_delegate_mining,
+                &old_delegate,
+                &new_delegate,
                 amount,
             )],
             Some(&context.payer.pubkey()),

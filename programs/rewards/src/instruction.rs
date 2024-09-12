@@ -135,6 +135,10 @@ pub enum RewardsInstruction {
     #[account(4, writable, name = "old_delegate_mining", desc = "The address of the old delegate mining account")]
     #[account(5, writable, name = "new_delegate_mining", desc = "The address of the new delegate mining account")]
     ChangeDelegate {
+        /// The previous delegate for the stake
+        old_delegate: Pubkey,
+        /// A new delegate for the stake
+        new_delegate: Pubkey,
         /// Amount of staked tokens
         staked_amount: u64,
     },
@@ -397,6 +401,8 @@ pub fn change_delegate(
     mining_owner: &Pubkey,
     old_delegate_mining: &Pubkey,
     new_delegate_mining: &Pubkey,
+    old_delegate: &Pubkey,
+    new_delegate: &Pubkey,
     staked_amount: u64,
 ) -> Instruction {
     let accounts = vec![
@@ -410,7 +416,11 @@ pub fn change_delegate(
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::ChangeDelegate { staked_amount },
+        &RewardsInstruction::ChangeDelegate {
+            old_delegate: *old_delegate,
+            new_delegate: *new_delegate,
+            staked_amount,
+        },
         accounts,
     )
 }

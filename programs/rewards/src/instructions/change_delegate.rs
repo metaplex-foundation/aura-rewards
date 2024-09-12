@@ -8,6 +8,8 @@ use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubke
 pub fn process_change_delegate<'a>(
     program_id: &Pubkey,
     accounts: &'a [AccountInfo<'a>],
+    old_delegate: &Pubkey,
+    new_delegate: &Pubkey,
     staked_amount: u64,
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter().enumerate();
@@ -36,6 +38,7 @@ pub fn process_change_delegate<'a>(
         mining_data,
     )?;
 
+    // NB: two Nones are impossible, but two Some are possible
     let new_delegate_mining = get_delegate_mining(new_delegate_mining, mining)?;
     let old_delegate_mining = get_delegate_mining(old_delegate_mining, mining)?;
 
@@ -43,6 +46,8 @@ pub fn process_change_delegate<'a>(
         &mut wrapped_mining,
         new_delegate_mining,
         old_delegate_mining,
+        old_delegate,
+        new_delegate,
         staked_amount,
     )?;
 

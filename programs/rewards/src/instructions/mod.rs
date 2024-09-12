@@ -98,9 +98,19 @@ pub fn process_instruction<'a>(
             msg!("RewardsInstruction: CloseAccount");
             process_close_mining(program_id, accounts)
         }
-        RewardsInstruction::ChangeDelegate { staked_amount } => {
+        RewardsInstruction::ChangeDelegate {
+            old_delegate,
+            new_delegate,
+            staked_amount,
+        } => {
             msg!("RewardsInstruction: ChangeDelegate");
-            process_change_delegate(program_id, accounts, staked_amount)
+            process_change_delegate(
+                program_id,
+                accounts,
+                &old_delegate,
+                &new_delegate,
+                staked_amount,
+            )
         }
     }
 }

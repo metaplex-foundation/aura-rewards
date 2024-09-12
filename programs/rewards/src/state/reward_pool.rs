@@ -1,4 +1,5 @@
 use crate::{
+    asserts::assert_pubkey_eq,
     error::MplxRewardsError,
     state::AccountType,
     utils::{get_curr_unix_ts, LockupPeriod, SafeArithmeticOperations},
@@ -166,6 +167,8 @@ impl<'a> WrappedRewardPool<'a> {
         mining: &mut WrappedMining,
         new_delegate_mining: Option<&AccountInfo>,
         old_delegate_mining: Option<&AccountInfo>,
+        old_delegate: &Pubkey,
+        new_delegate: &Pubkey,
         staked_amount: u64,
     ) -> ProgramResult {
         mining.refresh_rewards(self.cumulative_index)?;
@@ -174,17 +177,23 @@ impl<'a> WrappedRewardPool<'a> {
             let old_delegate_mining_data = &mut old_delegate_info.data.borrow_mut();
             let mut old_delegate_mining = WrappedMining::from_bytes_mut(old_delegate_mining_data)?;
 
+            assert_pubkey_eq(&old_delegate_mining.mining.owner, old_delegate)?;
+
             old_delegate_mining.mining.stake_from_others = old_delegate_mining
                 .mining
                 .stake_from_others
                 .safe_sub(staked_amount)?;
             self.pool.total_share = self.pool.total_share.safe_sub(staked_amount)?;
             old_delegate_mining.refresh_rewards(self.cumulative_index)?;
+        } else {
+            assert_pubkey_eq(&mining.mining.owner, old_delegate)?;
         }
 
         if let Some(new_delegate_info) = new_delegate_mining {
             let new_delegate_mining_data = &mut new_delegate_info.data.borrow_mut();
             let mut new_delegate_mining = WrappedMining::from_bytes_mut(new_delegate_mining_data)?;
+
+            assert_pubkey_eq(&new_delegate_mining.mining.owner, new_delegate)?;
 
             new_delegate_mining.mining.stake_from_others = new_delegate_mining
                 .mining
@@ -192,6 +201,8 @@ impl<'a> WrappedRewardPool<'a> {
                 .safe_add(staked_amount)?;
             self.pool.total_share = self.pool.total_share.safe_add(staked_amount)?;
             new_delegate_mining.refresh_rewards(self.cumulative_index)?;
+        } else {
+            assert_pubkey_eq(&mining.mining.owner, new_delegate)?;
         }
 
         Ok(())

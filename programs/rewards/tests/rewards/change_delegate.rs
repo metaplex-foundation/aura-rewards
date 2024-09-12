@@ -69,6 +69,8 @@ async fn change_delegate_to_the_same() {
             &user_a,
             &user_mining_a,
             &user_mining_a,
+            &user_a.pubkey(),
+            &user_a.pubkey(),
             6_000_000,
         )
         .await
@@ -118,6 +120,8 @@ async fn change_delegate_then_claim() {
             &user_a,
             &delegate_mining,
             &user_mining_a,
+            &user_a.pubkey(),
+            &delegate.pubkey(),
             1_000_000,
         )
         .await

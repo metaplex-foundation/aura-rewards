@@ -125,16 +125,7 @@ pub fn assert_and_get_pool_and_mining<'a>(
         &wrapped_reward_pool.pool.deposit_authority,
     )?;
     assert_account_key(reward_pool, &wrapped_mining.mining.reward_pool)?;
-
-    if mining_owner != &wrapped_mining.mining.owner {
-        msg!(
-            "Assert account error. Got {} Expected {}",
-            mining_owner,
-            wrapped_mining.mining.owner
-        );
-
-        return Err(ProgramError::InvalidArgument);
-    }
+    assert_pubkey_eq(mining_owner, &wrapped_mining.mining.owner)?;
 
     Ok((wrapped_reward_pool, wrapped_mining))
 }
