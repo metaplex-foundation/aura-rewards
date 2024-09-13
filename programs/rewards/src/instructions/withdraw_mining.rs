@@ -1,6 +1,5 @@
 use crate::{
     asserts::assert_and_get_pool_and_mining,
-    error::MplxRewardsError,
     utils::{get_delegate_mining, AccountLoader},
 };
 
@@ -33,10 +32,6 @@ pub fn process_withdraw_mining<'a>(
         reward_pool_data,
         mining_data,
     )?;
-
-    if wrapped_mining.mining.is_tokenflow_restricted() {
-        return Err(MplxRewardsError::WithdrawalRestricted.into());
-    }
 
     let delegate_mining = get_delegate_mining(delegate_mining, mining)?;
     if let Some(delegate_mining) = delegate_mining {

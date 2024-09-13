@@ -118,26 +118,6 @@ pub fn process_instruction<'a>(
             msg!("RewardsInstruction: ChangeDelegate");
             process_change_delegate(program_id, accounts, staked_amount, &new_delegate)
         }
-        RewardsInstruction::RestrictTokenFlow { mining_owner } => {
-            msg!("RewardsInstruction: RestrictClaiming");
-            process_restrict_tokenflow(program_id, accounts, &mining_owner)
-        }
-        RewardsInstruction::AllowTokenFlow { mining_owner } => {
-            msg!("RewardsInstruction: AllowClaiming");
-            process_allow_tokenflow(program_id, accounts, &mining_owner)
-        }
-        RewardsInstruction::RestrictBatchMinting {
-            restrict_batch_minting_until_ts,
-            mining_owner,
-        } => {
-            msg!("RewardsInstruction: RestrictBatchMinting");
-            process_restrict_batch_minting(
-                program_id,
-                accounts,
-                restrict_batch_minting_until_ts,
-                &mining_owner,
-            )
-        }
         RewardsInstruction::Slash {
             mining_owner,
             slash_amount_in_native,
