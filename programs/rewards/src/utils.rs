@@ -1,7 +1,11 @@
 //! Arbitrary auxilliary functions
 use std::iter::Enumerate;
 
-use crate::error::MplxRewardsError;
+use crate::{
+    asserts::{assert_account_key, assert_pubkey_eq},
+    error::MplxRewardsError,
+    state::WrappedImmutableMining,
+};
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::AccountInfo,
@@ -31,6 +35,25 @@ pub fn find_mining_program_address(
         ],
         program_id,
     )
+}
+
+/// Generates mining address with a specific seed
+pub fn get_mining_address(
+    program_id: &Pubkey,
+    mining_owner: &Pubkey,
+    reward_pool: &Pubkey,
+    mining_bump: u8,
+) -> Result<Pubkey, ProgramError> {
+    Pubkey::create_program_address(
+        &[
+            b"mining".as_ref(),
+            mining_owner.as_ref(),
+            reward_pool.as_ref(),
+            &[mining_bump],
+        ],
+        program_id,
+    )
+    .map_err(|_| MplxRewardsError::AccountDerivationAddresFailed.into())
 }
 
 /// Generates vault address
@@ -116,6 +139,30 @@ pub fn get_delegate_mining<'a, 'b>(
         // None means delegate_mining is the same as mining
         Ok(None)
     }
+}
+
+// Verifies that delegate mining has been derived from the specified pool and mining owner
+pub fn vefiry_delegate_mining(
+    delegate_mining: Option<&AccountInfo>,
+    mining_owner: &Pubkey,
+    program_id: &Pubkey,
+    reward_pool: &Pubkey,
+) -> ProgramResult {
+    if let Some(delegate_mining_info) = delegate_mining {
+        let delegate_mining_data = &mut delegate_mining_info.data.borrow_mut();
+        let wrapped_delegate_mining = WrappedImmutableMining::from_bytes(delegate_mining_data)?;
+
+        let mining_pubkey = get_mining_address(
+            program_id,
+            mining_owner,
+            reward_pool,
+            wrapped_delegate_mining.mining.bump,
+        )?;
+        assert_pubkey_eq(mining_owner, &wrapped_delegate_mining.mining.owner)?;
+        assert_account_key(delegate_mining_info, &mining_pubkey)?;
+    }
+
+    Ok(())
 }
 
 /// Helper for parsing accounts with arbitrary input conditions

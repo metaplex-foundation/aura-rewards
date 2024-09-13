@@ -47,11 +47,10 @@ async fn happy_path() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_addr,
             100,
             LockupPeriod::ThreeMonths,
             &user.pubkey(),
-            &user_mining_addr,
+            &user.pubkey(),
         )
         .await
         .unwrap();
@@ -94,11 +93,10 @@ async fn happy_path_with_flex() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_addr,
             100,
             LockupPeriod::Flex,
             &user.pubkey(),
-            &user_mining_addr,
+            &user.pubkey(),
         )
         .await
         .unwrap();
@@ -141,11 +139,10 @@ async fn happy_path_with_flex_continious_distribution() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_addr,
             100,
             LockupPeriod::Flex,
             &user.pubkey(),
-            &user_mining_addr,
+            &user.pubkey(),
         )
         .await
         .unwrap();
@@ -192,11 +189,10 @@ async fn happy_path_with_flex_continious_distribution_with_two_users() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &alice_mining_addr,
             100,
             LockupPeriod::Flex,
             &alice.pubkey(),
-            &alice_mining_addr,
+            &alice.pubkey(),
         )
         .await
         .unwrap();
@@ -205,11 +201,10 @@ async fn happy_path_with_flex_continious_distribution_with_two_users() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &bob_mining_addr,
             100,
             LockupPeriod::Flex,
             &bob.pubkey(),
-            &bob_mining_addr,
+            &bob.pubkey(),
         )
         .await
         .unwrap();

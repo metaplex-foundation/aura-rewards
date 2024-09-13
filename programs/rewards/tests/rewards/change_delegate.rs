@@ -54,11 +54,10 @@ async fn change_delegate_to_the_same() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             6_000_000,
             LockupPeriod::OneYear,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -86,11 +85,10 @@ async fn change_delegate_then_claim() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &delegate_mining,
             3_000_000, // 18_000_000 of weighted stake
             LockupPeriod::OneYear,
             &delegate.pubkey(),
-            &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -105,11 +103,10 @@ async fn change_delegate_then_claim() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             1_000_000, //  6_000_000 of weighted stake
             LockupPeriod::OneYear,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();

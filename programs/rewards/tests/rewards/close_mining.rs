@@ -45,11 +45,10 @@ async fn success() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
-            &mining,
+            &mining_owner.pubkey(),
         )
         .await
         .unwrap();
@@ -68,7 +67,7 @@ async fn success() {
 
 #[tokio::test]
 async fn close_when_has_stake_from_others() {
-    let (mut context, test_rewards, mining_owner, mining) = setup().await;
+    let (mut context, test_rewards, mining_owner, _) = setup().await;
 
     let delegate = Keypair::new();
     let delegate_mining = test_rewards
@@ -77,11 +76,10 @@ async fn close_when_has_stake_from_others() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &delegate_mining,
             3_000_000, // 18_000_000 of weighted stake
             LockupPeriod::OneYear,
             &delegate.pubkey(),
-            &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -101,11 +99,10 @@ async fn close_when_has_stake_from_others() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
-            &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -128,11 +125,10 @@ async fn close_when_has_unclaimed_rewards() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner.pubkey(),
-            &mining,
+            &mining_owner.pubkey(),
         )
         .await
         .unwrap();

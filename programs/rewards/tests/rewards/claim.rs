@@ -53,11 +53,10 @@ async fn with_two_users() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -67,11 +66,10 @@ async fn with_two_users() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             100,
             LockupPeriod::ThreeMonths,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -133,11 +131,10 @@ async fn flex_vs_three_months() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -149,11 +146,10 @@ async fn flex_vs_three_months() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             100,
             LockupPeriod::ThreeMonths,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -215,11 +211,10 @@ async fn multiple_consequantial_distributions_for_two_users() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -229,11 +224,10 @@ async fn multiple_consequantial_distributions_for_two_users() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             100,
             LockupPeriod::OneYear,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -310,11 +304,10 @@ async fn rewards_after_distribution_are_unclaimable() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -365,11 +358,10 @@ async fn rewards_after_distribution_are_unclaimable() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             100,
             LockupPeriod::OneYear,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -401,11 +393,10 @@ async fn switch_to_flex_is_correct() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             100,
             LockupPeriod::ThreeMonths,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -415,11 +406,10 @@ async fn switch_to_flex_is_correct() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             100,
             LockupPeriod::OneYear,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -480,11 +470,10 @@ async fn two_deposits_vs_one() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             100,
             LockupPeriod::OneYear,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -494,11 +483,10 @@ async fn two_deposits_vs_one() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             50,
             LockupPeriod::OneYear,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -508,11 +496,10 @@ async fn two_deposits_vs_one() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             50,
             LockupPeriod::OneYear,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -570,11 +557,10 @@ async fn claim_tokens_after_deposit_expiration() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             100,
             LockupPeriod::OneYear,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -584,11 +570,10 @@ async fn claim_tokens_after_deposit_expiration() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             300,
             LockupPeriod::ThreeMonths,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -649,11 +634,10 @@ async fn claim_after_withdraw_is_correct() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             100,
             LockupPeriod::OneYear,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -662,11 +646,10 @@ async fn claim_after_withdraw_is_correct() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             50,
             LockupPeriod::OneYear,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -674,11 +657,10 @@ async fn claim_after_withdraw_is_correct() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             150,
             LockupPeriod::ThreeMonths,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -758,7 +740,7 @@ async fn claim_after_withdraw_is_correct() {
         .withdraw_mining(
             &mut context,
             &user_mining_b,
-            &user_mining_b,
+            &user_b.pubkey(),
             150,
             &user_b.pubkey(),
         )
@@ -808,11 +790,10 @@ async fn with_two_users_with_flex() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             100,
             LockupPeriod::Flex,
             &user_a.pubkey(),
-            &user_mining_a,
+            &user_a.pubkey(),
         )
         .await
         .unwrap();
@@ -822,11 +803,10 @@ async fn with_two_users_with_flex() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_b,
             100,
             LockupPeriod::Flex,
             &user_b.pubkey(),
-            &user_mining_b,
+            &user_b.pubkey(),
         )
         .await
         .unwrap();
@@ -887,11 +867,10 @@ async fn claim_with_delegate() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &delegate_mining,
             3_000_000, // 18_000_000 of weighted stake
             LockupPeriod::OneYear,
             &delegate.pubkey(),
-            &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -906,11 +885,10 @@ async fn claim_with_delegate() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_a,
             1_000_000, //  6_000_000 of weighted stake
             LockupPeriod::OneYear,
             &user_a.pubkey(),
-            &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();

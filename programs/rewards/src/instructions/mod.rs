@@ -55,16 +55,31 @@ pub fn process_instruction<'a>(
             amount,
             lockup_period,
             mining_owner,
+            delegate_mining_owner,
         } => {
             msg!("RewardsInstruction: DepositMining");
-            process_deposit_mining(program_id, accounts, amount, lockup_period, &mining_owner)
+            process_deposit_mining(
+                program_id,
+                accounts,
+                amount,
+                lockup_period,
+                &mining_owner,
+                &delegate_mining_owner,
+            )
         }
         RewardsInstruction::WithdrawMining {
             amount,
             mining_owner,
+            delegate_mining_owner,
         } => {
             msg!("RewardsInstruction: WithdrawMining");
-            process_withdraw_mining(program_id, accounts, amount, &mining_owner)
+            process_withdraw_mining(
+                program_id,
+                accounts,
+                amount,
+                &mining_owner,
+                &delegate_mining_owner,
+            )
         }
         RewardsInstruction::Claim => {
             msg!("RewardsInstruction: Claim");
@@ -77,6 +92,7 @@ pub fn process_instruction<'a>(
             base_amount,
             additional_amount,
             mining_owner,
+            delegate_mining_owner,
         } => {
             msg!("RewardsInstruction: ExtendStake");
             process_extend_stake(
@@ -88,6 +104,7 @@ pub fn process_instruction<'a>(
                 base_amount,
                 additional_amount,
                 &mining_owner,
+                &delegate_mining_owner,
             )
         }
         RewardsInstruction::DistributeRewards => {

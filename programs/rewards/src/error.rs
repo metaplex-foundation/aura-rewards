@@ -80,6 +80,10 @@ pub enum MplxRewardsError {
     /// Account is already initialized
     #[error("Account is already initialized")]
     AlreadyInitialized,
+
+    /// 19
+    #[error("Account addres derivation has failed")]
+    AccountDerivationAddresFailed,
 }
 
 impl PrintProgramError for MplxRewardsError {

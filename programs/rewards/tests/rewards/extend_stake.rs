@@ -52,11 +52,10 @@ async fn restake_before_its_expired() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             100,
             old_lockup_period,
             &mining_owner,
-            &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -69,7 +68,7 @@ async fn restake_before_its_expired() {
         .extend_stake(
             &mut context,
             &mining,
-            &mining,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
@@ -112,11 +111,10 @@ async fn restake_for_another_period_after_old_is_expired() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner,
-            &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -132,7 +130,7 @@ async fn restake_for_another_period_after_old_is_expired() {
         .extend_stake(
             &mut context,
             &mining,
-            &mining,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
@@ -170,11 +168,10 @@ async fn just_prolong_without_adding_tokes() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             100,
             old_lockup_period,
             &mining_owner,
-            &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -187,7 +184,7 @@ async fn just_prolong_without_adding_tokes() {
         .extend_stake(
             &mut context,
             &mining,
-            &mining,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
@@ -230,11 +227,10 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner,
-            &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -250,7 +246,7 @@ async fn restake_after_its_expired_with_no_additional_tokens() {
         .extend_stake(
             &mut context,
             &mining,
-            &mining,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
@@ -287,11 +283,10 @@ async fn restake_in_expiration_day() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             100,
             LockupPeriod::ThreeMonths,
             &mining_owner,
-            &mining,
+            &mining_owner,
         )
         .await
         .unwrap();
@@ -307,7 +302,7 @@ async fn restake_in_expiration_day() {
         .extend_stake(
             &mut context,
             &mining,
-            &mining,
+            &mining_owner,
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,
@@ -339,11 +334,10 @@ async fn prolong_with_delegate() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &delegate_mining,
             3_000_000, // 18_000_000 of weighted stake
             LockupPeriod::OneYear,
             &delegate.pubkey(),
-            &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -368,11 +362,10 @@ async fn prolong_with_delegate() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             base_amount,
             old_lockup_period,
             &mining_owner,
-            &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -404,7 +397,7 @@ async fn prolong_with_delegate() {
         .extend_stake(
             &mut context,
             &mining,
-            &delegate_mining,
+            &delegate.pubkey(),
             old_lockup_period,
             new_lockup_period,
             deposit_start_ts,

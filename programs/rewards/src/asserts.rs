@@ -7,6 +7,7 @@ use solana_program::{
 use crate::{
     error::MplxRewardsError,
     state::{WrappedMining, WrappedRewardPool},
+    utils::get_mining_address,
 };
 
 /// Assert signer.
@@ -109,14 +110,11 @@ pub fn assert_and_get_pool_and_mining<'a>(
 ) -> Result<(WrappedRewardPool<'a>, WrappedMining<'a>), ProgramError> {
     let wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
-    let mining_pubkey = Pubkey::create_program_address(
-        &[
-            b"mining".as_ref(),
-            mining_owner.as_ref(),
-            reward_pool.key.as_ref(),
-            &[wrapped_mining.mining.bump],
-        ],
+    let mining_pubkey = get_mining_address(
         program_id,
+        mining_owner,
+        reward_pool.key,
+        wrapped_mining.mining.bump,
     )?;
 
     assert_account_key(mining, &mining_pubkey)?;

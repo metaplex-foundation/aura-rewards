@@ -1,6 +1,10 @@
 use std::borrow::{Borrow, BorrowMut};
 
-use mplx_rewards::{error::MplxRewardsError, state::WrappedRewardPool, utils::LockupPeriod};
+use mplx_rewards::{
+    error::MplxRewardsError,
+    state::WrappedRewardPool,
+    utils::{find_mining_program_address, LockupPeriod},
+};
 use solana_program::{instruction::InstructionError, pubkey::Pubkey};
 use solana_program_test::{BanksClientError, ProgramTestContext};
 use solana_sdk::{
@@ -120,6 +124,7 @@ impl TestRewards {
         mining_account
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn change_delegate(
         &self,
         context: &mut ProgramTestContext,
@@ -140,8 +145,8 @@ impl TestRewards {
                 &mining_owner.pubkey(),
                 old_delegate_mining,
                 new_delegate_mining,
-                &old_delegate,
-                &new_delegate,
+                old_delegate,
+                new_delegate,
                 amount,
             )],
             Some(&context.payer.pubkey()),
@@ -155,22 +160,34 @@ impl TestRewards {
     pub async fn deposit_mining(
         &self,
         context: &mut ProgramTestContext,
-        mining_account: &Pubkey,
         amount: u64,
         lockup_period: LockupPeriod,
-        owner: &Pubkey,
-        delegate_mining: &Pubkey,
+        mining_owner: &Pubkey,
+        delegate_mining_owner: &Pubkey,
     ) -> BanksClientResult<()> {
+        let (mining_account, _) = find_mining_program_address(
+            &mplx_rewards::id(),
+            mining_owner,
+            &self.reward_pool.pubkey(),
+        );
+
+        let (delegate_mining, _) = find_mining_program_address(
+            &mplx_rewards::id(),
+            delegate_mining_owner,
+            &self.reward_pool.pubkey(),
+        );
+
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::deposit_mining(
                 &mplx_rewards::id(),
                 &self.reward_pool.pubkey(),
-                mining_account,
+                &mining_account,
                 &self.deposit_authority.pubkey(),
-                delegate_mining,
+                &delegate_mining,
                 amount,
                 lockup_period,
-                owner,
+                mining_owner,
+                delegate_mining_owner,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -184,19 +201,26 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
-        delegate_mining: &Pubkey,
+        delegate_mining_owner: &Pubkey,
         amount: u64,
         owner: &Pubkey,
     ) -> BanksClientResult<()> {
+        let (delegate_mining, _) = find_mining_program_address(
+            &mplx_rewards::id(),
+            delegate_mining_owner,
+            &self.reward_pool.pubkey(),
+        );
+
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::withdraw_mining(
                 &mplx_rewards::id(),
                 &self.reward_pool.pubkey(),
                 mining_account,
                 &self.deposit_authority.pubkey(),
-                delegate_mining,
+                &delegate_mining,
                 amount,
                 owner,
+                delegate_mining_owner,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],
@@ -281,7 +305,7 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
-        delegate_mining: &Pubkey,
+        delegate_mining_owner: &Pubkey,
         old_lockup_period: LockupPeriod,
         new_lockup_period: LockupPeriod,
         deposit_start_ts: u64,
@@ -289,19 +313,26 @@ impl TestRewards {
         additional_amount: u64,
         mining_owner: &Pubkey,
     ) -> BanksClientResult<()> {
+        let (delegate_mining, _) = find_mining_program_address(
+            &mplx_rewards::id(),
+            delegate_mining_owner,
+            &self.reward_pool.pubkey(),
+        );
+
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::extend_stake(
                 &mplx_rewards::id(),
                 &self.reward_pool.pubkey(),
                 mining_account,
                 &self.deposit_authority.pubkey(),
-                delegate_mining,
+                &delegate_mining,
                 old_lockup_period,
                 new_lockup_period,
                 deposit_start_ts,
                 base_amount,
                 additional_amount,
                 mining_owner,
+                delegate_mining_owner,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],

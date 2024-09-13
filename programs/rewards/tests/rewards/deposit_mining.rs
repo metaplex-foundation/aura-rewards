@@ -37,14 +37,7 @@ async fn success() {
     let (mut context, test_rewards, user, mining) = setup().await;
 
     test_rewards
-        .deposit_mining(
-            &mut context,
-            &mining,
-            100,
-            LockupPeriod::ThreeMonths,
-            &user,
-            &mining,
-        )
+        .deposit_mining(&mut context, 100, LockupPeriod::ThreeMonths, &user, &user)
         .await
         .unwrap();
 
@@ -67,14 +60,7 @@ async fn success_with_flex() {
     let (mut context, test_rewards, user, mining) = setup().await;
 
     test_rewards
-        .deposit_mining(
-            &mut context,
-            &mining,
-            100,
-            LockupPeriod::Flex,
-            &user,
-            &mining,
-        )
+        .deposit_mining(&mut context, 100, LockupPeriod::Flex, &user, &user)
         .await
         .unwrap();
 
@@ -103,11 +89,10 @@ async fn delegating_success() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &delegate_mining,
             3_000_000, // 18_000_000 of weighted stake
             LockupPeriod::OneYear,
             &delegate.pubkey(),
-            &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();
@@ -120,11 +105,10 @@ async fn delegating_success() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &mining,
             100,
             LockupPeriod::Flex,
             &user,
-            &delegate_mining,
+            &delegate.pubkey(),
         )
         .await
         .unwrap();

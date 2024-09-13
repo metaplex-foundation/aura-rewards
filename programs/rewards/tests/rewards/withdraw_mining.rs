@@ -32,12 +32,12 @@ async fn success() {
 
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(&mut context, &mining, 100, lockup_period, &user, &mining)
+        .deposit_mining(&mut context, 100, lockup_period, &user, &user)
         .await
         .unwrap();
 
     test_rewards
-        .withdraw_mining(&mut context, &mining, &mining, 30, &user)
+        .withdraw_mining(&mut context, &mining, &user, 30, &user)
         .await
         .unwrap();
 
@@ -61,21 +61,14 @@ async fn success_with_5kkk_after_expiring() {
 
     let lockup_period = LockupPeriod::ThreeMonths;
     test_rewards
-        .deposit_mining(
-            &mut context,
-            &mining,
-            5000000000,
-            lockup_period,
-            &user,
-            &mining,
-        )
+        .deposit_mining(&mut context, 5000000000, lockup_period, &user, &user)
         .await
         .unwrap();
 
     advance_clock_by_ts(&mut context, (100 * SECONDS_PER_DAY).try_into().unwrap()).await;
 
     test_rewards
-        .withdraw_mining(&mut context, &mining, &mining, 5000000000, &user)
+        .withdraw_mining(&mut context, &mining, &user, 5000000000, &user)
         .await
         .unwrap();
 

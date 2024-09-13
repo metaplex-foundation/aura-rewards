@@ -43,16 +43,14 @@ async fn setup() -> (ProgramTestContext, TestRewards, Pubkey) {
 async fn precision_distribution() {
     let (mut context, test_rewards, rewarder) = setup().await;
 
-    let (rich_user, _rich_user_rewards, rich_user_mining_addr) =
-        create_end_user(&mut context, &test_rewards).await;
+    let (rich_user, _rich_user_rewards, _) = create_end_user(&mut context, &test_rewards).await;
     test_rewards
         .deposit_mining(
             &mut context,
-            &rich_user_mining_addr,
             333_333_316 * 1_000_000,
             LockupPeriod::Flex,
             &rich_user.pubkey(),
-            &rich_user_mining_addr,
+            &rich_user.pubkey(),
         )
         .await
         .unwrap();
@@ -61,11 +59,10 @@ async fn precision_distribution() {
     test_rewards
         .deposit_mining(
             &mut context,
-            &user_mining_addr,
             17 * 1_000_000,
             LockupPeriod::Flex,
             &user.pubkey(),
-            &user_mining_addr,
+            &user.pubkey(),
         )
         .await
         .unwrap();
