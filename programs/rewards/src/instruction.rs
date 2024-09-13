@@ -47,7 +47,8 @@ pub enum RewardsInstruction {
     #[account(0, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(1, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
     #[account(2, writable, signer, name = "payer")]
-    #[account(3, name = "system_program", desc = "The system program")]
+    #[account(3, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
+    #[account(4, name = "system_program", desc = "The system program")]
     InitializeMining {
         /// Represent the end-user, owner of the mining
         mining_owner: Pubkey,
@@ -214,12 +215,14 @@ pub fn initialize_mining(
     reward_pool: &Pubkey,
     mining: &Pubkey,
     payer: &Pubkey,
+    deposit_authority: &Pubkey,
     mining_owner: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
         AccountMeta::new(*payer, true),
+        AccountMeta::new_readonly(*deposit_authority, true),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 

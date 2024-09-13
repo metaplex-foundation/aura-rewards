@@ -107,10 +107,11 @@ impl TestRewards {
                 &self.reward_pool.pubkey(),
                 &mining_account,
                 &context.payer.pubkey(),
+                &self.deposit_authority.pubkey(),
                 &mining_owner.pubkey(),
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer],
+            &[&context.payer, &self.deposit_authority],
             context.last_blockhash,
         );
 

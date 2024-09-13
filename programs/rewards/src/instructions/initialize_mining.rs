@@ -1,6 +1,6 @@
 use crate::{
     asserts::assert_account_key,
-    state::{Mining, WrappedMining},
+    state::{Mining, WrappedMining, WrappedRewardPool},
     utils::{find_mining_program_address, AccountLoader},
 };
 use solana_program::{
@@ -18,6 +18,7 @@ pub fn process_initialize_mining<'a>(
     let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
     let mining = AccountLoader::next_uninitialized(account_info_iter)?;
     let payer = AccountLoader::next_signer(account_info_iter)?;
+    let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
     let _system_program = AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
 
     let (pubkey, bump) = find_mining_program_address(program_id, mining_owner, reward_pool.key);
@@ -39,6 +40,13 @@ pub fn process_initialize_mining<'a>(
         program_id,
     );
     invoke_signed(&ix, &[payer.clone(), mining.clone()], &[signers_seeds])?;
+
+    let reward_pool_data = &mut reward_pool.data.borrow_mut();
+    let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
+    assert_account_key(
+        deposit_authority,
+        &wrapped_reward_pool.pool.deposit_authority,
+    )?;
 
     let mining_data = &mut mining.data.borrow_mut();
     let wrapped_mining = WrappedMining::from_bytes_mut(mining_data)?;
