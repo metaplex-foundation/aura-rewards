@@ -41,76 +41,52 @@ pub enum MplxRewardsError {
     #[error("Rewards: distribution_ends_at date is lower than current date")]
     InvalidPrimitiveTypesConversion,
 
-    /// 11
+    /// 6
     /// Impossible to close accounts while it has unclaimed rewards
     #[error("Rewards: unclaimed rewards must be claimed")]
     RewardsMustBeClaimed,
 
-    /// 12
+    /// 7
     /// No need to transfer zero amount of rewards.
     #[error("Rewards: rewards amount must be positive")]
     RewardsMustBeGreaterThanZero,
 
-    /// 13
-    /// Delegate lack of tokens
-    #[error("Rewards: Delegate must have at least 15_000_000 of own weighted stake")]
-    InsufficientWeightedStake,
-
-    /// 14
+    /// 8
     /// Stake from others must be zero
     #[error("Rewards: Stake from others must be zero")]
     StakeFromOthersMustBeZero,
 
-    /// 15
+    /// 9
     /// No need to transfer zero amount of rewards.
     #[error("No changes at the date in weighted stake modifiers while they're expected")]
     NoWeightedStakeModifiersAtADate,
 
-    /// 16
+    /// 10
     /// To change a delegate, the new delegate must differ from the current one
     #[error("Passed delegates are the same")]
     DelegatesAreTheSame,
 
-    /// 17
+    /// 11
     /// Getting pointer to the data of the zero-copy account has failed
     #[error("Getting pointer to the data of the zero-copy account has failed")]
     RetreivingZeroCopyAccountFailire,
 
-    /// 18
+    /// 12
     /// Account is already initialized
     #[error("Account is already initialized")]
     AlreadyInitialized,
 
-    /// 19
+    /// 13
     /// Incorrect mining address.
     #[error("Invalid mining")]
     InvalidMining,
 
-    /// 20
+    /// 14
     /// Failed to derive PDA.
     #[error("Failed to derive PDA")]
     DerivationError,
 
-    /// 21
-    #[error("Mining already restricted")]
-    MiningAlreadyRestricted,
-
-    /// 22
-    /// Mining is not restricted
-    #[error("Mining is not restricted")]
-    MiningNotRestricted,
-
-    /// 23
-    /// Claiming is restricted
-    #[error("Claiming is restricted")]
-    ClaimingRestricted,
-
-    /// 24
-    /// Withdrawal is restricted while claiming is restricted
-    #[error("Withdrawal is restricted while claiming is restricted")]
-    WithdrawalRestricted,
-
-    /// 25
+    /// 15
     #[error(
         "Rewards: Penalty is not apliable becase it's bigger than the mining's weighted stake"
     )]

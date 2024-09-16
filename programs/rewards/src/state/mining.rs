@@ -1,6 +1,6 @@
 use crate::{error::MplxRewardsError, state::PRECISION};
 
-use crate::utils::{get_curr_unix_ts, SafeArithmeticOperations};
+use crate::utils::SafeArithmeticOperations;
 use bytemuck::{Pod, Zeroable};
 use shank::ShankAccount;
 use sokoban::{NodeAllocatorMap, ZeroCopy};
@@ -33,12 +33,6 @@ pub struct WrappedImmutableMining<'a> {
 }
 
 pub const ACCOUNT_TYPE_BYTE: usize = 0;
-const IS_TOKENFLOW_RESTRICTED_MASK: u8 = 1 << 0;
-
-/// That byte represents the set of applicable penalties. The structure is follows:
-/// - 0: tokenflow
-/// - 1-7: reserved
-pub const PENALTIES_BYTE: usize = 1;
 
 impl<'a> WrappedMining<'a> {
     pub const LEN: usize =
@@ -137,17 +131,13 @@ pub struct Mining {
     pub unclaimed_rewards: u64,
     /// This field sums up each time somebody stakes to that account as a delegate.
     pub stake_from_others: u64,
-    /// The date when batch minting is restricted until.
-    pub batch_minting_restricted_until: u64,
     /// Bump of the mining account
     pub bump: u8,
     /// Account type - Mining. This discriminator should exist in order to prevent
     /// shenanigans with customly modified accounts and their fields.
     /// 0: account type
-    /// 1: claim is restricted
-    /// 2: penalties bitmap
-    /// 3-15: unused
-    pub data: [u8; 15],
+    /// 1-7: unused
+    pub data: [u8; 7],
 }
 
 impl ZeroCopy for Mining {}
@@ -160,7 +150,7 @@ impl Mining {
     pub fn initialize(reward_pool: Pubkey, owner: Pubkey, bump: u8) -> Mining {
         let account_type = AccountType::Mining.into();
 
-        let mut data = [0; 15];
+        let mut data = [0; 7];
         data[ACCOUNT_TYPE_BYTE] = account_type;
 
         Mining {
@@ -240,32 +230,6 @@ impl Mining {
         *index_with_precision = vault_index_for_date;
 
         Ok(())
-    }
-
-    pub fn restrict_tokenflow(&mut self) -> ProgramResult {
-        if self.is_tokenflow_restricted() {
-            Err(MplxRewardsError::MiningAlreadyRestricted.into())
-        } else {
-            self.data[PENALTIES_BYTE] |= IS_TOKENFLOW_RESTRICTED_MASK;
-            Ok(())
-        }
-    }
-
-    pub fn allow_tokenflow(&mut self) -> ProgramResult {
-        if !self.is_tokenflow_restricted() {
-            Err(MplxRewardsError::MiningAlreadyRestricted.into())
-        } else {
-            self.data[PENALTIES_BYTE] &= !(IS_TOKENFLOW_RESTRICTED_MASK);
-            Ok(())
-        }
-    }
-
-    pub fn is_tokenflow_restricted(&self) -> bool {
-        self.data[PENALTIES_BYTE] & IS_TOKENFLOW_RESTRICTED_MASK > 0
-    }
-
-    pub fn is_batch_minting_restricted(&self) -> bool {
-        self.batch_minting_restricted_until > get_curr_unix_ts()
     }
 }
 

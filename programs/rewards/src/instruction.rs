@@ -145,29 +145,6 @@ pub enum RewardsInstruction {
         new_delegate: Pubkey,
     },
 
-    /// Prevents the mining account from rewards withdrawing
-    #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
-    #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
-    RestrictTokenFlow {
-        mining_owner: Pubkey,
-    },
-
-    #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
-    #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
-    AllowTokenFlow {
-        mining_owner: Pubkey,
-    },
-
-    #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
-    #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
-    RestrictBatchMinting {
-        restrict_batch_minting_until_ts: u64,
-        mining_owner: Pubkey,
-    },
-
     #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
     #[account(1, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
@@ -472,74 +449,6 @@ pub fn change_delegate(
         &RewardsInstruction::ChangeDelegate {
             staked_amount,
             new_delegate: *new_delegate,
-        },
-        accounts,
-    )
-}
-
-pub fn restrict_tokenflow(
-    program_id: &Pubkey,
-    deposit_authority: &Pubkey,
-    reward_pool: &Pubkey,
-    mining: &Pubkey,
-    mining_owner: &Pubkey,
-) -> Instruction {
-    let accounts = vec![
-        AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new_readonly(*reward_pool, false),
-        AccountMeta::new(*mining, false),
-    ];
-
-    Instruction::new_with_borsh(
-        *program_id,
-        &RewardsInstruction::RestrictTokenFlow {
-            mining_owner: *mining_owner,
-        },
-        accounts,
-    )
-}
-
-pub fn allow_tokenflow(
-    program_id: &Pubkey,
-    deposit_authority: &Pubkey,
-    reward_pool: &Pubkey,
-    mining: &Pubkey,
-    mining_owner: &Pubkey,
-) -> Instruction {
-    let accounts = vec![
-        AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new_readonly(*reward_pool, false),
-        AccountMeta::new(*mining, false),
-    ];
-
-    Instruction::new_with_borsh(
-        *program_id,
-        &RewardsInstruction::AllowTokenFlow {
-            mining_owner: *mining_owner,
-        },
-        accounts,
-    )
-}
-
-pub fn restrict_batch_minting(
-    program_id: &Pubkey,
-    deposit_authority: &Pubkey,
-    reward_pool: &Pubkey,
-    mining: &Pubkey,
-    mining_owner: &Pubkey,
-    restrict_batch_minting_until_ts: u64,
-) -> Instruction {
-    let accounts = vec![
-        AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new_readonly(*reward_pool, false),
-        AccountMeta::new(*mining, false),
-    ];
-
-    Instruction::new_with_borsh(
-        *program_id,
-        &RewardsInstruction::RestrictBatchMinting {
-            restrict_batch_minting_until_ts,
-            mining_owner: *mining_owner,
         },
         accounts,
     )
