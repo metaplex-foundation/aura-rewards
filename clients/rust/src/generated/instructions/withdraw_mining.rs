@@ -80,6 +80,7 @@ impl WithdrawMiningInstructionData {
 pub struct WithdrawMiningInstructionArgs {
     pub amount: u64,
     pub mining_owner: Pubkey,
+    pub delegate: Pubkey,
 }
 
 /// Instruction builder for `WithdrawMining`.
@@ -98,6 +99,7 @@ pub struct WithdrawMiningBuilder {
     delegate_mining: Option<solana_program::pubkey::Pubkey>,
     amount: Option<u64>,
     mining_owner: Option<Pubkey>,
+    delegate: Option<Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -145,6 +147,11 @@ impl WithdrawMiningBuilder {
         self.mining_owner = Some(mining_owner);
         self
     }
+    #[inline(always)]
+    pub fn delegate(&mut self, delegate: Pubkey) -> &mut Self {
+        self.delegate = Some(delegate);
+        self
+    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -176,6 +183,7 @@ impl WithdrawMiningBuilder {
         let args = WithdrawMiningInstructionArgs {
             amount: self.amount.clone().expect("amount is not set"),
             mining_owner: self.mining_owner.clone().expect("mining_owner is not set"),
+            delegate: self.delegate.clone().expect("delegate is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -331,6 +339,7 @@ impl<'a, 'b> WithdrawMiningCpiBuilder<'a, 'b> {
             delegate_mining: None,
             amount: None,
             mining_owner: None,
+            delegate: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -381,6 +390,11 @@ impl<'a, 'b> WithdrawMiningCpiBuilder<'a, 'b> {
         self.instruction.mining_owner = Some(mining_owner);
         self
     }
+    #[inline(always)]
+    pub fn delegate(&mut self, delegate: Pubkey) -> &mut Self {
+        self.instruction.delegate = Some(delegate);
+        self
+    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -429,6 +443,11 @@ impl<'a, 'b> WithdrawMiningCpiBuilder<'a, 'b> {
                 .mining_owner
                 .clone()
                 .expect("mining_owner is not set"),
+            delegate: self
+                .instruction
+                .delegate
+                .clone()
+                .expect("delegate is not set"),
         };
         let instruction = WithdrawMiningCpi {
             __program: self.instruction.__program,
@@ -466,6 +485,7 @@ struct WithdrawMiningCpiBuilderInstruction<'a, 'b> {
     delegate_mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amount: Option<u64>,
     mining_owner: Option<Pubkey>,
+    delegate: Option<Pubkey>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

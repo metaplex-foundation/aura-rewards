@@ -5,37 +5,38 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::LockupPeriod;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
 /// Accounts.
-pub struct DepositMining {
+pub struct Slash {
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    pub deposit_authority: solana_program::pubkey::Pubkey,
     /// The address of the reward pool
     pub reward_pool: solana_program::pubkey::Pubkey,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
     pub mining: solana_program::pubkey::Pubkey,
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
-    pub deposit_authority: solana_program::pubkey::Pubkey,
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
-    pub delegate_mining: solana_program::pubkey::Pubkey,
 }
 
-impl DepositMining {
+impl Slash {
     pub fn instruction(
         &self,
-        args: DepositMiningInstructionArgs,
+        args: SlashInstructionArgs,
     ) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: DepositMiningInstructionArgs,
+        args: SlashInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.deposit_authority,
+            true,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.reward_pool,
             false,
@@ -44,16 +45,8 @@ impl DepositMining {
             self.mining,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.deposit_authority,
-            true,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.delegate_mining,
-            false,
-        ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = DepositMiningInstructionData::new().try_to_vec().unwrap();
+        let mut data = SlashInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
         data.append(&mut args);
 
@@ -66,49 +59,56 @@ impl DepositMining {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct DepositMiningInstructionData {
+pub struct SlashInstructionData {
     discriminator: u8,
 }
 
-impl DepositMiningInstructionData {
+impl SlashInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 3 }
+        Self { discriminator: 10 }
     }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct DepositMiningInstructionArgs {
-    pub amount: u64,
-    pub lockup_period: LockupPeriod,
+pub struct SlashInstructionArgs {
     pub mining_owner: Pubkey,
-    pub delegate: Pubkey,
+    pub slash_amount_in_native: u64,
+    pub slash_amount_multiplied_by_period: u64,
+    pub stake_expiration_date: Option<u64>,
 }
 
-/// Instruction builder for `DepositMining`.
+/// Instruction builder for `Slash`.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` reward_pool
-///   1. `[writable]` mining
-///   2. `[signer]` deposit_authority
-///   3. `[]` delegate_mining
+///   0. `[signer]` deposit_authority
+///   1. `[writable]` reward_pool
+///   2. `[writable]` mining
 #[derive(Default)]
-pub struct DepositMiningBuilder {
+pub struct SlashBuilder {
+    deposit_authority: Option<solana_program::pubkey::Pubkey>,
     reward_pool: Option<solana_program::pubkey::Pubkey>,
     mining: Option<solana_program::pubkey::Pubkey>,
-    deposit_authority: Option<solana_program::pubkey::Pubkey>,
-    delegate_mining: Option<solana_program::pubkey::Pubkey>,
-    amount: Option<u64>,
-    lockup_period: Option<LockupPeriod>,
     mining_owner: Option<Pubkey>,
-    delegate: Option<Pubkey>,
+    slash_amount_in_native: Option<u64>,
+    slash_amount_multiplied_by_period: Option<u64>,
+    stake_expiration_date: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl DepositMiningBuilder {
+impl SlashBuilder {
     pub fn new() -> Self {
         Self::default()
+    }
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    #[inline(always)]
+    pub fn deposit_authority(
+        &mut self,
+        deposit_authority: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.deposit_authority = Some(deposit_authority);
+        self
     }
     /// The address of the reward pool
     #[inline(always)]
@@ -122,42 +122,28 @@ impl DepositMiningBuilder {
         self.mining = Some(mining);
         self
     }
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
-    #[inline(always)]
-    pub fn deposit_authority(
-        &mut self,
-        deposit_authority: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.deposit_authority = Some(deposit_authority);
-        self
-    }
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
-    #[inline(always)]
-    pub fn delegate_mining(
-        &mut self,
-        delegate_mining: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.delegate_mining = Some(delegate_mining);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.amount = Some(amount);
-        self
-    }
-    #[inline(always)]
-    pub fn lockup_period(&mut self, lockup_period: LockupPeriod) -> &mut Self {
-        self.lockup_period = Some(lockup_period);
-        self
-    }
     #[inline(always)]
     pub fn mining_owner(&mut self, mining_owner: Pubkey) -> &mut Self {
         self.mining_owner = Some(mining_owner);
         self
     }
     #[inline(always)]
-    pub fn delegate(&mut self, delegate: Pubkey) -> &mut Self {
-        self.delegate = Some(delegate);
+    pub fn slash_amount_in_native(&mut self, slash_amount_in_native: u64) -> &mut Self {
+        self.slash_amount_in_native = Some(slash_amount_in_native);
+        self
+    }
+    #[inline(always)]
+    pub fn slash_amount_multiplied_by_period(
+        &mut self,
+        slash_amount_multiplied_by_period: u64,
+    ) -> &mut Self {
+        self.slash_amount_multiplied_by_period = Some(slash_amount_multiplied_by_period);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn stake_expiration_date(&mut self, stake_expiration_date: u64) -> &mut Self {
+        self.stake_expiration_date = Some(stake_expiration_date);
         self
     }
     /// Add an aditional account to the instruction.
@@ -180,68 +166,65 @@ impl DepositMiningBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = DepositMining {
-            reward_pool: self.reward_pool.expect("reward_pool is not set"),
-            mining: self.mining.expect("mining is not set"),
+        let accounts = Slash {
             deposit_authority: self
                 .deposit_authority
                 .expect("deposit_authority is not set"),
-            delegate_mining: self.delegate_mining.expect("delegate_mining is not set"),
+            reward_pool: self.reward_pool.expect("reward_pool is not set"),
+            mining: self.mining.expect("mining is not set"),
         };
-        let args = DepositMiningInstructionArgs {
-            amount: self.amount.clone().expect("amount is not set"),
-            lockup_period: self
-                .lockup_period
-                .clone()
-                .expect("lockup_period is not set"),
+        let args = SlashInstructionArgs {
             mining_owner: self.mining_owner.clone().expect("mining_owner is not set"),
-            delegate: self.delegate.clone().expect("delegate is not set"),
+            slash_amount_in_native: self
+                .slash_amount_in_native
+                .clone()
+                .expect("slash_amount_in_native is not set"),
+            slash_amount_multiplied_by_period: self
+                .slash_amount_multiplied_by_period
+                .clone()
+                .expect("slash_amount_multiplied_by_period is not set"),
+            stake_expiration_date: self.stake_expiration_date.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
     }
 }
 
-/// `deposit_mining` CPI accounts.
-pub struct DepositMiningCpiAccounts<'a, 'b> {
+/// `slash` CPI accounts.
+pub struct SlashCpiAccounts<'a, 'b> {
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the reward pool
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
-    pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
-    pub delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `deposit_mining` CPI instruction.
-pub struct DepositMiningCpi<'a, 'b> {
+/// `slash` CPI instruction.
+pub struct SlashCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the reward pool
     pub reward_pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The address of the mining account which belongs to the user and stores info about user's rewards
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
-    pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
-    pub delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: DepositMiningInstructionArgs,
+    pub __args: SlashInstructionArgs,
 }
 
-impl<'a, 'b> DepositMiningCpi<'a, 'b> {
+impl<'a, 'b> SlashCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: DepositMiningCpiAccounts<'a, 'b>,
-        args: DepositMiningInstructionArgs,
+        accounts: SlashCpiAccounts<'a, 'b>,
+        args: SlashInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
+            deposit_authority: accounts.deposit_authority,
             reward_pool: accounts.reward_pool,
             mining: accounts.mining,
-            deposit_authority: accounts.deposit_authority,
-            delegate_mining: accounts.delegate_mining,
             __args: args,
         }
     }
@@ -278,21 +261,17 @@ impl<'a, 'b> DepositMiningCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.deposit_authority.key,
+            true,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.reward_pool.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.mining.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.deposit_authority.key,
-            true,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.delegate_mining.key,
             false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
@@ -302,7 +281,7 @@ impl<'a, 'b> DepositMiningCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = DepositMiningInstructionData::new().try_to_vec().unwrap();
+        let mut data = SlashInstructionData::new().try_to_vec().unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
         data.append(&mut args);
 
@@ -311,12 +290,11 @@ impl<'a, 'b> DepositMiningCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
+        account_infos.push(self.deposit_authority.clone());
         account_infos.push(self.reward_pool.clone());
         account_infos.push(self.mining.clone());
-        account_infos.push(self.deposit_authority.clone());
-        account_infos.push(self.delegate_mining.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -329,33 +307,40 @@ impl<'a, 'b> DepositMiningCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `DepositMining` via CPI.
+/// Instruction builder for `Slash` via CPI.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` reward_pool
-///   1. `[writable]` mining
-///   2. `[signer]` deposit_authority
-///   3. `[]` delegate_mining
-pub struct DepositMiningCpiBuilder<'a, 'b> {
-    instruction: Box<DepositMiningCpiBuilderInstruction<'a, 'b>>,
+///   0. `[signer]` deposit_authority
+///   1. `[writable]` reward_pool
+///   2. `[writable]` mining
+pub struct SlashCpiBuilder<'a, 'b> {
+    instruction: Box<SlashCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
+impl<'a, 'b> SlashCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(DepositMiningCpiBuilderInstruction {
+        let instruction = Box::new(SlashCpiBuilderInstruction {
             __program: program,
+            deposit_authority: None,
             reward_pool: None,
             mining: None,
-            deposit_authority: None,
-            delegate_mining: None,
-            amount: None,
-            lockup_period: None,
             mining_owner: None,
-            delegate: None,
+            slash_amount_in_native: None,
+            slash_amount_multiplied_by_period: None,
+            stake_expiration_date: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
+    }
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    #[inline(always)]
+    pub fn deposit_authority(
+        &mut self,
+        deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.deposit_authority = Some(deposit_authority);
+        self
     }
     /// The address of the reward pool
     #[inline(always)]
@@ -375,42 +360,29 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
         self.instruction.mining = Some(mining);
         self
     }
-    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
-    #[inline(always)]
-    pub fn deposit_authority(
-        &mut self,
-        deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.deposit_authority = Some(deposit_authority);
-        self
-    }
-    /// The address of Mining Account that might be used as a delegate in delegated staking model
-    #[inline(always)]
-    pub fn delegate_mining(
-        &mut self,
-        delegate_mining: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.delegate_mining = Some(delegate_mining);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.instruction.amount = Some(amount);
-        self
-    }
-    #[inline(always)]
-    pub fn lockup_period(&mut self, lockup_period: LockupPeriod) -> &mut Self {
-        self.instruction.lockup_period = Some(lockup_period);
-        self
-    }
     #[inline(always)]
     pub fn mining_owner(&mut self, mining_owner: Pubkey) -> &mut Self {
         self.instruction.mining_owner = Some(mining_owner);
         self
     }
     #[inline(always)]
-    pub fn delegate(&mut self, delegate: Pubkey) -> &mut Self {
-        self.instruction.delegate = Some(delegate);
+    pub fn slash_amount_in_native(&mut self, slash_amount_in_native: u64) -> &mut Self {
+        self.instruction.slash_amount_in_native = Some(slash_amount_in_native);
+        self
+    }
+    #[inline(always)]
+    pub fn slash_amount_multiplied_by_period(
+        &mut self,
+        slash_amount_multiplied_by_period: u64,
+    ) -> &mut Self {
+        self.instruction.slash_amount_multiplied_by_period =
+            Some(slash_amount_multiplied_by_period);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn stake_expiration_date(&mut self, stake_expiration_date: u64) -> &mut Self {
+        self.instruction.stake_expiration_date = Some(stake_expiration_date);
         self
     }
     /// Add an additional account to the instruction.
@@ -454,26 +426,31 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = DepositMiningInstructionArgs {
-            amount: self.instruction.amount.clone().expect("amount is not set"),
-            lockup_period: self
-                .instruction
-                .lockup_period
-                .clone()
-                .expect("lockup_period is not set"),
+        let args = SlashInstructionArgs {
             mining_owner: self
                 .instruction
                 .mining_owner
                 .clone()
                 .expect("mining_owner is not set"),
-            delegate: self
+            slash_amount_in_native: self
                 .instruction
-                .delegate
+                .slash_amount_in_native
                 .clone()
-                .expect("delegate is not set"),
+                .expect("slash_amount_in_native is not set"),
+            slash_amount_multiplied_by_period: self
+                .instruction
+                .slash_amount_multiplied_by_period
+                .clone()
+                .expect("slash_amount_multiplied_by_period is not set"),
+            stake_expiration_date: self.instruction.stake_expiration_date.clone(),
         };
-        let instruction = DepositMiningCpi {
+        let instruction = SlashCpi {
             __program: self.instruction.__program,
+
+            deposit_authority: self
+                .instruction
+                .deposit_authority
+                .expect("deposit_authority is not set"),
 
             reward_pool: self
                 .instruction
@@ -481,16 +458,6 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
                 .expect("reward_pool is not set"),
 
             mining: self.instruction.mining.expect("mining is not set"),
-
-            deposit_authority: self
-                .instruction
-                .deposit_authority
-                .expect("deposit_authority is not set"),
-
-            delegate_mining: self
-                .instruction
-                .delegate_mining
-                .expect("delegate_mining is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -500,16 +467,15 @@ impl<'a, 'b> DepositMiningCpiBuilder<'a, 'b> {
     }
 }
 
-struct DepositMiningCpiBuilderInstruction<'a, 'b> {
+struct SlashCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
+    deposit_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     reward_pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    deposit_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    delegate_mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    amount: Option<u64>,
-    lockup_period: Option<LockupPeriod>,
     mining_owner: Option<Pubkey>,
-    delegate: Option<Pubkey>,
+    slash_amount_in_native: Option<u64>,
+    slash_amount_multiplied_by_period: Option<u64>,
+    stake_expiration_date: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

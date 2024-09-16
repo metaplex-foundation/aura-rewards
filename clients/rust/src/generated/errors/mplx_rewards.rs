@@ -34,24 +34,32 @@ pub enum MplxRewardsError {
     /// 7 (0x7) - Rewards: rewards amount must be positive
     #[error("Rewards: rewards amount must be positive")]
     RewardsMustBeGreaterThanZero,
-    /// 8 (0x8) - Rewards: Delegate must have at least 15_000_000 of own weighted stake
-    #[error("Rewards: Delegate must have at least 15_000_000 of own weighted stake")]
-    InsufficientWeightedStake,
-    /// 9 (0x9) - Rewards: Stake from others must be zero
+    /// 8 (0x8) - Rewards: Stake from others must be zero
     #[error("Rewards: Stake from others must be zero")]
     StakeFromOthersMustBeZero,
-    /// 10 (0xA) - No changes at the date in weighted stake modifiers while they're expected
+    /// 9 (0x9) - No changes at the date in weighted stake modifiers while they're expected
     #[error("No changes at the date in weighted stake modifiers while they're expected")]
     NoWeightedStakeModifiersAtADate,
-    /// 11 (0xB) - Passed delegates are the same
+    /// 10 (0xA) - Passed delegates are the same
     #[error("Passed delegates are the same")]
     DelegatesAreTheSame,
-    /// 12 (0xC) - Getting pointer to the data of the zero-copy account has failed
+    /// 11 (0xB) - Getting pointer to the data of the zero-copy account has failed
     #[error("Getting pointer to the data of the zero-copy account has failed")]
     RetreivingZeroCopyAccountFailire,
-    /// 13 (0xD) - Account is already initialized
+    /// 12 (0xC) - Account is already initialized
     #[error("Account is already initialized")]
     AlreadyInitialized,
+    /// 13 (0xD) - Invalid mining
+    #[error("Invalid mining")]
+    InvalidMining,
+    /// 14 (0xE) - Failed to derive PDA
+    #[error("Failed to derive PDA")]
+    DerivationError,
+    /// 15 (0xF) - Rewards: Penalty is not apliable becase it's bigger than the mining's weighted stake
+    #[error(
+        "Rewards: Penalty is not apliable becase it's bigger than the mining's weighted stake"
+    )]
+    DecreaseRewardsTooBig,
 }
 
 impl solana_program::program_error::PrintProgramError for MplxRewardsError {

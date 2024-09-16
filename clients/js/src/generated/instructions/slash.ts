@@ -8,6 +8,8 @@
 
 import {
   Context,
+  Option,
+  OptionOrNullable,
   Pda,
   PublicKey,
   Signer,
@@ -17,6 +19,7 @@ import {
 import {
   Serializer,
   mapSerializer,
+  option,
   publicKey as publicKeySerializer,
   struct,
   u64,
@@ -29,63 +32,57 @@ import {
 } from '../shared';
 
 // Accounts.
-export type WithdrawMiningInstructionAccounts = {
+export type SlashInstructionAccounts = {
+  /** The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs */
+  depositAuthority: Signer;
   /** The address of the reward pool */
   rewardPool: PublicKey | Pda;
   /** The address of the mining account which belongs to the user and stores info about user's rewards */
   mining: PublicKey | Pda;
-  /** The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs */
-  depositAuthority: Signer;
-  /** The address of Mining Account that might be used as a delegate in delegated staking model */
-  delegateMining: PublicKey | Pda;
 };
 
 // Data.
-export type WithdrawMiningInstructionData = {
+export type SlashInstructionData = {
   discriminator: number;
-  amount: bigint;
   miningOwner: PublicKey;
-  delegate: PublicKey;
+  slashAmountInNative: bigint;
+  slashAmountMultipliedByPeriod: bigint;
+  stakeExpirationDate: Option<bigint>;
 };
 
-export type WithdrawMiningInstructionDataArgs = {
-  amount: number | bigint;
+export type SlashInstructionDataArgs = {
   miningOwner: PublicKey;
-  delegate: PublicKey;
+  slashAmountInNative: number | bigint;
+  slashAmountMultipliedByPeriod: number | bigint;
+  stakeExpirationDate: OptionOrNullable<number | bigint>;
 };
 
-export function getWithdrawMiningInstructionDataSerializer(): Serializer<
-  WithdrawMiningInstructionDataArgs,
-  WithdrawMiningInstructionData
+export function getSlashInstructionDataSerializer(): Serializer<
+  SlashInstructionDataArgs,
+  SlashInstructionData
 > {
-  return mapSerializer<
-    WithdrawMiningInstructionDataArgs,
-    any,
-    WithdrawMiningInstructionData
-  >(
-    struct<WithdrawMiningInstructionData>(
+  return mapSerializer<SlashInstructionDataArgs, any, SlashInstructionData>(
+    struct<SlashInstructionData>(
       [
         ['discriminator', u8()],
-        ['amount', u64()],
         ['miningOwner', publicKeySerializer()],
-        ['delegate', publicKeySerializer()],
+        ['slashAmountInNative', u64()],
+        ['slashAmountMultipliedByPeriod', u64()],
+        ['stakeExpirationDate', option(u64())],
       ],
-      { description: 'WithdrawMiningInstructionData' }
+      { description: 'SlashInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 4 })
-  ) as Serializer<
-    WithdrawMiningInstructionDataArgs,
-    WithdrawMiningInstructionData
-  >;
+    (value) => ({ ...value, discriminator: 10 })
+  ) as Serializer<SlashInstructionDataArgs, SlashInstructionData>;
 }
 
 // Args.
-export type WithdrawMiningInstructionArgs = WithdrawMiningInstructionDataArgs;
+export type SlashInstructionArgs = SlashInstructionDataArgs;
 
 // Instruction.
-export function withdrawMining(
+export function slash(
   context: Pick<Context, 'programs'>,
-  input: WithdrawMiningInstructionAccounts & WithdrawMiningInstructionArgs
+  input: SlashInstructionAccounts & SlashInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -95,30 +92,25 @@ export function withdrawMining(
 
   // Accounts.
   const resolvedAccounts = {
-    rewardPool: {
+    depositAuthority: {
       index: 0,
+      isWritable: false as boolean,
+      value: input.depositAuthority ?? null,
+    },
+    rewardPool: {
+      index: 1,
       isWritable: true as boolean,
       value: input.rewardPool ?? null,
     },
     mining: {
-      index: 1,
+      index: 2,
       isWritable: true as boolean,
       value: input.mining ?? null,
-    },
-    depositAuthority: {
-      index: 2,
-      isWritable: false as boolean,
-      value: input.depositAuthority ?? null,
-    },
-    delegateMining: {
-      index: 3,
-      isWritable: false as boolean,
-      value: input.delegateMining ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: WithdrawMiningInstructionArgs = { ...input };
+  const resolvedArgs: SlashInstructionArgs = { ...input };
 
   // Accounts in order.
   const orderedAccounts: ResolvedAccount[] = Object.values(
@@ -133,8 +125,8 @@ export function withdrawMining(
   );
 
   // Data.
-  const data = getWithdrawMiningInstructionDataSerializer().serialize(
-    resolvedArgs as WithdrawMiningInstructionDataArgs
+  const data = getSlashInstructionDataSerializer().serialize(
+    resolvedArgs as SlashInstructionDataArgs
   );
 
   // Bytes Created On Chain.

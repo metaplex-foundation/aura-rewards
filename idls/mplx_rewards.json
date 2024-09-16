@@ -243,6 +243,10 @@
         {
           "name": "miningOwner",
           "type": "publicKey"
+        },
+        {
+          "name": "delegate",
+          "type": "publicKey"
         }
       ],
       "discriminant": {
@@ -293,6 +297,10 @@
         },
         {
           "name": "miningOwner",
+          "type": "publicKey"
+        },
+        {
+          "name": "delegate",
           "type": "publicKey"
         }
       ],
@@ -447,6 +455,10 @@
         {
           "name": "miningOwner",
           "type": "publicKey"
+        },
+        {
+          "name": "delegate",
+          "type": "publicKey"
         }
       ],
       "discriminant": {
@@ -583,11 +595,111 @@
         {
           "name": "stakedAmount",
           "type": "u64"
+        },
+        {
+          "name": "newDelegate",
+          "type": "publicKey"
         }
       ],
       "discriminant": {
         "type": "u8",
         "value": 9
+      }
+    },
+    {
+      "name": "Slash",
+      "accounts": [
+        {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        },
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "mining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the mining account which belongs to the user and stores info about user's rewards"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "miningOwner",
+          "type": "publicKey"
+        },
+        {
+          "name": "slashAmountInNative",
+          "type": "u64"
+        },
+        {
+          "name": "slashAmountMultipliedByPeriod",
+          "type": "u64"
+        },
+        {
+          "name": "stakeExpirationDate",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 10
+      }
+    },
+    {
+      "name": "DecreaseRewards",
+      "accounts": [
+        {
+          "name": "depositAuthority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs"
+          ]
+        },
+        {
+          "name": "rewardPool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the reward pool"
+          ]
+        },
+        {
+          "name": "mining",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The address of the mining account which belongs to the user and stores info about user's rewards"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "miningOwner",
+          "type": "publicKey"
+        },
+        {
+          "name": "decreasedWeightedStakeNumber",
+          "type": "u64"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 11
       }
     }
   ],
@@ -780,33 +892,43 @@
     },
     {
       "code": 8,
-      "name": "InsufficientWeightedStake",
-      "msg": "Rewards: Delegate must have at least 15_000_000 of own weighted stake"
-    },
-    {
-      "code": 9,
       "name": "StakeFromOthersMustBeZero",
       "msg": "Rewards: Stake from others must be zero"
     },
     {
-      "code": 10,
+      "code": 9,
       "name": "NoWeightedStakeModifiersAtADate",
       "msg": "No changes at the date in weighted stake modifiers while they're expected"
     },
     {
-      "code": 11,
+      "code": 10,
       "name": "DelegatesAreTheSame",
       "msg": "Passed delegates are the same"
     },
     {
-      "code": 12,
+      "code": 11,
       "name": "RetreivingZeroCopyAccountFailire",
       "msg": "Getting pointer to the data of the zero-copy account has failed"
     },
     {
-      "code": 13,
+      "code": 12,
       "name": "AlreadyInitialized",
       "msg": "Account is already initialized"
+    },
+    {
+      "code": 13,
+      "name": "InvalidMining",
+      "msg": "Invalid mining"
+    },
+    {
+      "code": 14,
+      "name": "DerivationError",
+      "msg": "Failed to derive PDA"
+    },
+    {
+      "code": 15,
+      "name": "DecreaseRewardsTooBig",
+      "msg": "Rewards: Penalty is not apliable becase it's bigger than the mining's weighted stake"
     }
   ],
   "metadata": {
