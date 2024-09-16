@@ -1,5 +1,7 @@
 use crate::utils::{assert_custom_on_chain_error::AssertCustomOnChainErr, *};
+use mplx_rewards::state::WrappedRewardPool;
 use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
+use solana_program::clock::SECONDS_PER_DAY;
 use solana_program::program_pack::Pack;
 use solana_program_test::*;
 use solana_sdk::{signature::Keypair, signer::Signer};
@@ -135,4 +137,153 @@ async fn zero_amount_of_rewards() {
         .fill_vault(&mut context, &rewarder.pubkey(), 0, distribution_ends_at)
         .await
         .assert_on_chain_err(MplxRewardsError::RewardsMustBeGreaterThanZero);
+}
+
+#[tokio::test]
+#[should_panic]
+async fn only_dao_can_top_up_pool() {
+    let (mut context, test_rewards, rewarder) = setup().await;
+
+    let (user, _user_rewards, user_mining_addr) =
+        create_end_user(&mut context, &test_rewards).await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &user_mining_addr,
+            100,
+            LockupPeriod::ThreeMonths,
+            &user.pubkey(),
+            &user_mining_addr,
+            &user.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    // fill vault with tokens
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY * 100;
+
+    test_rewards
+        .fill_vault_with_authority(
+            &mut context,
+            &rewarder,
+            &Keypair::new(),
+            100,
+            distribution_ends_at,
+        )
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn rewards_top_up_extend() {
+    let (mut context, test_rewards, rewarder) = setup().await;
+
+    let (user, _user_rewards, user_mining_addr) =
+        create_end_user(&mut context, &test_rewards).await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &user_mining_addr,
+            50,
+            LockupPeriod::ThreeMonths,
+            &user.pubkey(),
+            &user_mining_addr,
+            &user.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    // fill vault with tokens
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY * 100;
+
+    test_rewards
+        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .await
+        .unwrap();
+
+    // fill vault with tokens
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY * 150;
+    test_rewards
+        .fill_vault(&mut context, &rewarder, 50, distribution_ends_at)
+        .await
+        .unwrap();
+    // distribute rewards to users
+    let mut binding = context
+        .banks_client
+        .get_account(test_rewards.reward_pool.pubkey())
+        .await
+        .unwrap()
+        .unwrap();
+    let pool = WrappedRewardPool::from_bytes_mut(&mut binding.data).unwrap();
+
+    assert_eq!(
+        pool.pool.distribution_ends_at,
+        distribution_ends_at - (distribution_ends_at % SECONDS_PER_DAY)
+    )
+}
+
+#[tokio::test]
+#[should_panic]
+async fn rewards_top_up_second_time_with_earlier_distribution_ends_at() {
+    let (mut context, test_rewards, rewarder) = setup().await;
+
+    let (user, _user_rewards, user_mining_addr) =
+        create_end_user(&mut context, &test_rewards).await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &user_mining_addr,
+            50,
+            LockupPeriod::ThreeMonths,
+            &user.pubkey(),
+            &user_mining_addr,
+            &user.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    // fill vault with tokens
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY * 100;
+
+    test_rewards
+        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .await
+        .unwrap();
+
+    // fill vault with tokens
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY * 50;
+    test_rewards
+        .fill_vault(&mut context, &rewarder, 50, distribution_ends_at)
+        .await
+        .unwrap();
 }
