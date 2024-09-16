@@ -1,11 +1,11 @@
 use crate::{asserts::assert_and_get_pool_and_mining, utils::AccountLoader};
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 
-pub fn process_restrict_batch_minting<'a>(
+pub fn process_decrease_rewards<'a>(
     program_id: &Pubkey,
     accounts: &'a [AccountInfo<'a>],
-    restrict_batch_minting_until_ts: u64,
     mining_owner: &Pubkey,
+    decreased_weighted_stake_number: u64,
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter().enumerate();
 
@@ -16,7 +16,7 @@ pub fn process_restrict_batch_minting<'a>(
     let reward_pool_data = &mut reward_pool.data.borrow_mut();
     let mining_data = &mut mining.data.borrow_mut();
 
-    let (_, wrapped_mining) = assert_and_get_pool_and_mining(
+    let (_, mut wrapped_mining) = assert_and_get_pool_and_mining(
         program_id,
         mining_owner,
         mining,
@@ -26,7 +26,7 @@ pub fn process_restrict_batch_minting<'a>(
         mining_data,
     )?;
 
-    wrapped_mining.mining.batch_minting_restricted_until = restrict_batch_minting_until_ts;
+    wrapped_mining.decrease_rewards(decreased_weighted_stake_number)?;
 
     Ok(())
 }

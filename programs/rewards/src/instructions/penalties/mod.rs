@@ -1,9 +1,5 @@
-pub(crate) use allow_tokenflow::*;
-pub(crate) use restrict_tokenflow::*;
+mod decrease_rewards;
+mod slash;
 
-mod allow_tokenflow;
-mod restrict_tokenflow;
-
-pub(crate) use restrict_batch_minting::*;
-
-mod restrict_batch_minting;
+pub(crate) use decrease_rewards::*;
+pub(crate) use slash::*;

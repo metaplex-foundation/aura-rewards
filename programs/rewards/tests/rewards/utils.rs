@@ -181,6 +181,34 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
+    pub async fn slash(
+        &self,
+        context: &mut ProgramTestContext,
+        mining_account: &Pubkey,
+        mining_owner: &Pubkey,
+        slash_amount_in_native: u64,
+        slash_amount_multiplied_by_period: u64,
+        stake_expiration_date: Option<u64>,
+    ) -> BanksClientResult<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[mplx_rewards::instruction::slash(
+                &mplx_rewards::id(),
+                &self.deposit_authority.pubkey(),
+                &self.reward_pool.pubkey(),
+                mining_account,
+                mining_owner,
+                slash_amount_in_native,
+                slash_amount_multiplied_by_period,
+                stake_expiration_date,
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, &self.deposit_authority],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
     pub async fn withdraw_mining(
         &self,
         context: &mut ProgramTestContext,
@@ -340,65 +368,22 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
-    pub async fn restrict_tokenflow(
+    #[allow(dead_code)]
+    pub async fn decrease_rewards(
         &self,
         context: &mut ProgramTestContext,
         mining_account: &Pubkey,
         mining_owner: &Pubkey,
+        decreased_weighted_stake_number: u64,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::restrict_tokenflow(
+            &[mplx_rewards::instruction::decrease_rewards(
                 &mplx_rewards::id(),
                 &self.deposit_authority.pubkey(),
                 &self.reward_pool.pubkey(),
                 mining_account,
                 mining_owner,
-            )],
-            Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority],
-            context.last_blockhash,
-        );
-
-        context.banks_client.process_transaction(tx).await
-    }
-
-    pub async fn allow_tokenflow(
-        &self,
-        context: &mut ProgramTestContext,
-        mining_account: &Pubkey,
-        mining_owner: &Pubkey,
-    ) -> BanksClientResult<()> {
-        let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::allow_tokenflow(
-                &mplx_rewards::id(),
-                &self.deposit_authority.pubkey(),
-                &self.reward_pool.pubkey(),
-                mining_account,
-                mining_owner,
-            )],
-            Some(&context.payer.pubkey()),
-            &[&context.payer, &self.deposit_authority],
-            context.last_blockhash,
-        );
-
-        context.banks_client.process_transaction(tx).await
-    }
-
-    pub async fn restrict_batch_minting(
-        &self,
-        context: &mut ProgramTestContext,
-        mining_account: &Pubkey,
-        restrict_batch_minting_until_ts: u64,
-        mining_owner: &Pubkey,
-    ) -> BanksClientResult<()> {
-        let tx = Transaction::new_signed_with_payer(
-            &[mplx_rewards::instruction::restrict_batch_minting(
-                &mplx_rewards::id(),
-                &self.deposit_authority.pubkey(),
-                &self.reward_pool.pubkey(),
-                mining_account,
-                mining_owner,
-                restrict_batch_minting_until_ts,
+                decreased_weighted_stake_number,
             )],
             Some(&context.payer.pubkey()),
             &[&context.payer, &self.deposit_authority],

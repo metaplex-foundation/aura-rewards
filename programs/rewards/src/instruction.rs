@@ -145,27 +145,26 @@ pub enum RewardsInstruction {
         new_delegate: Pubkey,
     },
 
-    /// Prevents the mining account from rewards withdrawing
     #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
-    RestrictTokenFlow {
+    Slash {
         mining_owner: Pubkey,
+        // number of tokens that had been slashed
+        slash_amount_in_native: u64,
+        // weighted stake part for the slashed number of tokens multiplied by the period
+        slash_amount_multiplied_by_period: u64,
+        // None if it's Flex period, because it's already expired
+        stake_expiration_date: Option<u64>,
     },
 
     #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
+    #[account(1, writable, name = "reward_pool", desc = "The address of the reward pool")]
     #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
-    AllowTokenFlow {
+    DecreaseRewards {
         mining_owner: Pubkey,
-    },
-
-    #[account(0, signer, name = "deposit_authority", desc = "The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs")]
-    #[account(1, name = "reward_pool", desc = "The address of the reward pool")]
-    #[account(2, writable, name = "mining", desc = "The address of the mining account which belongs to the user and stores info about user's rewards")]
-    RestrictBatchMinting {
-        restrict_batch_minting_until_ts: u64,
-        mining_owner: Pubkey,
+        // The number by which weighted stake should be decreased
+        decreased_weighted_stake_number: u64,
     },
 }
 
@@ -455,69 +454,54 @@ pub fn change_delegate(
     )
 }
 
-pub fn restrict_tokenflow(
+#[allow(clippy::too_many_arguments)]
+pub fn slash(
     program_id: &Pubkey,
     deposit_authority: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
     mining_owner: &Pubkey,
+    slash_amount_in_native: u64,
+    slash_amount_multiplied_by_period: u64,
+    stake_expiration_date: Option<u64>,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new_readonly(*reward_pool, false),
+        AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
     ];
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::RestrictTokenFlow {
+        &RewardsInstruction::Slash {
             mining_owner: *mining_owner,
+            slash_amount_in_native,
+            slash_amount_multiplied_by_period,
+            stake_expiration_date,
         },
         accounts,
     )
 }
 
-pub fn allow_tokenflow(
+pub fn decrease_rewards(
     program_id: &Pubkey,
     deposit_authority: &Pubkey,
     reward_pool: &Pubkey,
     mining: &Pubkey,
     mining_owner: &Pubkey,
+    decreased_weighted_stake_number: u64,
 ) -> Instruction {
     let accounts = vec![
         AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new_readonly(*reward_pool, false),
+        AccountMeta::new(*reward_pool, false),
         AccountMeta::new(*mining, false),
     ];
 
     Instruction::new_with_borsh(
         *program_id,
-        &RewardsInstruction::AllowTokenFlow {
+        &RewardsInstruction::DecreaseRewards {
             mining_owner: *mining_owner,
-        },
-        accounts,
-    )
-}
-
-pub fn restrict_batch_minting(
-    program_id: &Pubkey,
-    deposit_authority: &Pubkey,
-    reward_pool: &Pubkey,
-    mining: &Pubkey,
-    mining_owner: &Pubkey,
-    restrict_batch_minting_until_ts: u64,
-) -> Instruction {
-    let accounts = vec![
-        AccountMeta::new_readonly(*deposit_authority, true),
-        AccountMeta::new_readonly(*reward_pool, false),
-        AccountMeta::new(*mining, false),
-    ];
-
-    Instruction::new_with_borsh(
-        *program_id,
-        &RewardsInstruction::RestrictBatchMinting {
-            restrict_batch_minting_until_ts,
-            mining_owner: *mining_owner,
+            decreased_weighted_stake_number,
         },
         accounts,
     )
