@@ -51,12 +51,14 @@ export type DepositMiningInstructionData = {
   amount: bigint;
   lockupPeriod: LockupPeriod;
   miningOwner: PublicKey;
+  delegateMiningOwner: PublicKey;
 };
 
 export type DepositMiningInstructionDataArgs = {
   amount: number | bigint;
   lockupPeriod: LockupPeriodArgs;
   miningOwner: PublicKey;
+  delegateMiningOwner: PublicKey;
 };
 
 export function getDepositMiningInstructionDataSerializer(): Serializer<
@@ -74,6 +76,7 @@ export function getDepositMiningInstructionDataSerializer(): Serializer<
         ['amount', u64()],
         ['lockupPeriod', getLockupPeriodSerializer()],
         ['miningOwner', publicKeySerializer()],
+        ['delegateMiningOwner', publicKeySerializer()],
       ],
       { description: 'DepositMiningInstructionData' }
     ),

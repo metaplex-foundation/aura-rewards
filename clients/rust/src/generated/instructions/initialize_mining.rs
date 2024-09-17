@@ -17,6 +17,8 @@ pub struct InitializeMining {
     pub mining: solana_program::pubkey::Pubkey,
 
     pub payer: solana_program::pubkey::Pubkey,
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    pub deposit_authority: solana_program::pubkey::Pubkey,
     /// The system program
     pub system_program: solana_program::pubkey::Pubkey,
 }
@@ -34,7 +36,7 @@ impl InitializeMining {
         args: InitializeMiningInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.reward_pool,
             false,
@@ -45,6 +47,10 @@ impl InitializeMining {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.payer, true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.deposit_authority,
+            true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
@@ -87,12 +93,14 @@ pub struct InitializeMiningInstructionArgs {
 ///   0. `[writable]` reward_pool
 ///   1. `[writable]` mining
 ///   2. `[writable, signer]` payer
-///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   3. `[signer]` deposit_authority
+///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct InitializeMiningBuilder {
     reward_pool: Option<solana_program::pubkey::Pubkey>,
     mining: Option<solana_program::pubkey::Pubkey>,
     payer: Option<solana_program::pubkey::Pubkey>,
+    deposit_authority: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     mining_owner: Option<Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -117,6 +125,15 @@ impl InitializeMiningBuilder {
     #[inline(always)]
     pub fn payer(&mut self, payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.payer = Some(payer);
+        self
+    }
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    #[inline(always)]
+    pub fn deposit_authority(
+        &mut self,
+        deposit_authority: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.deposit_authority = Some(deposit_authority);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
@@ -155,6 +172,9 @@ impl InitializeMiningBuilder {
             reward_pool: self.reward_pool.expect("reward_pool is not set"),
             mining: self.mining.expect("mining is not set"),
             payer: self.payer.expect("payer is not set"),
+            deposit_authority: self
+                .deposit_authority
+                .expect("deposit_authority is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -175,6 +195,8 @@ pub struct InitializeMiningCpiAccounts<'a, 'b> {
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     /// The system program
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -189,6 +211,8 @@ pub struct InitializeMiningCpi<'a, 'b> {
     pub mining: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    pub deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
     /// The system program
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -206,6 +230,7 @@ impl<'a, 'b> InitializeMiningCpi<'a, 'b> {
             reward_pool: accounts.reward_pool,
             mining: accounts.mining,
             payer: accounts.payer,
+            deposit_authority: accounts.deposit_authority,
             system_program: accounts.system_program,
             __args: args,
         }
@@ -243,7 +268,7 @@ impl<'a, 'b> InitializeMiningCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.reward_pool.key,
             false,
@@ -254,6 +279,10 @@ impl<'a, 'b> InitializeMiningCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.payer.key,
+            true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.deposit_authority.key,
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -276,11 +305,12 @@ impl<'a, 'b> InitializeMiningCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.reward_pool.clone());
         account_infos.push(self.mining.clone());
         account_infos.push(self.payer.clone());
+        account_infos.push(self.deposit_authority.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -301,7 +331,8 @@ impl<'a, 'b> InitializeMiningCpi<'a, 'b> {
 ///   0. `[writable]` reward_pool
 ///   1. `[writable]` mining
 ///   2. `[writable, signer]` payer
-///   3. `[]` system_program
+///   3. `[signer]` deposit_authority
+///   4. `[]` system_program
 pub struct InitializeMiningCpiBuilder<'a, 'b> {
     instruction: Box<InitializeMiningCpiBuilderInstruction<'a, 'b>>,
 }
@@ -313,6 +344,7 @@ impl<'a, 'b> InitializeMiningCpiBuilder<'a, 'b> {
             reward_pool: None,
             mining: None,
             payer: None,
+            deposit_authority: None,
             system_program: None,
             mining_owner: None,
             __remaining_accounts: Vec::new(),
@@ -340,6 +372,15 @@ impl<'a, 'b> InitializeMiningCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn payer(&mut self, payer: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.payer = Some(payer);
+        self
+    }
+    /// The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs
+    #[inline(always)]
+    pub fn deposit_authority(
+        &mut self,
+        deposit_authority: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.deposit_authority = Some(deposit_authority);
         self
     }
     /// The system program
@@ -416,6 +457,11 @@ impl<'a, 'b> InitializeMiningCpiBuilder<'a, 'b> {
 
             payer: self.instruction.payer.expect("payer is not set"),
 
+            deposit_authority: self
+                .instruction
+                .deposit_authority
+                .expect("deposit_authority is not set"),
+
             system_program: self
                 .instruction
                 .system_program
@@ -434,6 +480,7 @@ struct InitializeMiningCpiBuilderInstruction<'a, 'b> {
     reward_pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    deposit_authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mining_owner: Option<Pubkey>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

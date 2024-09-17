@@ -39,8 +39,6 @@ export type ExtendStakeInstructionAccounts = {
   rewardPool: PublicKey | Pda;
   /** The address of the mining account which belongs to the user and stores info about user's rewards */
   mining: PublicKey | Pda;
-  /** The address of the reward mint */
-  rewardMint: PublicKey | Pda;
   /** The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs */
   depositAuthority: Signer;
   /** The address of Mining Account that might be used as a delegate in delegated staking model */
@@ -56,6 +54,7 @@ export type ExtendStakeInstructionData = {
   baseAmount: bigint;
   additionalAmount: bigint;
   miningOwner: PublicKey;
+  delegateMiningOwner: PublicKey;
 };
 
 export type ExtendStakeInstructionDataArgs = {
@@ -65,6 +64,7 @@ export type ExtendStakeInstructionDataArgs = {
   baseAmount: number | bigint;
   additionalAmount: number | bigint;
   miningOwner: PublicKey;
+  delegateMiningOwner: PublicKey;
 };
 
 export function getExtendStakeInstructionDataSerializer(): Serializer<
@@ -85,6 +85,7 @@ export function getExtendStakeInstructionDataSerializer(): Serializer<
         ['baseAmount', u64()],
         ['additionalAmount', u64()],
         ['miningOwner', publicKeySerializer()],
+        ['delegateMiningOwner', publicKeySerializer()],
       ],
       { description: 'ExtendStakeInstructionData' }
     ),
@@ -118,18 +119,13 @@ export function extendStake(
       isWritable: true as boolean,
       value: input.mining ?? null,
     },
-    rewardMint: {
-      index: 2,
-      isWritable: false as boolean,
-      value: input.rewardMint ?? null,
-    },
     depositAuthority: {
-      index: 3,
+      index: 2,
       isWritable: false as boolean,
       value: input.depositAuthority ?? null,
     },
     delegateMining: {
-      index: 4,
+      index: 3,
       isWritable: false as boolean,
       value: input.delegateMining ?? null,
     },

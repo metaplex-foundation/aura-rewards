@@ -17,6 +17,7 @@ import {
 import {
   Serializer,
   mapSerializer,
+  publicKey as publicKeySerializer,
   struct,
   u64,
   u8,
@@ -46,10 +47,14 @@ export type ChangeDelegateInstructionAccounts = {
 // Data.
 export type ChangeDelegateInstructionData = {
   discriminator: number;
+  oldDelegate: PublicKey;
+  newDelegate: PublicKey;
   stakedAmount: bigint;
 };
 
 export type ChangeDelegateInstructionDataArgs = {
+  oldDelegate: PublicKey;
+  newDelegate: PublicKey;
   stakedAmount: number | bigint;
 };
 
@@ -65,6 +70,8 @@ export function getChangeDelegateInstructionDataSerializer(): Serializer<
     struct<ChangeDelegateInstructionData>(
       [
         ['discriminator', u8()],
+        ['oldDelegate', publicKeySerializer()],
+        ['newDelegate', publicKeySerializer()],
         ['stakedAmount', u64()],
       ],
       { description: 'ChangeDelegateInstructionData' }
