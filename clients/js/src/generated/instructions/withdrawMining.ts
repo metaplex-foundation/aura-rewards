@@ -45,11 +45,13 @@ export type WithdrawMiningInstructionData = {
   discriminator: number;
   amount: bigint;
   miningOwner: PublicKey;
+  delegateMiningOwner: PublicKey;
 };
 
 export type WithdrawMiningInstructionDataArgs = {
   amount: number | bigint;
   miningOwner: PublicKey;
+  delegateMiningOwner: PublicKey;
 };
 
 export function getWithdrawMiningInstructionDataSerializer(): Serializer<
@@ -66,6 +68,7 @@ export function getWithdrawMiningInstructionDataSerializer(): Serializer<
         ['discriminator', u8()],
         ['amount', u64()],
         ['miningOwner', publicKeySerializer()],
+        ['delegateMiningOwner', publicKeySerializer()],
       ],
       { description: 'WithdrawMiningInstructionData' }
     ),

@@ -229,6 +229,22 @@ export class AlreadyInitializedError extends ProgramError {
 codeToErrorMap.set(0xd, AlreadyInitializedError);
 nameToErrorMap.set('AlreadyInitialized', AlreadyInitializedError);
 
+/** AccountDerivationAddresFailed: Account addres derivation has failed */
+export class AccountDerivationAddresFailedError extends ProgramError {
+  override readonly name: string = 'AccountDerivationAddresFailed';
+
+  readonly code: number = 0xe; // 14
+
+  constructor(program: Program, cause?: Error) {
+    super('Account addres derivation has failed', program, cause);
+  }
+}
+codeToErrorMap.set(0xe, AccountDerivationAddresFailedError);
+nameToErrorMap.set(
+  'AccountDerivationAddresFailed',
+  AccountDerivationAddresFailedError
+);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

@@ -52,6 +52,9 @@ pub enum MplxRewardsError {
     /// 13 (0xD) - Account is already initialized
     #[error("Account is already initialized")]
     AlreadyInitialized,
+    /// 14 (0xE) - Account addres derivation has failed
+    #[error("Account addres derivation has failed")]
+    AccountDerivationAddresFailed,
 }
 
 impl solana_program::program_error::PrintProgramError for MplxRewardsError {

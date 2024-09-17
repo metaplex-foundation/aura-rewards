@@ -34,6 +34,8 @@ export type InitializeMiningInstructionAccounts = {
   /** The address of the mining account which belongs to the user and stores info about user's rewards */
   mining: PublicKey | Pda;
   payer?: Signer;
+  /** The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs */
+  depositAuthority: Signer;
   /** The system program */
   systemProgram?: PublicKey | Pda;
 };
@@ -101,8 +103,13 @@ export function initializeMining(
       isWritable: true as boolean,
       value: input.payer ?? null,
     },
-    systemProgram: {
+    depositAuthority: {
       index: 3,
+      isWritable: false as boolean,
+      value: input.depositAuthority ?? null,
+    },
+    systemProgram: {
+      index: 4,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
