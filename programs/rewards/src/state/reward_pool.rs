@@ -142,9 +142,9 @@ impl<'a> WrappedRewardPool<'a> {
 
         self.pool.total_share =
             self.consume_old_modifiers(beginning_of_the_day, self.pool.total_share)?;
-        if self.cumulative_index.contains(&beginning_of_the_day) {
-            return Ok(());
-        }
+        // if self.cumulative_index.contains(&beginning_of_the_day) {
+        //     return Ok(());
+        // }
 
         WrappedRewardPool::update_index(
             self.cumulative_index,
