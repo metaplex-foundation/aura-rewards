@@ -234,6 +234,7 @@ impl AccountLoader {
 pub enum LockupPeriod {
     /// Unreachable option
     None,
+    Test,
     /// Unlimited lockup period.
     Flex,
     /// Three months
@@ -254,6 +255,7 @@ impl LockupPeriod {
             LockupPeriod::SixMonths => 4,
             LockupPeriod::OneYear => 6,
             LockupPeriod::Flex => 1,
+            LockupPeriod::Test => 1,
         }
     }
 
@@ -268,6 +270,7 @@ impl LockupPeriod {
             LockupPeriod::SixMonths => Ok(beginning_of_the_day + SECONDS_PER_DAY * 180),
             LockupPeriod::OneYear => Ok(beginning_of_the_day + SECONDS_PER_DAY * 365),
             LockupPeriod::Flex => Ok(beginning_of_the_day + SECONDS_PER_DAY * 5),
+            LockupPeriod::Test => Ok(beginning_of_the_day + 120),
         }
     }
 
@@ -279,6 +282,7 @@ impl LockupPeriod {
             LockupPeriod::SixMonths => Ok(180),
             LockupPeriod::OneYear => Ok(365),
             LockupPeriod::Flex => Ok(5),
+            LockupPeriod::Test => Ok(0),
         }
     }
 }

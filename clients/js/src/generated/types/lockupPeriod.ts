@@ -10,6 +10,7 @@ import { Serializer, scalarEnum } from '@metaplex-foundation/umi/serializers';
 
 export enum LockupPeriod {
   None,
+  Test,
   Flex,
   ThreeMonths,
   SixMonths,
