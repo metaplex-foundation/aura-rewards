@@ -31,6 +31,7 @@ pub fn process_fill_vault<'a>(
     let wrapped_reward_pool = WrappedRewardPool::from_bytes_mut(reward_pool_data)?;
 
     assert_account_key(fill_authority, &wrapped_reward_pool.pool.fill_authority)?;
+    assert_account_key(reward_mint, &wrapped_reward_pool.pool.reward_mint)?;
 
     {
         let vault_seeds = &[
