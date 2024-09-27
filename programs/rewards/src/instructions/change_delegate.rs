@@ -44,6 +44,7 @@ pub fn process_change_delegate<'a>(
 
     wrapped_reward_pool.change_delegate(
         &mut wrapped_mining,
+        reward_pool,
         new_delegate_mining,
         old_delegate_mining,
         old_delegate,

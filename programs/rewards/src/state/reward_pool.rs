@@ -1,5 +1,5 @@
 use crate::{
-    asserts::assert_pubkey_eq,
+    asserts::{assert_account_key, assert_pubkey_eq},
     error::MplxRewardsError,
     state::AccountType,
     utils::{get_curr_unix_ts, LockupPeriod, SafeArithmeticOperations},
@@ -165,6 +165,7 @@ impl<'a> WrappedRewardPool<'a> {
     pub fn change_delegate(
         &mut self,
         mining: &mut WrappedMining,
+        reward_pool: &AccountInfo,
         new_delegate_mining: Option<&AccountInfo>,
         old_delegate_mining: Option<&AccountInfo>,
         old_delegate: &Pubkey,
@@ -178,6 +179,7 @@ impl<'a> WrappedRewardPool<'a> {
             let mut old_delegate_mining = WrappedMining::from_bytes_mut(old_delegate_mining_data)?;
 
             assert_pubkey_eq(&old_delegate_mining.mining.owner, old_delegate)?;
+            assert_account_key(&reward_pool, &old_delegate_mining.mining.reward_pool)?;
 
             old_delegate_mining.mining.stake_from_others = old_delegate_mining
                 .mining
@@ -187,6 +189,8 @@ impl<'a> WrappedRewardPool<'a> {
             old_delegate_mining.refresh_rewards(self.cumulative_index)?;
         } else {
             assert_pubkey_eq(&mining.mining.owner, old_delegate)?;
+            // check for reward pool is not needed because it's already checked previously
+            // in case when old_delegate_mining is the same as mining
         }
 
         if let Some(new_delegate_info) = new_delegate_mining {
@@ -194,6 +198,7 @@ impl<'a> WrappedRewardPool<'a> {
             let mut new_delegate_mining = WrappedMining::from_bytes_mut(new_delegate_mining_data)?;
 
             assert_pubkey_eq(&new_delegate_mining.mining.owner, new_delegate)?;
+            assert_account_key(&reward_pool, &new_delegate_mining.mining.reward_pool)?;
 
             new_delegate_mining.mining.stake_from_others = new_delegate_mining
                 .mining
@@ -203,6 +208,8 @@ impl<'a> WrappedRewardPool<'a> {
             new_delegate_mining.refresh_rewards(self.cumulative_index)?;
         } else {
             assert_pubkey_eq(&mining.mining.owner, new_delegate)?;
+            // check for reward pool is not needed because it's already checked previously
+            // in case when old_delegate_mining is the same as mining
         }
 
         Ok(())
