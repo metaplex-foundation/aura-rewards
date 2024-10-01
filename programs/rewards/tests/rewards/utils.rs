@@ -241,6 +241,7 @@ impl TestRewards {
         &self,
         context: &mut ProgramTestContext,
         from: &Pubkey,
+        fill_authority: &Keypair,
         amount: u64,
         distribution_ends_at: u64,
     ) -> BanksClientResult<()> {
@@ -250,13 +251,13 @@ impl TestRewards {
                 &self.reward_pool.pubkey(),
                 &self.token_mint_pubkey,
                 &self.vault_pubkey,
-                &self.fill_authority.pubkey(),
+                &fill_authority.pubkey(),
                 from,
                 amount,
                 distribution_ends_at,
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.fill_authority],
+            &[&context.payer, fill_authority],
             context.last_blockhash,
         );
 
@@ -291,16 +292,17 @@ impl TestRewards {
 
     pub async fn distribute_rewards(
         &self,
+        authority: &Keypair,
         context: &mut ProgramTestContext,
     ) -> BanksClientResult<()> {
         let tx = Transaction::new_signed_with_payer(
             &[mplx_rewards::instruction::distribute_rewards(
                 &mplx_rewards::id(),
                 &self.reward_pool.pubkey(),
-                &self.distribution_authority.pubkey(),
+                &authority.pubkey(),
             )],
             Some(&context.payer.pubkey()),
-            &[&context.payer, &self.distribution_authority],
+            &[&context.payer, authority],
             context.last_blockhash,
         );
 

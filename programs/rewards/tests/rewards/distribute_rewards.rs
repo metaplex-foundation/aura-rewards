@@ -67,11 +67,20 @@ async fn happy_path() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     // // user claims their rewards
     test_rewards
@@ -85,6 +94,52 @@ async fn happy_path() {
         .unwrap();
 
     assert_tokens(&mut context, &user_rewards.pubkey(), 1).await;
+}
+
+#[tokio::test]
+#[should_panic]
+async fn unauthorised_rewards_distribution_fail() {
+    let (mut context, test_rewards, rewarder) = setup().await;
+
+    let (user, _user_rewards, user_mining_addr) =
+        create_end_user(&mut context, &test_rewards).await;
+    test_rewards
+        .deposit_mining(
+            &mut context,
+            &user_mining_addr,
+            100,
+            LockupPeriod::ThreeMonths,
+            &user.pubkey(),
+            &user_mining_addr,
+            &user.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    // fill vault with tokens
+    let distribution_ends_at = context
+        .banks_client
+        .get_sysvar::<solana_program::clock::Clock>()
+        .await
+        .unwrap()
+        .unix_timestamp as u64
+        + SECONDS_PER_DAY * 100;
+
+    test_rewards
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
+        .await
+        .unwrap();
+    // distribute rewards to users
+    test_rewards
+        .distribute_rewards(&Keypair::new(), &mut context)
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -115,11 +170,20 @@ async fn happy_path_with_flex() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     // // user claims their rewards
     test_rewards
@@ -163,12 +227,21 @@ async fn happy_path_with_flex_continious_distribution() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
     for _ in 0..100 {
-        test_rewards.distribute_rewards(&mut context).await.unwrap();
+        test_rewards
+            .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+            .await
+            .unwrap();
         advance_clock_by_ts(&mut context, SECONDS_PER_DAY.try_into().unwrap()).await;
     }
 
@@ -229,12 +302,21 @@ async fn happy_path_with_flex_continious_distribution_with_two_users() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
     for _ in 0..100 {
-        test_rewards.distribute_rewards(&mut context).await.unwrap();
+        test_rewards
+            .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+            .await
+            .unwrap();
         advance_clock_by_ts(&mut context, SECONDS_PER_DAY.try_into().unwrap()).await;
     }
 

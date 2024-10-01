@@ -85,6 +85,7 @@ async fn precision_distribution() {
         .fill_vault(
             &mut context,
             &rewarder,
+            &test_rewards.fill_authority,
             5000 * 1_000_000,
             distribution_ends_at,
         )
@@ -93,7 +94,10 @@ async fn precision_distribution() {
     // distribute rewards to users
 
     for _ in 0..30 {
-        test_rewards.distribute_rewards(&mut context).await.unwrap();
+        test_rewards
+            .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+            .await
+            .unwrap();
         advance_clock_by_ts(&mut context, SECONDS_PER_DAY.try_into().unwrap()).await;
     }
 
