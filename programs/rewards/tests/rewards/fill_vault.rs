@@ -1,8 +1,6 @@
 use crate::utils::{assert_custom_on_chain_error::AssertCustomOnChainErr, *};
-use mplx_rewards::state::WrappedRewardPool;
-use mplx_rewards::{error::MplxRewardsError, utils::LockupPeriod};
-use solana_program::clock::SECONDS_PER_DAY;
-use solana_program::program_pack::Pack;
+use mplx_rewards::{error::MplxRewardsError, state::WrappedRewardPool, utils::LockupPeriod};
+use solana_program::{clock::SECONDS_PER_DAY, program_pack::Pack};
 use solana_program_test::*;
 use solana_sdk::{signature::Keypair, signer::Signer};
 use spl_token::state::Account;
