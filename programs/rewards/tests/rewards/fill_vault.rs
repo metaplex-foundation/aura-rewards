@@ -142,8 +142,26 @@ async fn zero_amount_of_rewards() {
 #[tokio::test]
 #[should_panic]
 async fn only_dao_can_top_up_pool() {
-    let (mut context, test_rewards, rewarder) = setup().await;
-
+    let (mut context, test_rewards) = setup().await;
+    // mint token for fill_authority aka wallet who will fill the vault with tokens
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        150,
+    )
+    .await
+    .unwrap();
     let (user, _user_rewards, user_mining_addr) =
         create_end_user(&mut context, &test_rewards).await;
     test_rewards
@@ -171,7 +189,7 @@ async fn only_dao_can_top_up_pool() {
     test_rewards
         .fill_vault_with_authority(
             &mut context,
-            &rewarder,
+            &rewarder.pubkey(),
             &Keypair::new(),
             100,
             distribution_ends_at,
@@ -182,8 +200,26 @@ async fn only_dao_can_top_up_pool() {
 
 #[tokio::test]
 async fn rewards_top_up_extend() {
-    let (mut context, test_rewards, rewarder) = setup().await;
-
+    let (mut context, test_rewards) = setup().await;
+    // mint token for fill_authority aka wallet who will fill the vault with tokens
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        150,
+    )
+    .await
+    .unwrap();
     let (user, _user_rewards, user_mining_addr) =
         create_end_user(&mut context, &test_rewards).await;
     test_rewards
@@ -209,7 +245,7 @@ async fn rewards_top_up_extend() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
         .await
         .unwrap();
 
@@ -222,7 +258,7 @@ async fn rewards_top_up_extend() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY * 150;
     test_rewards
-        .fill_vault(&mut context, &rewarder, 50, distribution_ends_at)
+        .fill_vault(&mut context, &rewarder.pubkey(), 50, distribution_ends_at)
         .await
         .unwrap();
     // distribute rewards to users
@@ -243,8 +279,26 @@ async fn rewards_top_up_extend() {
 #[tokio::test]
 #[should_panic]
 async fn rewards_top_up_second_time_with_earlier_distribution_ends_at() {
-    let (mut context, test_rewards, rewarder) = setup().await;
-
+    let (mut context, test_rewards) = setup().await;
+    // mint token for fill_authority aka wallet who will fill the vault with tokens
+    let rewarder = Keypair::new();
+    create_token_account(
+        &mut context,
+        &rewarder,
+        &test_rewards.token_mint_pubkey,
+        &test_rewards.fill_authority.pubkey(),
+        0,
+    )
+    .await
+    .unwrap();
+    mint_tokens(
+        &mut context,
+        &test_rewards.token_mint_pubkey,
+        &rewarder.pubkey(),
+        150,
+    )
+    .await
+    .unwrap();
     let (user, _user_rewards, user_mining_addr) =
         create_end_user(&mut context, &test_rewards).await;
     test_rewards
@@ -270,7 +324,7 @@ async fn rewards_top_up_second_time_with_earlier_distribution_ends_at() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
         .await
         .unwrap();
 
@@ -283,7 +337,7 @@ async fn rewards_top_up_second_time_with_earlier_distribution_ends_at() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY * 50;
     test_rewards
-        .fill_vault(&mut context, &rewarder, 50, distribution_ends_at)
+        .fill_vault(&mut context, &rewarder.pubkey(), 50, distribution_ends_at)
         .await
         .unwrap();
 }
