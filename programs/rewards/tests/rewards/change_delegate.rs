@@ -156,11 +156,20 @@ async fn change_delegate_then_claim() {
         .unix_timestamp as u64;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 1_000_000, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            1_000_000,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     test_rewards
         .claim(

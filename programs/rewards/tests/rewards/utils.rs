@@ -237,7 +237,7 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
-    pub async fn fill_vault_with_authority(
+    pub async fn fill_vault(
         &self,
         context: &mut ProgramTestContext,
         from: &Pubkey,
@@ -262,23 +262,6 @@ impl TestRewards {
         );
 
         context.banks_client.process_transaction(tx).await
-    }
-
-    pub async fn fill_vault(
-        &self,
-        context: &mut ProgramTestContext,
-        from: &Pubkey,
-        amount: u64,
-        distribution_ends_at: u64,
-    ) -> BanksClientResult<()> {
-        self.fill_vault_with_authority(
-            context,
-            from,
-            &self.fill_authority,
-            amount,
-            distribution_ends_at,
-        )
-        .await
     }
 
     pub async fn claim(
@@ -307,7 +290,7 @@ impl TestRewards {
         context.banks_client.process_transaction(tx).await
     }
 
-    pub async fn distribute_rewards_with_authority(
+    pub async fn distribute_rewards(
         &self,
         authority: &Keypair,
         context: &mut ProgramTestContext,
@@ -324,14 +307,6 @@ impl TestRewards {
         );
 
         context.banks_client.process_transaction(tx).await
-    }
-
-    pub async fn distribute_rewards(
-        &self,
-        context: &mut ProgramTestContext,
-    ) -> BanksClientResult<()> {
-        self.distribute_rewards_with_authority(&self.distribution_authority, context)
-            .await
     }
 
     #[allow(clippy::too_many_arguments)]

@@ -67,11 +67,20 @@ async fn happy_path() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     // // user claims their rewards
     test_rewards
@@ -117,12 +126,18 @@ async fn unauthorised_rewards_distribution_fail() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
     test_rewards
-        .distribute_rewards_with_authority(&Keypair::new(), &mut context)
+        .distribute_rewards(&Keypair::new(), &mut context)
         .await
         .unwrap();
 }
@@ -155,11 +170,20 @@ async fn happy_path_with_flex() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     // // user claims their rewards
     test_rewards
@@ -203,12 +227,21 @@ async fn happy_path_with_flex_continious_distribution() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
     for _ in 0..100 {
-        test_rewards.distribute_rewards(&mut context).await.unwrap();
+        test_rewards
+            .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+            .await
+            .unwrap();
         advance_clock_by_ts(&mut context, SECONDS_PER_DAY.try_into().unwrap()).await;
     }
 
@@ -269,12 +302,21 @@ async fn happy_path_with_flex_continious_distribution_with_two_users() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
     for _ in 0..100 {
-        test_rewards.distribute_rewards(&mut context).await.unwrap();
+        test_rewards
+            .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+            .await
+            .unwrap();
         advance_clock_by_ts(&mut context, SECONDS_PER_DAY.try_into().unwrap()).await;
     }
 

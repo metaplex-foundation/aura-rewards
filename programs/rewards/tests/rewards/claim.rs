@@ -88,11 +88,20 @@ async fn with_two_users() {
         + SECONDS_PER_DAY;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
 
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     test_rewards
         .claim(
@@ -171,11 +180,20 @@ async fn flex_vs_three_months() {
         + SECONDS_PER_DAY;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 1_000, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            1_000,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
 
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     test_rewards
         .claim(
@@ -253,13 +271,22 @@ async fn multiple_consequantial_distributions_for_two_users() {
         + SECONDS_PER_DAY * 6;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 500, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            500,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
 
     // 5 days of daily reward claiming for user2
     for _ in 0..5 {
-        test_rewards.distribute_rewards(&mut context).await.unwrap();
+        test_rewards
+            .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+            .await
+            .unwrap();
 
         test_rewards
             .claim(
@@ -335,10 +362,19 @@ async fn rewards_after_distribution_are_unclaimable() {
         + SECONDS_PER_DAY;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 1000, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            1000,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     test_rewards
         .claim(
@@ -363,7 +399,13 @@ async fn rewards_after_distribution_are_unclaimable() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY;
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
 
@@ -445,10 +487,19 @@ async fn switch_to_flex_is_correct() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY;
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     test_rewards
         .claim(
@@ -538,10 +589,19 @@ async fn two_deposits_vs_one() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY;
     test_rewards
-        .fill_vault(&mut context, &rewarder, 1000, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            1000,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     test_rewards
         .claim(
@@ -616,10 +676,19 @@ async fn claim_tokens_after_deposit_expiration() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY;
     test_rewards
-        .fill_vault(&mut context, &rewarder, 1000, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            1000,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     advance_clock_by_ts(&mut context, (180 * SECONDS_PER_DAY).try_into().unwrap()).await;
 
@@ -709,10 +778,19 @@ async fn claim_after_withdraw_is_correct() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY;
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     claim_and_assert(
         &test_rewards,
@@ -747,10 +825,19 @@ async fn claim_after_withdraw_is_correct() {
         .unwrap();
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     // T = 1050, A = 600, B = 300 + 150
     claim_and_assert(
@@ -793,10 +880,19 @@ async fn claim_after_withdraw_is_correct() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY;
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     claim_and_assert(
         &test_rewards,
@@ -862,11 +958,20 @@ async fn with_two_users_with_flex() {
         + SECONDS_PER_DAY;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
 
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     test_rewards
         .claim(
@@ -966,11 +1071,20 @@ async fn claim_with_delegate() {
         .unix_timestamp as u64;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder, 1_000_000, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder,
+            &test_rewards.fill_authority,
+            1_000_000,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     test_rewards
         .claim(

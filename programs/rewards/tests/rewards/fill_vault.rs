@@ -85,7 +85,13 @@ async fn success() {
         + 86400 * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder.pubkey(),
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
 
@@ -132,7 +138,13 @@ async fn zero_amount_of_rewards() {
         + 86400 * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder.pubkey(), 0, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder.pubkey(),
+            &test_rewards.fill_authority,
+            0,
+            distribution_ends_at,
+        )
         .await
         .assert_on_chain_err(MplxRewardsError::RewardsMustBeGreaterThanZero);
 }
@@ -185,7 +197,7 @@ async fn only_dao_can_top_up_pool() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault_with_authority(
+        .fill_vault(
             &mut context,
             &rewarder.pubkey(),
             &Keypair::new(),
@@ -243,7 +255,13 @@ async fn rewards_top_up_extend() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder.pubkey(),
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
 
@@ -256,7 +274,13 @@ async fn rewards_top_up_extend() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY * 150;
     test_rewards
-        .fill_vault(&mut context, &rewarder.pubkey(), 50, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder.pubkey(),
+            &test_rewards.fill_authority,
+            50,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
@@ -322,7 +346,13 @@ async fn rewards_top_up_second_time_with_earlier_distribution_ends_at() {
         + SECONDS_PER_DAY * 100;
 
     test_rewards
-        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder.pubkey(),
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
 
@@ -335,7 +365,13 @@ async fn rewards_top_up_second_time_with_earlier_distribution_ends_at() {
         .unix_timestamp as u64
         + SECONDS_PER_DAY * 50;
     test_rewards
-        .fill_vault(&mut context, &rewarder.pubkey(), 50, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder.pubkey(),
+            &test_rewards.fill_authority,
+            50,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
 }

@@ -171,11 +171,20 @@ async fn close_when_has_unclaimed_rewards() {
     .unwrap();
 
     test_rewards
-        .fill_vault(&mut context, &rewarder.pubkey(), 100, distribution_ends_at)
+        .fill_vault(
+            &mut context,
+            &rewarder.pubkey(),
+            &test_rewards.fill_authority,
+            100,
+            distribution_ends_at,
+        )
         .await
         .unwrap();
     // distribute rewards to users
-    test_rewards.distribute_rewards(&mut context).await.unwrap();
+    test_rewards
+        .distribute_rewards(&test_rewards.distribution_authority, &mut context)
+        .await
+        .unwrap();
 
     advance_clock_by_ts(&mut context, (SECONDS_PER_DAY * 100).try_into().unwrap()).await;
 
