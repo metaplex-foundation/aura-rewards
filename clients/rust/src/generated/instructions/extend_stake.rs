@@ -91,6 +91,7 @@ pub struct ExtendStakeInstructionArgs {
     pub base_amount: u64,
     pub additional_amount: u64,
     pub mining_owner: Pubkey,
+    pub delegate: Pubkey,
 }
 
 /// Instruction builder for `ExtendStake`.
@@ -115,6 +116,7 @@ pub struct ExtendStakeBuilder {
     base_amount: Option<u64>,
     additional_amount: Option<u64>,
     mining_owner: Option<Pubkey>,
+    delegate: Option<Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -188,6 +190,11 @@ impl ExtendStakeBuilder {
         self.mining_owner = Some(mining_owner);
         self
     }
+    #[inline(always)]
+    pub fn delegate(&mut self, delegate: Pubkey) -> &mut Self {
+        self.delegate = Some(delegate);
+        self
+    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -236,6 +243,7 @@ impl ExtendStakeBuilder {
                 .clone()
                 .expect("additional_amount is not set"),
             mining_owner: self.mining_owner.clone().expect("mining_owner is not set"),
+            delegate: self.delegate.clone().expect("delegate is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -407,6 +415,7 @@ impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
             base_amount: None,
             additional_amount: None,
             mining_owner: None,
+            delegate: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -486,6 +495,11 @@ impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
         self.instruction.mining_owner = Some(mining_owner);
         self
     }
+    #[inline(always)]
+    pub fn delegate(&mut self, delegate: Pubkey) -> &mut Self {
+        self.instruction.delegate = Some(delegate);
+        self
+    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -558,6 +572,11 @@ impl<'a, 'b> ExtendStakeCpiBuilder<'a, 'b> {
                 .mining_owner
                 .clone()
                 .expect("mining_owner is not set"),
+            delegate: self
+                .instruction
+                .delegate
+                .clone()
+                .expect("delegate is not set"),
         };
         let instruction = ExtendStakeCpi {
             __program: self.instruction.__program,
@@ -605,6 +624,7 @@ struct ExtendStakeCpiBuilderInstruction<'a, 'b> {
     base_amount: Option<u64>,
     additional_amount: Option<u64>,
     mining_owner: Option<Pubkey>,
+    delegate: Option<Pubkey>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

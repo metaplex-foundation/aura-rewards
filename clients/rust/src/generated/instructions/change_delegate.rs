@@ -7,6 +7,7 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use solana_program::pubkey::Pubkey;
 
 /// Accounts.
 pub struct ChangeDelegate {
@@ -90,6 +91,7 @@ impl ChangeDelegateInstructionData {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ChangeDelegateInstructionArgs {
     pub staked_amount: u64,
+    pub new_delegate: Pubkey,
 }
 
 /// Instruction builder for `ChangeDelegate`.
@@ -111,6 +113,7 @@ pub struct ChangeDelegateBuilder {
     old_delegate_mining: Option<solana_program::pubkey::Pubkey>,
     new_delegate_mining: Option<solana_program::pubkey::Pubkey>,
     staked_amount: Option<u64>,
+    new_delegate: Option<Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -168,6 +171,11 @@ impl ChangeDelegateBuilder {
         self.staked_amount = Some(staked_amount);
         self
     }
+    #[inline(always)]
+    pub fn new_delegate(&mut self, new_delegate: Pubkey) -> &mut Self {
+        self.new_delegate = Some(new_delegate);
+        self
+    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -207,6 +215,7 @@ impl ChangeDelegateBuilder {
                 .staked_amount
                 .clone()
                 .expect("staked_amount is not set"),
+            new_delegate: self.new_delegate.clone().expect("new_delegate is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -385,6 +394,7 @@ impl<'a, 'b> ChangeDelegateCpiBuilder<'a, 'b> {
             old_delegate_mining: None,
             new_delegate_mining: None,
             staked_amount: None,
+            new_delegate: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -448,6 +458,11 @@ impl<'a, 'b> ChangeDelegateCpiBuilder<'a, 'b> {
         self.instruction.staked_amount = Some(staked_amount);
         self
     }
+    #[inline(always)]
+    pub fn new_delegate(&mut self, new_delegate: Pubkey) -> &mut Self {
+        self.instruction.new_delegate = Some(new_delegate);
+        self
+    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -495,6 +510,11 @@ impl<'a, 'b> ChangeDelegateCpiBuilder<'a, 'b> {
                 .staked_amount
                 .clone()
                 .expect("staked_amount is not set"),
+            new_delegate: self
+                .instruction
+                .new_delegate
+                .clone()
+                .expect("new_delegate is not set"),
         };
         let instruction = ChangeDelegateCpi {
             __program: self.instruction.__program,
@@ -543,6 +563,7 @@ struct ChangeDelegateCpiBuilderInstruction<'a, 'b> {
     old_delegate_mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     new_delegate_mining: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     staked_amount: Option<u64>,
+    new_delegate: Option<Pubkey>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

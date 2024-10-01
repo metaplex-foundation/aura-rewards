@@ -1,6 +1,6 @@
 use crate::{error::MplxRewardsError, state::PRECISION};
 
-use crate::utils::{get_curr_unix_ts, SafeArithmeticOperations};
+use crate::utils::SafeArithmeticOperations;
 use bytemuck::{Pod, Zeroable};
 use shank::ShankAccount;
 use sokoban::{NodeAllocatorMap, ZeroCopy};
@@ -33,12 +33,6 @@ pub struct WrappedImmutableMining<'a> {
 }
 
 pub const ACCOUNT_TYPE_BYTE: usize = 0;
-const IS_TOKENFLOW_RESTRICTED_MASK: u8 = 1 << 0;
-
-/// That byte represents the set of applicable penalties. The structure is follows:
-/// - 0: tokenflow
-/// - 1-7: reserved
-pub const PENALTIES_BYTE: usize = 1;
 
 impl<'a> WrappedMining<'a> {
     pub const LEN: usize =
@@ -81,6 +75,39 @@ impl<'a> WrappedMining<'a> {
 
         Ok(())
     }
+
+    /// Decrease rewards
+    pub fn decrease_rewards(&mut self, mut decreased_weighted_stake_number: u64) -> ProgramResult {
+        if decreased_weighted_stake_number == 0 {
+            return Ok(());
+        }
+
+        if decreased_weighted_stake_number > self.mining.share {
+            return Err(MplxRewardsError::DecreaseRewardsTooBig.into());
+        }
+
+        // apply penalty to the weighted stake
+        self.mining.share = self
+            .mining
+            .share
+            .safe_sub(decreased_weighted_stake_number)?;
+
+        // going through the weighted stake diffs backwards
+        // and decreasing the modifiers accordingly to the decreased share number.
+        // otherwise moddifier might decrease the share more then needed, even to negative value.
+        for (_, stake_diff) in self.weighted_stake_diffs.iter_mut().rev() {
+            if stake_diff >= &mut decreased_weighted_stake_number {
+                *stake_diff = stake_diff.safe_sub(decreased_weighted_stake_number)?;
+                break;
+            } else {
+                decreased_weighted_stake_number =
+                    decreased_weighted_stake_number.safe_sub(*stake_diff)?;
+                *stake_diff = 0;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[repr(C)]
@@ -104,17 +131,13 @@ pub struct Mining {
     pub unclaimed_rewards: u64,
     /// This field sums up each time somebody stakes to that account as a delegate.
     pub stake_from_others: u64,
-    /// The date when batch minting is restricted until.
-    pub batch_minting_restricted_until: u64,
     /// Bump of the mining account
     pub bump: u8,
     /// Account type - Mining. This discriminator should exist in order to prevent
     /// shenanigans with customly modified accounts and their fields.
     /// 0: account type
-    /// 1: claim is restricted
-    /// 2: penalties bitmap
-    /// 3-15: unused
-    pub data: [u8; 15],
+    /// 1-7: unused
+    pub data: [u8; 7],
 }
 
 impl ZeroCopy for Mining {}
@@ -127,7 +150,7 @@ impl Mining {
     pub fn initialize(reward_pool: Pubkey, owner: Pubkey, bump: u8) -> Mining {
         let account_type = AccountType::Mining.into();
 
-        let mut data = [0; 15];
+        let mut data = [0; 7];
         data[ACCOUNT_TYPE_BYTE] = account_type;
 
         Mining {
@@ -208,32 +231,6 @@ impl Mining {
 
         Ok(())
     }
-
-    pub fn restrict_tokenflow(&mut self) -> ProgramResult {
-        if self.is_tokenflow_restricted() {
-            Err(MplxRewardsError::MiningAlreadyRestricted.into())
-        } else {
-            self.data[PENALTIES_BYTE] |= IS_TOKENFLOW_RESTRICTED_MASK;
-            Ok(())
-        }
-    }
-
-    pub fn allow_tokenflow(&mut self) -> ProgramResult {
-        if !self.is_tokenflow_restricted() {
-            Err(MplxRewardsError::MiningAlreadyRestricted.into())
-        } else {
-            self.data[PENALTIES_BYTE] &= !(IS_TOKENFLOW_RESTRICTED_MASK);
-            Ok(())
-        }
-    }
-
-    pub fn is_tokenflow_restricted(&self) -> bool {
-        self.data[PENALTIES_BYTE] & IS_TOKENFLOW_RESTRICTED_MASK > 0
-    }
-
-    pub fn is_batch_minting_restricted(&self) -> bool {
-        self.batch_minting_restricted_until > get_curr_unix_ts()
-    }
 }
 
 impl IsInitialized for Mining {
@@ -257,8 +254,11 @@ impl<'a> WrappedImmutableMining<'a> {
         })
     }
 }
+
+#[allow(unused_imports)]
 mod test {
-    #[allow(unused_imports)]
+    use super::*;
+
     #[test]
     fn test_wrapped_immutable_mining_is_same_size_as_wrapped_mining() {
         assert_eq!(
@@ -305,5 +305,74 @@ mod test {
             stake_from_others
         );
         assert_eq!(wrapped_immutable_mining.mining.bump, bump);
+    }
+
+    #[test]
+    fn slighly_decrease_rewards() {
+        let mut wrapped_mining = super::WrappedMining {
+            mining: &mut super::Mining {
+                share: 3600,
+                ..Default::default()
+            },
+            weighted_stake_diffs: &mut Default::default(),
+        };
+        // three stakes:
+        // - 500 x4 (six months)
+        // - 700 x2 (three months)
+        // - 200 x1 (flex)
+        wrapped_mining.weighted_stake_diffs.insert(365, 1500);
+        wrapped_mining.weighted_stake_diffs.insert(180, 700);
+
+        wrapped_mining.decrease_rewards(300).unwrap();
+
+        assert_eq!(wrapped_mining.mining.share, 3300);
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&365), Some(&1200));
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&180), Some(&700));
+    }
+
+    #[test]
+    fn moderate_decrease_rewards() {
+        let mut wrapped_mining = super::WrappedMining {
+            mining: &mut super::Mining {
+                share: 3600,
+                ..Default::default()
+            },
+            weighted_stake_diffs: &mut Default::default(),
+        };
+        // three stakes:
+        // - 500 x4 (six months)
+        // - 700 x2 (three months)
+        // - 200 x1 (flex)
+        wrapped_mining.weighted_stake_diffs.insert(365, 1500);
+        wrapped_mining.weighted_stake_diffs.insert(180, 700);
+
+        wrapped_mining.decrease_rewards(2200).unwrap();
+
+        assert_eq!(wrapped_mining.mining.share, 1400);
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&365), Some(&0));
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&180), Some(&0));
+    }
+
+    #[test]
+    fn severe_decrease_rewards() {
+        let mut wrapped_mining = super::WrappedMining {
+            mining: &mut super::Mining {
+                share: 3600,
+                ..Default::default()
+            },
+            weighted_stake_diffs: &mut Default::default(),
+        };
+        // three stakes:
+        // - 500 x4 (six months)
+        // - 700 x2 (three months)
+        // - 200 x1 (flex)
+        wrapped_mining.weighted_stake_diffs.insert(365, 1500);
+        wrapped_mining.weighted_stake_diffs.insert(180, 700);
+
+        wrapped_mining.decrease_rewards(3500).unwrap();
+
+        assert_eq!(wrapped_mining.mining.share, 100);
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&365), Some(&0));
+        assert_eq!(wrapped_mining.weighted_stake_diffs.get(&180), Some(&0));
     }
 }

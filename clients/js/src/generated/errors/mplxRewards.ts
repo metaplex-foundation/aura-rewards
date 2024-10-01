@@ -133,41 +133,24 @@ nameToErrorMap.set(
   RewardsMustBeGreaterThanZeroError
 );
 
-/** InsufficientWeightedStake: Rewards: Delegate must have at least 15_000_000 of own weighted stake */
-export class InsufficientWeightedStakeError extends ProgramError {
-  override readonly name: string = 'InsufficientWeightedStake';
-
-  readonly code: number = 0x8; // 8
-
-  constructor(program: Program, cause?: Error) {
-    super(
-      'Rewards: Delegate must have at least 15_000_000 of own weighted stake',
-      program,
-      cause
-    );
-  }
-}
-codeToErrorMap.set(0x8, InsufficientWeightedStakeError);
-nameToErrorMap.set('InsufficientWeightedStake', InsufficientWeightedStakeError);
-
 /** StakeFromOthersMustBeZero: Rewards: Stake from others must be zero */
 export class StakeFromOthersMustBeZeroError extends ProgramError {
   override readonly name: string = 'StakeFromOthersMustBeZero';
 
-  readonly code: number = 0x9; // 9
+  readonly code: number = 0x8; // 8
 
   constructor(program: Program, cause?: Error) {
     super('Rewards: Stake from others must be zero', program, cause);
   }
 }
-codeToErrorMap.set(0x9, StakeFromOthersMustBeZeroError);
+codeToErrorMap.set(0x8, StakeFromOthersMustBeZeroError);
 nameToErrorMap.set('StakeFromOthersMustBeZero', StakeFromOthersMustBeZeroError);
 
 /** NoWeightedStakeModifiersAtADate: No changes at the date in weighted stake modifiers while they're expected */
 export class NoWeightedStakeModifiersAtADateError extends ProgramError {
   override readonly name: string = 'NoWeightedStakeModifiersAtADate';
 
-  readonly code: number = 0xa; // 10
+  readonly code: number = 0x9; // 9
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -177,7 +160,7 @@ export class NoWeightedStakeModifiersAtADateError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0xa, NoWeightedStakeModifiersAtADateError);
+codeToErrorMap.set(0x9, NoWeightedStakeModifiersAtADateError);
 nameToErrorMap.set(
   'NoWeightedStakeModifiersAtADate',
   NoWeightedStakeModifiersAtADateError
@@ -187,20 +170,20 @@ nameToErrorMap.set(
 export class DelegatesAreTheSameError extends ProgramError {
   override readonly name: string = 'DelegatesAreTheSame';
 
-  readonly code: number = 0xb; // 11
+  readonly code: number = 0xa; // 10
 
   constructor(program: Program, cause?: Error) {
     super('Passed delegates are the same', program, cause);
   }
 }
-codeToErrorMap.set(0xb, DelegatesAreTheSameError);
+codeToErrorMap.set(0xa, DelegatesAreTheSameError);
 nameToErrorMap.set('DelegatesAreTheSame', DelegatesAreTheSameError);
 
 /** RetreivingZeroCopyAccountFailire: Getting pointer to the data of the zero-copy account has failed */
 export class RetreivingZeroCopyAccountFailireError extends ProgramError {
   override readonly name: string = 'RetreivingZeroCopyAccountFailire';
 
-  readonly code: number = 0xc; // 12
+  readonly code: number = 0xb; // 11
 
   constructor(program: Program, cause?: Error) {
     super(
@@ -210,7 +193,7 @@ export class RetreivingZeroCopyAccountFailireError extends ProgramError {
     );
   }
 }
-codeToErrorMap.set(0xc, RetreivingZeroCopyAccountFailireError);
+codeToErrorMap.set(0xb, RetreivingZeroCopyAccountFailireError);
 nameToErrorMap.set(
   'RetreivingZeroCopyAccountFailire',
   RetreivingZeroCopyAccountFailireError
@@ -220,14 +203,57 @@ nameToErrorMap.set(
 export class AlreadyInitializedError extends ProgramError {
   override readonly name: string = 'AlreadyInitialized';
 
-  readonly code: number = 0xd; // 13
+  readonly code: number = 0xc; // 12
 
   constructor(program: Program, cause?: Error) {
     super('Account is already initialized', program, cause);
   }
 }
-codeToErrorMap.set(0xd, AlreadyInitializedError);
+codeToErrorMap.set(0xc, AlreadyInitializedError);
 nameToErrorMap.set('AlreadyInitialized', AlreadyInitializedError);
+
+/** InvalidMining: Invalid mining */
+export class InvalidMiningError extends ProgramError {
+  override readonly name: string = 'InvalidMining';
+
+  readonly code: number = 0xd; // 13
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid mining', program, cause);
+  }
+}
+codeToErrorMap.set(0xd, InvalidMiningError);
+nameToErrorMap.set('InvalidMining', InvalidMiningError);
+
+/** DerivationError: Failed to derive PDA */
+export class DerivationErrorError extends ProgramError {
+  override readonly name: string = 'DerivationError';
+
+  readonly code: number = 0xe; // 14
+
+  constructor(program: Program, cause?: Error) {
+    super('Failed to derive PDA', program, cause);
+  }
+}
+codeToErrorMap.set(0xe, DerivationErrorError);
+nameToErrorMap.set('DerivationError', DerivationErrorError);
+
+/** DecreaseRewardsTooBig: Rewards: Penalty is not apliable becase it's bigger than the mining's weighted stake */
+export class DecreaseRewardsTooBigError extends ProgramError {
+  override readonly name: string = 'DecreaseRewardsTooBig';
+
+  readonly code: number = 0xf; // 15
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      "Rewards: Penalty is not apliable becase it's bigger than the mining's weighted stake",
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0xf, DecreaseRewardsTooBigError);
+nameToErrorMap.set('DecreaseRewardsTooBig', DecreaseRewardsTooBigError);
 
 /**
  * Attempts to resolve a custom program error from the provided error code.

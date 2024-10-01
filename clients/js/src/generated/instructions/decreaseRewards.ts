@@ -29,63 +29,58 @@ import {
 } from '../shared';
 
 // Accounts.
-export type WithdrawMiningInstructionAccounts = {
+export type DecreaseRewardsInstructionAccounts = {
+  /** The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs */
+  depositAuthority: Signer;
   /** The address of the reward pool */
   rewardPool: PublicKey | Pda;
   /** The address of the mining account which belongs to the user and stores info about user's rewards */
   mining: PublicKey | Pda;
-  /** The address of the Staking program's Registrar, which is PDA and is responsible for signing CPIs */
-  depositAuthority: Signer;
-  /** The address of Mining Account that might be used as a delegate in delegated staking model */
-  delegateMining: PublicKey | Pda;
 };
 
 // Data.
-export type WithdrawMiningInstructionData = {
+export type DecreaseRewardsInstructionData = {
   discriminator: number;
-  amount: bigint;
   miningOwner: PublicKey;
-  delegate: PublicKey;
+  decreasedWeightedStakeNumber: bigint;
 };
 
-export type WithdrawMiningInstructionDataArgs = {
-  amount: number | bigint;
+export type DecreaseRewardsInstructionDataArgs = {
   miningOwner: PublicKey;
-  delegate: PublicKey;
+  decreasedWeightedStakeNumber: number | bigint;
 };
 
-export function getWithdrawMiningInstructionDataSerializer(): Serializer<
-  WithdrawMiningInstructionDataArgs,
-  WithdrawMiningInstructionData
+export function getDecreaseRewardsInstructionDataSerializer(): Serializer<
+  DecreaseRewardsInstructionDataArgs,
+  DecreaseRewardsInstructionData
 > {
   return mapSerializer<
-    WithdrawMiningInstructionDataArgs,
+    DecreaseRewardsInstructionDataArgs,
     any,
-    WithdrawMiningInstructionData
+    DecreaseRewardsInstructionData
   >(
-    struct<WithdrawMiningInstructionData>(
+    struct<DecreaseRewardsInstructionData>(
       [
         ['discriminator', u8()],
-        ['amount', u64()],
         ['miningOwner', publicKeySerializer()],
-        ['delegate', publicKeySerializer()],
+        ['decreasedWeightedStakeNumber', u64()],
       ],
-      { description: 'WithdrawMiningInstructionData' }
+      { description: 'DecreaseRewardsInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 4 })
+    (value) => ({ ...value, discriminator: 11 })
   ) as Serializer<
-    WithdrawMiningInstructionDataArgs,
-    WithdrawMiningInstructionData
+    DecreaseRewardsInstructionDataArgs,
+    DecreaseRewardsInstructionData
   >;
 }
 
 // Args.
-export type WithdrawMiningInstructionArgs = WithdrawMiningInstructionDataArgs;
+export type DecreaseRewardsInstructionArgs = DecreaseRewardsInstructionDataArgs;
 
 // Instruction.
-export function withdrawMining(
+export function decreaseRewards(
   context: Pick<Context, 'programs'>,
-  input: WithdrawMiningInstructionAccounts & WithdrawMiningInstructionArgs
+  input: DecreaseRewardsInstructionAccounts & DecreaseRewardsInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -95,30 +90,25 @@ export function withdrawMining(
 
   // Accounts.
   const resolvedAccounts = {
-    rewardPool: {
+    depositAuthority: {
       index: 0,
+      isWritable: false as boolean,
+      value: input.depositAuthority ?? null,
+    },
+    rewardPool: {
+      index: 1,
       isWritable: true as boolean,
       value: input.rewardPool ?? null,
     },
     mining: {
-      index: 1,
+      index: 2,
       isWritable: true as boolean,
       value: input.mining ?? null,
-    },
-    depositAuthority: {
-      index: 2,
-      isWritable: false as boolean,
-      value: input.depositAuthority ?? null,
-    },
-    delegateMining: {
-      index: 3,
-      isWritable: false as boolean,
-      value: input.delegateMining ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: WithdrawMiningInstructionArgs = { ...input };
+  const resolvedArgs: DecreaseRewardsInstructionArgs = { ...input };
 
   // Accounts in order.
   const orderedAccounts: ResolvedAccount[] = Object.values(
@@ -133,8 +123,8 @@ export function withdrawMining(
   );
 
   // Data.
-  const data = getWithdrawMiningInstructionDataSerializer().serialize(
-    resolvedArgs as WithdrawMiningInstructionDataArgs
+  const data = getDecreaseRewardsInstructionDataSerializer().serialize(
+    resolvedArgs as DecreaseRewardsInstructionDataArgs
   );
 
   // Bytes Created On Chain.

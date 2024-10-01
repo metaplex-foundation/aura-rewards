@@ -56,6 +56,7 @@ export type ExtendStakeInstructionData = {
   baseAmount: bigint;
   additionalAmount: bigint;
   miningOwner: PublicKey;
+  delegate: PublicKey;
 };
 
 export type ExtendStakeInstructionDataArgs = {
@@ -65,6 +66,7 @@ export type ExtendStakeInstructionDataArgs = {
   baseAmount: number | bigint;
   additionalAmount: number | bigint;
   miningOwner: PublicKey;
+  delegate: PublicKey;
 };
 
 export function getExtendStakeInstructionDataSerializer(): Serializer<
@@ -85,6 +87,7 @@ export function getExtendStakeInstructionDataSerializer(): Serializer<
         ['baseAmount', u64()],
         ['additionalAmount', u64()],
         ['miningOwner', publicKeySerializer()],
+        ['delegate', publicKeySerializer()],
       ],
       { description: 'ExtendStakeInstructionData' }
     ),
