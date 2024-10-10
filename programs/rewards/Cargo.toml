@@ -27,3 +27,4 @@ path = "tests/rewards/tests.rs"
 
 [features]
 no-entrypoint = []
+testing = []

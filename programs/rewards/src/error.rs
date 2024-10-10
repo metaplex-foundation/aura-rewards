@@ -84,6 +84,10 @@ pub enum MplxRewardsError {
     /// 19
     #[error("Account addres derivation has failed")]
     AccountDerivationAddresFailed,
+
+    /// 20
+    #[error("This contract is supposed to be called only from the staking contract")]
+    ForbiddenInvocation,
 }
 
 impl PrintProgramError for MplxRewardsError {
