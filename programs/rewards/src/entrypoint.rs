@@ -1,8 +1,11 @@
 //! Program entrypoint
 use crate::{error::MplxRewardsError, instructions::process_instruction};
+
+#[cfg(not(feature = "testing"))]
+use solana_program::instruction::get_stack_height;
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult,
-    instruction::get_stack_height, program_error::PrintProgramError, pubkey::Pubkey,
+    program_error::PrintProgramError, pubkey::Pubkey,
 };
 
 entrypoint!(program_entrypoint);
