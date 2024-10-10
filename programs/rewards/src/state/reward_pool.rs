@@ -162,6 +162,7 @@ impl<'a> WrappedRewardPool<'a> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn change_delegate(
         &mut self,
         mining: &mut WrappedMining,
@@ -179,7 +180,7 @@ impl<'a> WrappedRewardPool<'a> {
             let mut old_delegate_mining = WrappedMining::from_bytes_mut(old_delegate_mining_data)?;
 
             assert_pubkey_eq(&old_delegate_mining.mining.owner, old_delegate)?;
-            assert_account_key(&reward_pool, &old_delegate_mining.mining.reward_pool)?;
+            assert_account_key(reward_pool, &old_delegate_mining.mining.reward_pool)?;
 
             old_delegate_mining.mining.stake_from_others = old_delegate_mining
                 .mining
@@ -198,7 +199,7 @@ impl<'a> WrappedRewardPool<'a> {
             let mut new_delegate_mining = WrappedMining::from_bytes_mut(new_delegate_mining_data)?;
 
             assert_pubkey_eq(&new_delegate_mining.mining.owner, new_delegate)?;
-            assert_account_key(&reward_pool, &new_delegate_mining.mining.reward_pool)?;
+            assert_account_key(reward_pool, &new_delegate_mining.mining.reward_pool)?;
 
             new_delegate_mining.mining.stake_from_others = new_delegate_mining
                 .mining

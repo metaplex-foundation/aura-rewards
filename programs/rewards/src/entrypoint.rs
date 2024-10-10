@@ -1,9 +1,8 @@
 //! Program entrypoint
 use crate::{error::MplxRewardsError, instructions::process_instruction};
-use solana_program::instruction::get_stack_height;
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult,
-    program_error::PrintProgramError, pubkey::Pubkey,
+    instruction::get_stack_height, program_error::PrintProgramError, pubkey::Pubkey,
 };
 
 entrypoint!(program_entrypoint);
