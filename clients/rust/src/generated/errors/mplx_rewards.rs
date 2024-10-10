@@ -55,6 +55,9 @@ pub enum MplxRewardsError {
     /// 14 (0xE) - Account addres derivation has failed
     #[error("Account addres derivation has failed")]
     AccountDerivationAddresFailed,
+    /// 15 (0xF) - This contract is supposed to be called only from the staking contract
+    #[error("This contract is supposed to be called only from the staking contract")]
+    ForbiddenInvocation,
 }
 
 impl solana_program::program_error::PrintProgramError for MplxRewardsError {

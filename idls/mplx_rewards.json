@@ -832,6 +832,11 @@
       "code": 14,
       "name": "AccountDerivationAddresFailed",
       "msg": "Account addres derivation has failed"
+    },
+    {
+      "code": 15,
+      "name": "ForbiddenInvocation",
+      "msg": "This contract is supposed to be called only from the staking contract"
     }
   ],
   "metadata": {
