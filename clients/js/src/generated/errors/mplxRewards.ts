@@ -245,6 +245,23 @@ nameToErrorMap.set(
   AccountDerivationAddresFailedError
 );
 
+/** ForbiddenInvocation: This contract is supposed to be called only from the staking contract */
+export class ForbiddenInvocationError extends ProgramError {
+  override readonly name: string = 'ForbiddenInvocation';
+
+  readonly code: number = 0xf; // 15
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'This contract is supposed to be called only from the staking contract',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0xf, ForbiddenInvocationError);
+nameToErrorMap.set('ForbiddenInvocation', ForbiddenInvocationError);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

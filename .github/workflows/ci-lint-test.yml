@@ -85,4 +85,4 @@ jobs:
           solana-install init ${{ env.SOLANA_VERSION }}
 
       - name: Run tests
-        run: cargo test-bpf
+        run: cargo test-sbf -p mplx-rewards --features testing
