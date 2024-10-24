@@ -17,11 +17,12 @@ fn program_entrypoint<'a>(
     accounts: &'a [AccountInfo<'a>],
     instruction_data: &[u8],
 ) -> ProgramResult {
+    #[cfg(not(feature = "testing"))]
+    if get_stack_height() == TRANSACTION_LEVEL_STACK_HEIGHT {
+        return Err(MplxRewardsError::ForbiddenInvocation.into());
+    }
+
     if let Err(error) = process_instruction(program_id, accounts, instruction_data) {
-        #[cfg(not(feature = "testing"))]
-        if get_stack_height() == TRANSACTION_LEVEL_STACK_HEIGHT {
-            return Err(MplxRewardsError::ForbiddenInvocation.into());
-        }
         // Catch the error so we can print it
         error.print::<MplxRewardsError>();
         return Err(error);
