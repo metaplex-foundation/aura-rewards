@@ -2,8 +2,6 @@
 use crate::{error::MplxRewardsError, instructions::process_instruction};
 
 #[cfg(not(feature = "testing"))]
-use crate::STAKING_PROGRAM_ID;
-#[cfg(not(feature = "testing"))]
 use solana_program::instruction::get_stack_height;
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult,
@@ -20,7 +18,7 @@ fn program_entrypoint<'a>(
     instruction_data: &[u8],
 ) -> ProgramResult {
     #[cfg(not(feature = "testing"))]
-    if program_id != &STAKING_PROGRAM_ID || get_stack_height() == TRANSACTION_LEVEL_STACK_HEIGHT {
+    if get_stack_height() == TRANSACTION_LEVEL_STACK_HEIGHT {
         return Err(MplxRewardsError::ForbiddenInvocation.into());
     }
 
