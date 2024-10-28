@@ -16,7 +16,7 @@ pub fn process_deposit_mining<'a>(
 
     let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
     let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
-    let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+    let deposit_authority = AccountLoader::next_signer_from_staking_program(account_info_iter)?;
     let delegate_mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
 
     let mining_data = &mut mining.data.borrow_mut();

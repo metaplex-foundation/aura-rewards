@@ -5,6 +5,7 @@ use crate::{
     asserts::{assert_account_key, assert_pubkey_eq},
     error::MplxRewardsError,
     state::WrappedImmutableMining,
+    STAKING_PROGRAM_REGISTRAR,
 };
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -236,6 +237,28 @@ impl AccountLoader {
 
         msg!("Account #{}:{} missing signature", idx, acc.key,);
         Err(ProgramError::MissingRequiredSignature)
+    }
+
+    /// Checks if next account is a signer AND is derived from the Staking program
+    pub fn next_signer_from_staking_program<'a, 'b, I: Iterator<Item = &'a AccountInfo<'b>>>(
+        iter: &mut Enumerate<I>,
+    ) -> Result<I::Item, ProgramError> {
+        let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
+
+        if acc.is_signer && acc.key.eq(&STAKING_PROGRAM_REGISTRAR) {
+            return Ok(acc);
+        } else {
+            #[cfg(not(feature = "testing"))]
+            {
+                msg!("Account #{}:{} missing signature", idx, acc.key,);
+                return Err(ProgramError::MissingRequiredSignature);
+            }
+
+            #[cfg(feature = "testing")]
+            {
+                Ok(acc)
+            }
+        }
     }
 
     /// Load the account without any checks

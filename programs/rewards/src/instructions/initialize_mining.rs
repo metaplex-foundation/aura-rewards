@@ -18,7 +18,7 @@ pub fn process_initialize_mining<'a>(
     let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
     let mining = AccountLoader::next_uninitialized(account_info_iter)?;
     let payer = AccountLoader::next_signer(account_info_iter)?;
-    let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+    let deposit_authority = AccountLoader::next_signer_from_staking_program(account_info_iter)?;
     let _system_program = AccountLoader::next_with_key(account_info_iter, &system_program::id())?;
 
     let (pubkey, bump) = find_mining_program_address(program_id, mining_owner, reward_pool.key);

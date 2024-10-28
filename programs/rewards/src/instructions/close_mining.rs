@@ -17,7 +17,7 @@ pub fn process_close_mining<'a>(
     let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
     let mining_owner = AccountLoader::next_signer(account_info_iter)?;
     let target_account = AccountLoader::next_with_owner(account_info_iter, &system_program::id())?;
-    let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+    let deposit_authority = AccountLoader::next_signer_from_staking_program(account_info_iter)?;
     let reward_pool = AccountLoader::next_with_owner(account_info_iter, program_id)?;
 
     {
