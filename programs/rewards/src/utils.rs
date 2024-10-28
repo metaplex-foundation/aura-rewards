@@ -1,11 +1,13 @@
 //! Arbitrary auxilliary functions
 use std::iter::Enumerate;
 
+#[cfg(not(feature = "testing"))]
+use crate::STAKING_PROGRAM_REGISTRAR;
+
 use crate::{
     asserts::{assert_account_key, assert_pubkey_eq},
     error::MplxRewardsError,
     state::WrappedImmutableMining,
-    STAKING_PROGRAM_REGISTRAR,
 };
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -243,21 +245,20 @@ impl AccountLoader {
     pub fn next_signer_from_staking_program<'a, 'b, I: Iterator<Item = &'a AccountInfo<'b>>>(
         iter: &mut Enumerate<I>,
     ) -> Result<I::Item, ProgramError> {
-        let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
-
-        if acc.is_signer && acc.key.eq(&STAKING_PROGRAM_REGISTRAR) {
-            return Ok(acc);
-        } else {
-            #[cfg(not(feature = "testing"))]
-            {
-                msg!("Account #{}:{} missing signature", idx, acc.key,);
-                return Err(ProgramError::MissingRequiredSignature);
+        #[cfg(not(feature = "testing"))]
+        {
+            let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
+            if acc.is_signer && acc.key.eq(&STAKING_PROGRAM_REGISTRAR) {
+                return Ok(acc);
             }
+            msg!("Account #{}:{} missing signature", idx, acc.key,);
+            Err(ProgramError::MissingRequiredSignature)
+        }
 
-            #[cfg(feature = "testing")]
-            {
-                Ok(acc)
-            }
+        #[cfg(feature = "testing")]
+        {
+            let (_, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
+            Ok(acc)
         }
     }
 
