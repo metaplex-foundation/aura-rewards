@@ -1,8 +1,5 @@
 //! Program entrypoint
 use crate::{error::MplxRewardsError, instructions::process_instruction};
-
-#[cfg(not(feature = "testing"))]
-use solana_program::instruction::get_stack_height;
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult,
     program_error::PrintProgramError, pubkey::Pubkey,
@@ -17,11 +14,6 @@ fn program_entrypoint<'a>(
     accounts: &'a [AccountInfo<'a>],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    #[cfg(not(feature = "testing"))]
-    if get_stack_height() == TRANSACTION_LEVEL_STACK_HEIGHT {
-        return Err(MplxRewardsError::ForbiddenInvocation.into());
-    }
-
     if let Err(error) = process_instruction(program_id, accounts, instruction_data) {
         // Catch the error so we can print it
         error.print::<MplxRewardsError>();

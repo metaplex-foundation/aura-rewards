@@ -22,7 +22,7 @@ pub fn process_initialize_pool<'a>(
     let reward_mint = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
     let reward_vault = AccountLoader::next_uninitialized(account_info_iter)?;
     let payer = AccountLoader::next_signer(account_info_iter)?;
-    let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+    let deposit_authority = AccountLoader::next_signer_from_staking_program(account_info_iter)?;
     let rent = AccountLoader::next_with_key(account_info_iter, &Rent::id())?;
     let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
     let _system_program = AccountLoader::next_with_key(account_info_iter, &system_program::id())?;

@@ -1,6 +1,9 @@
 //! Arbitrary auxilliary functions
 use std::iter::Enumerate;
 
+#[cfg(not(feature = "testing"))]
+use crate::STAKING_PROGRAM_REGISTRAR;
+
 use crate::{
     asserts::{assert_account_key, assert_pubkey_eq},
     error::MplxRewardsError,
@@ -236,6 +239,42 @@ impl AccountLoader {
 
         msg!("Account #{}:{} missing signature", idx, acc.key,);
         Err(ProgramError::MissingRequiredSignature)
+    }
+
+    /// Checks if next account is a signer AND is derived from the Staking program
+    pub fn next_signer_from_staking_program<'a, 'b, I: Iterator<Item = &'a AccountInfo<'b>>>(
+        iter: &mut Enumerate<I>,
+    ) -> Result<I::Item, ProgramError> {
+        #[cfg(not(feature = "testing"))]
+        {
+            let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
+
+            if !acc.is_signer {
+                msg!("Account #{}:{} missing signature", idx, acc.key,);
+                return Err(ProgramError::MissingRequiredSignature);
+            }
+
+            if !acc.key.eq(&STAKING_PROGRAM_REGISTRAR) {
+                msg!(
+                    "Account #{}:{} account wasn't derived from the staking program",
+                    idx,
+                    acc.key,
+                );
+                return Err(MplxRewardsError::InvalidSigner.into());
+            }
+
+            Ok(acc)
+        }
+
+        #[cfg(feature = "testing")]
+        {
+            let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
+            if acc.is_signer {
+                return Ok(acc);
+            }
+            msg!("Account #{}:{} missing signature", idx, acc.key,);
+            Err(ProgramError::MissingRequiredSignature)
+        }
     }
 
     /// Load the account without any checks

@@ -18,7 +18,7 @@ pub fn process_claim<'a>(program_id: &Pubkey, accounts: &'a [AccountInfo<'a>]) -
     let vault = AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
     let mining = AccountLoader::next_with_owner(account_info_iter, program_id)?;
     let mining_owner = AccountLoader::next_signer(account_info_iter)?;
-    let deposit_authority = AccountLoader::next_signer(account_info_iter)?;
+    let deposit_authority = AccountLoader::next_signer_from_staking_program(account_info_iter)?;
     let mining_owner_reward_token_account =
         AccountLoader::next_with_owner(account_info_iter, &spl_token::id())?;
     let _token_program = AccountLoader::next_with_key(account_info_iter, &spl_token::id())?;
