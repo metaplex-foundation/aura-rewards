@@ -248,17 +248,32 @@ impl AccountLoader {
         #[cfg(not(feature = "testing"))]
         {
             let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
-            if acc.is_signer && acc.key.eq(&STAKING_PROGRAM_REGISTRAR) {
-                return Ok(acc);
+
+            if !acc.is_signer {
+                msg!("Account #{}:{} missing signature", idx, acc.key,);
+                return Err(ProgramError::MissingRequiredSignature);
             }
-            msg!("Account #{}:{} missing signature", idx, acc.key,);
-            Err(ProgramError::MissingRequiredSignature)
+
+            if !acc.key.eq(&STAKING_PROGRAM_REGISTRAR) {
+                msg!(
+                    "Account #{}:{} account wasn't derived from the staking program",
+                    idx,
+                    acc.key,
+                );
+                return Err(MplxRewardsError::InvalidSigner.into());
+            }
+
+            Ok(acc)
         }
 
         #[cfg(feature = "testing")]
         {
-            let (_, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
-            Ok(acc)
+            let (idx, acc) = iter.next().ok_or(ProgramError::NotEnoughAccountKeys)?;
+            if acc.is_signer {
+                return Ok(acc);
+            }
+            msg!("Account #{}:{} missing signature", idx, acc.key,);
+            Err(ProgramError::MissingRequiredSignature)
         }
     }
 

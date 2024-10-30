@@ -86,8 +86,12 @@ pub enum MplxRewardsError {
     AccountDerivationAddresFailed,
 
     /// 20
-    #[error("This contract is supposed to be called only from the staking contract")]
+    #[error("This contract is supposed to be called only from the staking program")]
     ForbiddenInvocation,
+
+    /// 21
+    #[error("The account should be the PDA from the staking program")]
+    InvalidSigner,
 }
 
 impl PrintProgramError for MplxRewardsError {
