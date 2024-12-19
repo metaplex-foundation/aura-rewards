@@ -13,16 +13,16 @@ pub mod utils;
 
 pub use solana_program::{self, pubkey::Pubkey};
 
-solana_program::declare_id!("DdAfv8RS2BS41FRjDX5nLXSmQWrPsdC17sbgD66oKcU8");
+solana_program::declare_id!("CnAF8KyrSH3mmzdyeRR7wh69ZxBrxf3diue7VbRH8Nzh");
 
-/// Address: DdAfv8RS2BS41FRjDX5nLXSmQWrPsdC17sbgD66oKcU8
+/// Address: FH6rnJ4qiVmzUCpnyRaQwCYcZhByY92NUQ6Eormni8J
 pub const STAKING_PROGRAM_ID: Pubkey = Pubkey::new_from_array([
-    164, 185, 242, 100, 167, 7, 245, 144, 85, 224, 196, 151, 192, 113, 216, 27, 46, 144, 114, 107,
-    253, 180, 250, 83, 45, 239, 58, 211, 199, 87, 250, 145,
+    3, 168, 86, 55, 247, 116, 32, 234, 116, 99, 208, 79, 42, 141, 17, 21, 75, 212, 118, 215, 162,
+    134, 10, 98, 59, 43, 62, 230, 96, 243, 30, 211,
 ]);
 
-// 88qpWZJxdKku9vsg7otRCUbk7rAjkQmRxB9QxDbRwg9B
+// DmjYbU42Ycfcqj352QKeK4zquhg3ua24qQ2PaouxaN5m
 pub const STAKING_PROGRAM_REGISTRAR: Pubkey = Pubkey::new_from_array([
-    106, 4, 18, 249, 60, 28, 25, 114, 22, 73, 216, 106, 24, 44, 254, 61, 181, 207, 37, 223, 224,
-    123, 86, 118, 101, 68, 246, 132, 166, 69, 19, 6,
+    189, 193, 231, 121, 54, 169, 180, 47, 178, 231, 180, 250, 227, 113, 240, 243, 203, 229, 214,
+    110, 128, 153, 62, 196, 154, 51, 38, 27, 4, 92, 221, 32,
 ]);
