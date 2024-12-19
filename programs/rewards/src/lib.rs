@@ -21,7 +21,9 @@ pub const STAKING_PROGRAM_ID: Pubkey = Pubkey::new_from_array([
     253, 180, 250, 83, 45, 239, 58, 211, 199, 87, 250, 145,
 ]);
 
-// 88qpWZJxdKku9vsg7otRCUbk7rAjkQmRxB9QxDbRwg9B
+/// 88qpWZJxdKku9vsg7otRCUbk7rAjkQmRxB9QxDbRwg9B
+/// Derived from PDA(realm.key(), "registrar", governing_token_mint),
+/// Realm is derived from PDA("dao_name", governance_program_id)
 pub const STAKING_PROGRAM_REGISTRAR: Pubkey = Pubkey::new_from_array([
     106, 4, 18, 249, 60, 28, 25, 114, 22, 73, 216, 106, 24, 44, 254, 61, 181, 207, 37, 223, 224,
     123, 86, 118, 101, 68, 246, 132, 166, 69, 19, 6,
