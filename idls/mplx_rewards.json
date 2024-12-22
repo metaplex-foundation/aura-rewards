@@ -836,12 +836,17 @@
     {
       "code": 15,
       "name": "ForbiddenInvocation",
-      "msg": "This contract is supposed to be called only from the staking contract"
+      "msg": "This contract is supposed to be called only from the staking program"
+    },
+    {
+      "code": 16,
+      "name": "InvalidSigner",
+      "msg": "The account should be the PDA from the staking program"
     }
   ],
   "metadata": {
     "origin": "shank",
-    "address": "BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR",
+    "address": "CnAF8KyrSH3mmzdyeRR7wh69ZxBrxf3diue7VbRH8Nzh",
     "binaryVersion": "0.4.2",
     "libVersion": "0.4"
   }

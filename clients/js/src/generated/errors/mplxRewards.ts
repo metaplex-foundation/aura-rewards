@@ -245,7 +245,7 @@ nameToErrorMap.set(
   AccountDerivationAddresFailedError
 );
 
-/** ForbiddenInvocation: This contract is supposed to be called only from the staking contract */
+/** ForbiddenInvocation: This contract is supposed to be called only from the staking program */
 export class ForbiddenInvocationError extends ProgramError {
   override readonly name: string = 'ForbiddenInvocation';
 
@@ -253,7 +253,7 @@ export class ForbiddenInvocationError extends ProgramError {
 
   constructor(program: Program, cause?: Error) {
     super(
-      'This contract is supposed to be called only from the staking contract',
+      'This contract is supposed to be called only from the staking program',
       program,
       cause
     );
@@ -261,6 +261,23 @@ export class ForbiddenInvocationError extends ProgramError {
 }
 codeToErrorMap.set(0xf, ForbiddenInvocationError);
 nameToErrorMap.set('ForbiddenInvocation', ForbiddenInvocationError);
+
+/** InvalidSigner: The account should be the PDA from the staking program */
+export class InvalidSignerError extends ProgramError {
+  override readonly name: string = 'InvalidSigner';
+
+  readonly code: number = 0x10; // 16
+
+  constructor(program: Program, cause?: Error) {
+    super(
+      'The account should be the PDA from the staking program',
+      program,
+      cause
+    );
+  }
+}
+codeToErrorMap.set(0x10, InvalidSignerError);
+nameToErrorMap.set('InvalidSigner', InvalidSignerError);
 
 /**
  * Attempts to resolve a custom program error from the provided error code.

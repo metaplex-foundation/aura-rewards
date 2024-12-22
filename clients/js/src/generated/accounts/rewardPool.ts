@@ -141,7 +141,7 @@ export function getRewardPoolGpaBuilder(
 ) {
   const programId = context.programs.getPublicKey(
     'mplxRewards',
-    'BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR'
+    'CnAF8KyrSH3mmzdyeRR7wh69ZxBrxf3diue7VbRH8Nzh'
   );
   return gpaBuilder(context, programId)
     .registerFields<{

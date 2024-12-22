@@ -18,7 +18,7 @@ import {
 } from '../errors';
 
 export const MPLX_REWARDS_PROGRAM_ID =
-  'BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR' as PublicKey<'BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR'>;
+  'CnAF8KyrSH3mmzdyeRR7wh69ZxBrxf3diue7VbRH8Nzh' as PublicKey<'CnAF8KyrSH3mmzdyeRR7wh69ZxBrxf3diue7VbRH8Nzh'>;
 
 export function createMplxRewardsProgram(): Program {
   return {

@@ -87,7 +87,7 @@ export function fillVault(
   // Program ID.
   const programId = context.programs.getPublicKey(
     'mplxRewards',
-    'BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR'
+    'CnAF8KyrSH3mmzdyeRR7wh69ZxBrxf3diue7VbRH8Nzh'
   );
 
   // Accounts.
