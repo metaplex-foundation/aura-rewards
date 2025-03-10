@@ -8,4 +8,4 @@
 use solana_program::{pubkey, pubkey::Pubkey};
 
 /// `mplx_rewards` program ID.
-pub const MPLX_REWARDS_ID: Pubkey = pubkey!("BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR");
+pub const MPLX_REWARDS_ID: Pubkey = pubkey!("5R1hXrm6aPgrjsDip4sJ9cByPtkzNXCBZut11bRauY36");

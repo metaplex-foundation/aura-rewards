@@ -13,18 +13,17 @@ pub mod utils;
 
 pub use solana_program::{self, pubkey::Pubkey};
 
-solana_program::declare_id!("DdAfv8RS2BS41FRjDX5nLXSmQWrPsdC17sbgD66oKcU8");
+solana_program::declare_id!("5R1hXrm6aPgrjsDip4sJ9cByPtkzNXCBZut11bRauY36");
 
-/// Address: DdAfv8RS2BS41FRjDX5nLXSmQWrPsdC17sbgD66oKcU8
+/// Address: BFzPVi4JULrec2xGWcUqtfNudZxUQQa2Qk2osn4uXB8P
 pub const STAKING_PROGRAM_ID: Pubkey = Pubkey::new_from_array([
-    164, 185, 242, 100, 167, 7, 245, 144, 85, 224, 196, 151, 192, 113, 216, 27, 46, 144, 114, 107,
-    253, 180, 250, 83, 45, 239, 58, 211, 199, 87, 250, 145,
+    152, 107, 227, 164, 196, 8, 225, 8, 221, 164, 56, 134, 190, 72, 90, 215, 218, 224, 215, 159,
+    170, 41, 68, 57, 34, 129, 191, 156, 249, 82, 32, 36,
 ]);
-
-/// 88qpWZJxdKku9vsg7otRCUbk7rAjkQmRxB9QxDbRwg9B
+/// HFWawhL4qv1a6MCMj7PnPPCZE7w5DW3r47pwZgRsiayC
 /// Derived from PDA(realm.key(), "registrar", governing_token_mint),
 /// Realm is derived from PDA("dao_name", governance_program_id)
 pub const STAKING_PROGRAM_REGISTRAR: Pubkey = Pubkey::new_from_array([
-    106, 4, 18, 249, 60, 28, 25, 114, 22, 73, 216, 106, 24, 44, 254, 61, 181, 207, 37, 223, 224,
-    123, 86, 118, 101, 68, 246, 132, 166, 69, 19, 6,
+    241, 114, 147, 3, 70, 61, 229, 235, 254, 172, 188, 149, 93, 10, 179, 67, 204, 89, 191, 235,
+    123, 112, 229, 54, 132, 68, 132, 190, 218, 224, 2, 167,
 ]);

@@ -94,7 +94,7 @@ export function initializePool(
   // Program ID.
   const programId = context.programs.getPublicKey(
     'mplxRewards',
-    'BF5PatmRTQDgEKoXR7iHRbkibEEi83nVM38cUKWzQcTR'
+    '5R1hXrm6aPgrjsDip4sJ9cByPtkzNXCBZut11bRauY36'
   );
 
   // Accounts.
